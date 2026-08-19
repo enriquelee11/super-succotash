@@ -254,6 +254,8 @@
   const COLOR_PHOSPHOR = '#ffb000';
   const COLOR_GRID = 'rgba(122, 84, 32, 0.28)';
   const COLOR_DANGER = '#ff5a36';
+  const COLOR_SCREEN = '#150f07';
+  const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
@@ -439,6 +441,93 @@
     particles = particles.filter(p => p.life > 0);
   }
 
+  function drawSnake() {
+    const pts = snake.map(s => ({ x: s.x * CELL + CELL / 2, y: s.y * CELL + CELL / 2 }));
+    const n = pts.length;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = COLOR_PHOSPHOR;
+    for (let i = n - 1; i > 0; i--) {
+      const t = i / (n - 1);
+      ctx.lineWidth = CELL * (0.92 - t * 0.42);
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = `rgba(255, 176, 0, ${0.55 + (1 - t) * 0.45})`;
+      ctx.beginPath();
+      ctx.moveTo(pts[i].x, pts[i].y);
+      ctx.lineTo(pts[i - 1].x, pts[i - 1].y);
+      ctx.stroke();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(74, 54, 24, 0.55)';
+    ctx.lineWidth = Math.max(2, CELL * 0.14);
+    ctx.beginPath();
+    ctx.moveTo(pts[n - 1].x, pts[n - 1].y);
+    for (let i = n - 2; i >= 0; i--) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    drawHead(pts[0]);
+  }
+
+  function drawHead(center) {
+    const fx = dir.x, fy = dir.y;
+    const px = -dir.y, py = dir.x;
+    const r = CELL * 0.5;
+
+    ctx.save();
+    ctx.shadowColor = COLOR_PHOSPHOR;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = COLOR_PHOSPHOR_BRIGHT;
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y, r * 0.62, r * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const eyeForward = r * 0.32;
+    const eyeSide = r * 0.4;
+    [-1, 1].forEach(side => {
+      const ex = center.x + fx * eyeForward + px * eyeSide * side;
+      const ey = center.y + fy * eyeForward + py * eyeSide * side;
+      ctx.fillStyle = COLOR_SCREEN;
+      ctx.beginPath();
+      ctx.arc(ex, ey, CELL * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLOR_PHOSPHOR_BRIGHT;
+      ctx.beginPath();
+      ctx.arc(ex + fx * CELL * 0.03, ey + fy * CELL * 0.03, CELL * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const mouthTip = { x: center.x + fx * r * 0.85, y: center.y + fy * r * 0.85 };
+    const mouthBack = { x: center.x + fx * r * 0.35, y: center.y + fy * r * 0.35 };
+    ctx.strokeStyle = COLOR_SCREEN;
+    ctx.lineWidth = Math.max(1.5, CELL * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(mouthBack.x - px * r * 0.18, mouthBack.y - py * r * 0.18);
+    ctx.lineTo(mouthTip.x, mouthTip.y);
+    ctx.lineTo(mouthBack.x + px * r * 0.18, mouthBack.y + py * r * 0.18);
+    ctx.stroke();
+
+    const flickOn = !REDUCE_MOTION && running && !paused && (performance.now() % 1400) < 260;
+    if (flickOn) {
+      const tongueBase = { x: center.x + fx * r * 0.95, y: center.y + fy * r * 0.95 };
+      const tongueLen = CELL * 0.55;
+      const tongueTip = { x: tongueBase.x + fx * tongueLen, y: tongueBase.y + fy * tongueLen };
+      const forkSpread = CELL * 0.12;
+      ctx.strokeStyle = COLOR_DANGER;
+      ctx.lineWidth = Math.max(1, CELL * 0.035);
+      ctx.beginPath();
+      ctx.moveTo(tongueBase.x, tongueBase.y);
+      ctx.lineTo(tongueTip.x, tongueTip.y);
+      ctx.moveTo(tongueTip.x, tongueTip.y);
+      ctx.lineTo(tongueTip.x + fx * CELL * 0.14 - px * forkSpread, tongueTip.y + fy * CELL * 0.14 - py * forkSpread);
+      ctx.moveTo(tongueTip.x, tongueTip.y);
+      ctx.lineTo(tongueTip.x + fx * CELL * 0.14 + px * forkSpread, tongueTip.y + fy * CELL * 0.14 + py * forkSpread);
+      ctx.stroke();
+    }
+  }
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -465,14 +554,7 @@
     ctx.fill();
     ctx.restore();
 
-    snake.forEach((seg, i) => {
-      const t = i / snake.length;
-      ctx.fillStyle = i === 0 ? COLOR_PHOSPHOR_BRIGHT : `rgba(255, 176, 0, ${1 - t * 0.65})`;
-      ctx.shadowColor = COLOR_PHOSPHOR;
-      ctx.shadowBlur = i === 0 ? 16 : 5;
-      const pad = 1.5;
-      ctx.fillRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
-    });
+    drawSnake();
     ctx.shadowBlur = 0;
 
     particles.forEach(p => {
