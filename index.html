@@ -191,7 +191,7 @@
   .hidden { display: none !important; }
 
   .touch-controls {
-    display: none;
+    display: grid;
     grid-template-columns: repeat(3, 50px);
     grid-template-rows: repeat(3, 50px);
     gap: 8px;
@@ -203,9 +203,6 @@
     box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
   }
   .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f5c00; }
-  @media (pointer: coarse) {
-    .touch-controls { display: grid; }
-  }
 </style>
 </head>
 <body>
