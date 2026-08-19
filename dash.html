@@ -463,7 +463,7 @@
 
   // ---------- Player ----------
   let player, mode, state, attempts;
-  let particles = [], screenShake = 0;
+  let particles = [], screenShake = 0, flashAlpha = 0, hitStopTimer = 0;
 
   function resetPlayer() {
     player = {
@@ -505,18 +505,21 @@
     stopMusic();
     if (audioCtx) playCrash(audioCtx.currentTime);
     screenShake = 1;
-    spawnBurst(PLAYER_X, player.y, '#ff2d6a');
+    flashAlpha = 1;
+    hitStopTimer = 0.05;
+    spawnDeathBurst(PLAYER_X, player.y, MODE_COLORS[mode] || '#35f0ff');
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
     if (pct > best) { best = pct; localStorage.setItem(BEST_KEY, String(best)); }
     bestEl.textContent = Math.floor(best) + '%';
     crashInfo.textContent = `PROGRESS: ${pct.toFixed(1)}%  ·  ATTEMPT ${attempts}`;
-    overOverlay.classList.remove('hidden');
+    // let the explosion play out before the overlay covers the screen
+    setTimeout(() => { if (state === 'crashed') overOverlay.classList.remove('hidden'); }, 380);
     setTimeout(() => {
       overOverlay.classList.add('hidden');
       attempts++;
       attemptsEl.textContent = attempts;
       startGame();
-    }, 1100);
+    }, 1250);
   }
 
   function win() {
@@ -526,10 +529,25 @@
     winOverlay.classList.remove('hidden');
   }
 
-  function spawnBurst(x, y, color) {
-    for (let i = 0; i < 18; i++) {
-      const a = (Math.PI * 2 * i) / 18;
-      particles.push({ x, y, vx: Math.cos(a) * 220, vy: Math.sin(a) * 220, life: 1, color });
+  function spawnDeathBurst(x, y, tintColor) {
+    // chunky shattered debris (the player breaking apart)
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 140 + Math.random() * 260;
+      particles.push({
+        x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - 120,
+        life: 1, color: tintColor, size: 4 + Math.random() * 7,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 16, shape: 'square',
+      });
+    }
+    // fine red sparks
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 260 + Math.random() * 260;
+      particles.push({
+        x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed,
+        life: 0.65, color: '#ff2d6a', size: 2 + Math.random() * 1.5, shape: 'dot',
+      });
     }
   }
 
@@ -647,6 +665,8 @@
     resetPlayer();
     particles = [];
     screenShake = 0;
+    flashAlpha = 0;
+    hitStopTimer = 0;
     state = 'playing';
     level.forEach(o => { o.done = false; });
     startOverlay.classList.add('hidden');
@@ -666,12 +686,32 @@
     lastTime = now;
     dt = Math.min(dt, 1 / 30);
 
-    if (state === 'playing') {
-      update(dt);
+    if (state === 'playing') update(dt);
+
+    if (hitStopTimer > 0) {
+      hitStopTimer -= dt;
+    } else {
+      updateEffects(dt);
     }
+
     draw();
     justPressed = false;
-    if (state === 'playing' || screenShake > 0) requestAnimationFrame(loop);
+    if (state === 'playing' || particles.length > 0 || screenShake > 0 || flashAlpha > 0) {
+      requestAnimationFrame(loop);
+    }
+  }
+
+  function updateEffects(dt) {
+    particles.forEach(p => {
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 700 * dt;
+      p.vx *= Math.max(0, 1 - dt * 1.5);
+      if (p.rot !== undefined) p.rot += p.vr * dt;
+      p.life -= dt * (p.decay || 1.5);
+    });
+    particles = particles.filter(p => p.life > 0);
+    if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 2.6);
+    if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 2.8);
   }
 
   function update(dt) {
@@ -707,10 +747,6 @@
     }
 
     progressBar.style.width = clamp((off / LEVEL_WORLD_LEN) * 100, 0, 100) + '%';
-
-    particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; p.life -= dt * 1.6; });
-    particles = particles.filter(p => p.life > 0);
-    if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 3);
   }
 
   // ---------- Rendering ----------
@@ -824,9 +860,18 @@
 
   function drawParticles() {
     particles.forEach(p => {
+      ctx.save();
       ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.translate(p.x, p.y);
+      if (p.rot) ctx.rotate(p.rot);
       ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = p.color; ctx.shadowBlur = 6;
+      if (p.shape === 'square') {
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      } else {
+        ctx.beginPath(); ctx.arc(0, 0, p.size || 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     });
     ctx.globalAlpha = 1;
   }
@@ -834,7 +879,7 @@
   function draw() {
     ctx.save();
     if (screenShake > 0) {
-      ctx.translate((Math.random() - 0.5) * 8 * screenShake, (Math.random() - 0.5) * 8 * screenShake);
+      ctx.translate((Math.random() - 0.5) * 14 * screenShake, (Math.random() - 0.5) * 14 * screenShake);
     }
     const off = worldOffset();
     const color = MODE_COLORS[mode] || '#35f0ff';
@@ -844,11 +889,49 @@
     if (state === 'playing') drawPlayer(color);
     drawParticles();
     ctx.restore();
+    if (flashAlpha > 0) {
+      ctx.fillStyle = `rgba(255,45,106,${(flashAlpha * 0.45).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ---------- Attract mode: the level auto-scrolls behind the start screen ----------
+  let demoOffset = 0, demoT = 0, demoLastTime = 0;
+  function drawAttractPlayer() {
+    const hopPeriod = 0.55;
+    const t = (demoT % hopPeriod) / hopPeriod;
+    const hop = Math.sin(t * Math.PI);
+    const y = (GROUND_Y - 15) - hop * 90;
+    ctx.save();
+    ctx.translate(PLAYER_X, y);
+    ctx.rotate(demoT * 3.2);
+    ctx.shadowColor = MODE_COLORS.cube; ctx.shadowBlur = 16;
+    ctx.fillStyle = MODE_COLORS.cube;
+    ctx.fillRect(-15, -15, 30, 30);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.strokeRect(-15, -15, 30, 30);
+    ctx.restore();
+  }
+
+  function attractLoop(now) {
+    if (state !== 'start') return;
+    let dt = (now - demoLastTime) / 1000;
+    demoLastTime = now;
+    dt = Math.min(dt, 1 / 30);
+    demoOffset = (demoOffset + SCROLL_SPEED * dt) % LEVEL_WORLD_LEN;
+    demoT += dt;
+
+    drawBackdrop(demoOffset);
+    drawGroundCeil(MODE_COLORS.cube);
+    drawObstacles(demoOffset, MODE_COLORS.cube);
+    drawAttractPlayer();
+
+    requestAnimationFrame(attractLoop);
   }
 
   resetPlayer();
-  draw();
   state = 'start';
+  demoLastTime = performance.now();
+  requestAnimationFrame(attractLoop);
 })();
 </script>
 </body>
