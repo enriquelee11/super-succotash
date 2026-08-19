@@ -574,7 +574,8 @@
     player.vy += P.cubeGravity * dt;
     player.y += player.vy * dt;
     if (player.y >= restY) { player.y = restY; player.vy = 0; player.onSurface = true; }
-    if (!player.onSurface) player.angle += dt * 9;
+    // roll continuously (grounded or airborne) so forward motion is always visible, not just mid-jump
+    player.angle += dt * (SCROLL_SPEED / player.size) * (player.onSurface ? 1 : 1.6);
   }
 
   function updateRobot(dt) {
@@ -908,6 +909,17 @@
       ctx.translate((Math.random() - 0.5) * 14 * screenShake, (Math.random() - 0.5) * 14 * screenShake);
     }
     const off = worldOffset();
+    // beat-synced camera punch: a quick forward zoom on every beat, so the whole
+    // scene visibly lurches forward in time with the music, not just the obstacles
+    if (state === 'playing') {
+      const beatFrac = (off / GRID) % 1;
+      const punch = beatFrac < 0.14 ? (1 - beatFrac / 0.14) * 0.028 : 0;
+      if (punch > 0) {
+        ctx.translate(W / 2, H / 2);
+        ctx.scale(1 + punch, 1 + punch);
+        ctx.translate(-W / 2, -H / 2);
+      }
+    }
     const color = MODE_COLORS[mode] || '#35f0ff';
     drawBackdrop(off);
     drawGroundCeil(off, color);
