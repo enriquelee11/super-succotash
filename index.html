@@ -3,147 +3,239 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Neon Snake</title>
+<title>Amber Snake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0e17;
-    --panel: #111827;
-    --accent: #39ff88;
-    --accent2: #00d4ff;
-    --danger: #ff3860;
-    --text: #e5eefc;
-    --muted: #6b7a99;
+    --cabinet: #1b140c;
+    --cabinet-hi: #33260f;
+    --cabinet-lo: #0e0a05;
+    --screen: #150f07;
+    --screen-edge: #0a0703;
+    --phosphor: #ffb000;
+    --phosphor-bright: #ffd88a;
+    --phosphor-dim: #7a5420;
+    --phosphor-faint: #4a3618;
+    --danger: #ff5a36;
+    --danger-dim: #8f3521;
+    --text-hint: #c99a4e;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     height: 100%;
-    background: radial-gradient(circle at 50% 20%, #14203a 0%, #0a0e17 70%);
-    color: var(--text);
-    font-family: 'Courier New', Consolas, monospace;
+    background: var(--cabinet-lo);
+    color: var(--phosphor);
+    font-family: 'Space Mono', 'Courier New', monospace;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
   }
-  .app {
+  .display-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flicker { animation: flicker 6s infinite; }
+  }
+  @keyframes flicker {
+    0%, 93%, 100% { opacity: 1; }
+    94% { opacity: 0.94; }
+    95% { opacity: 1; }
+    96% { opacity: 0.9; }
+    97% { opacity: 1; }
+  }
+
+  .cabinet {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
+    gap: 18px;
+    padding: 22px 26px 28px;
+    background:
+      linear-gradient(155deg, var(--cabinet-hi) 0%, var(--cabinet) 40%, var(--cabinet-lo) 100%);
+    border-radius: 18px;
+    box-shadow:
+      0 0 0 2px var(--cabinet-lo),
+      0 18px 50px rgba(0,0,0,0.65),
+      inset 0 2px 0 rgba(255,255,255,0.04);
   }
-  h1 {
-    margin: 0;
-    font-size: 28px;
-    letter-spacing: 4px;
-    color: var(--accent);
-    text-shadow: 0 0 12px rgba(57,255,136,0.6);
+
+  .marquee {
+    text-align: center;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--cabinet-lo);
+    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 70%);
+    padding: 10px 22px;
+    border-radius: 6px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 22px rgba(255,176,0,0.35);
   }
+
   .hud {
     display: flex;
     justify-content: space-between;
     width: 100%;
-    max-width: 520px;
-    font-size: 15px;
-    color: var(--muted);
-    padding: 0 4px;
+    max-width: 480px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--phosphor-dim);
+    padding: 0 2px;
   }
-  .hud span b { color: var(--accent2); }
+  .hud b {
+    color: var(--phosphor-bright);
+    font-weight: 700;
+    text-shadow: 0 0 6px rgba(255,216,138,0.6);
+  }
+
+  .screen-frame {
+    position: relative;
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--screen-edge);
+    box-shadow: inset 0 0 0 1px rgba(255,176,0,0.08);
+  }
   .board-wrap {
     position: relative;
-    border: 2px solid #24304a;
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(0,212,255,0.15), inset 0 0 40px rgba(0,0,0,0.6);
-    background: var(--panel);
-    padding: 6px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--screen);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px rgba(255,176,0,0.4);
+  }
+  .board-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.22) 0px,
+      rgba(0,0,0,0.22) 1px,
+      transparent 2px,
+      transparent 3px
+    );
+    mix-blend-mode: multiply;
+  }
+  .board-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    z-index: 3;
   }
   canvas {
     display: block;
-    background: #0d1424;
-    border-radius: 6px;
+    background: var(--screen);
     image-rendering: pixelated;
+    position: relative;
+    z-index: 1;
   }
+
   .overlay {
     position: absolute;
-    inset: 6px;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    background: rgba(6, 9, 16, 0.86);
-    border-radius: 6px;
+    gap: 16px;
+    background: rgba(10, 7, 3, 0.9);
     text-align: center;
     padding: 20px;
+    z-index: 4;
   }
   .overlay h2 {
     margin: 0;
-    font-size: 24px;
-    color: var(--accent2);
-    text-shadow: 0 0 10px rgba(0,212,255,0.7);
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--phosphor-bright);
+    text-shadow: 0 0 14px rgba(255,216,138,0.7);
   }
-  .overlay p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
-  .overlay .danger { color: var(--danger); font-size: 20px; }
+  .overlay p {
+    margin: 0;
+    color: var(--text-hint);
+    font-size: 12px;
+    line-height: 1.9;
+    max-width: 320px;
+  }
+  .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,90,54,0.7); }
+
   button {
-    font-family: inherit;
-    font-size: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 2px;
-    background: var(--accent);
-    color: #06210f;
+    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 75%);
+    color: #2a1a02;
     border: none;
-    padding: 10px 22px;
-    border-radius: 6px;
+    padding: 12px 26px;
+    border-radius: 5px;
     cursor: pointer;
-    font-weight: bold;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    box-shadow: 0 3px 0 #8f5c00, 0 0 18px rgba(255,176,0,0.3);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
-  button:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(57,255,136,0.4); }
-  button:active { transform: translateY(0); }
-  .hint { color: var(--muted); font-size: 12px; text-align: center; max-width: 480px; }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: translateY(3px); box-shadow: 0 0 0 #8f5c00, 0 0 10px rgba(255,176,0,0.3); }
+  button:focus-visible { outline: 2px solid var(--phosphor-bright); outline-offset: 3px; }
+
+  .hint {
+    color: var(--phosphor-faint);
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.7;
+  }
   .hidden { display: none !important; }
+
   .touch-controls {
     display: none;
-    grid-template-columns: repeat(3, 56px);
-    grid-template-rows: repeat(3, 56px);
-    gap: 6px;
-    margin-top: 4px;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 8px;
   }
   .touch-controls button {
-    width: 56px; height: 56px; padding: 0; font-size: 20px;
-    background: var(--panel); color: var(--accent2); border: 1px solid #24304a;
+    width: 50px; height: 50px; padding: 0; font-size: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--phosphor-bright), var(--phosphor) 70%);
+    box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
   }
+  .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f5c00; }
   @media (pointer: coarse) {
     .touch-controls { display: grid; }
   }
 </style>
 </head>
 <body>
-  <div class="app">
-    <h1>NEON SNAKE</h1>
+  <div class="cabinet flicker">
+    <div class="marquee display-font">AMBER SNAKE</div>
     <div class="hud">
-      <span>SCORE: <b id="score">0</b></span>
-      <span>BEST: <b id="best">0</b></span>
-      <span>SPEED: <b id="speed">1</b></span>
+      <span>SCORE <b id="score">0</b></span>
+      <span>BEST <b id="best">0</b></span>
+      <span>LEVEL <b id="speed">1</b></span>
     </div>
-    <div class="board-wrap">
-      <canvas id="board" width="480" height="480"></canvas>
-      <div id="startOverlay" class="overlay">
-        <h2>NEON SNAKE</h2>
-        <p>Use arrow keys or WASD to move.<br/>Eat the glowing orbs, avoid walls and yourself.</p>
-        <button id="startBtn">START GAME</button>
-      </div>
-      <div id="pauseOverlay" class="overlay hidden">
-        <h2>PAUSED</h2>
-        <button id="resumeBtn">RESUME</button>
-      </div>
-      <div id="overOverlay" class="overlay hidden">
-        <h2 class="danger">GAME OVER</h2>
-        <p id="finalScore">Score: 0</p>
-        <button id="restartBtn">PLAY AGAIN</button>
+    <div class="screen-frame">
+      <div class="board-wrap">
+        <canvas id="board" width="480" height="480"></canvas>
+        <div id="startOverlay" class="overlay">
+          <h2 class="display-font">AMBER<br/>SNAKE</h2>
+          <p>ARROWS OR WASD TO MOVE.<br/>EAT THE PELLETS.<br/>DON'T HIT THE WALLS OR YOURSELF.</p>
+          <button id="startBtn">INSERT COIN</button>
+        </div>
+        <div id="pauseOverlay" class="overlay hidden">
+          <h2 class="display-font">PAUSED</h2>
+          <button id="resumeBtn">RESUME</button>
+        </div>
+        <div id="overOverlay" class="overlay hidden">
+          <h2 class="display-font danger">GAME<br/>OVER</h2>
+          <p id="finalScore">SCORE: 0</p>
+          <button id="restartBtn">CONTINUE</button>
+        </div>
       </div>
     </div>
-    <div class="hint">Arrow keys / WASD to move &middot; Space to pause &middot; Enter to start/restart</div>
+    <div class="hint">ARROWS / WASD MOVE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; ENTER START</div>
     <div class="touch-controls">
       <span></span><button data-dir="up">▲</button><span></span>
       <button data-dir="left">◀</button><span></span><button data-dir="right">▶</button>
@@ -158,6 +250,11 @@
   const GRID = 24;
   const CELL = canvas.width / GRID;
 
+  const COLOR_PHOSPHOR_BRIGHT = '#ffd88a';
+  const COLOR_PHOSPHOR = '#ffb000';
+  const COLOR_GRID = 'rgba(122, 84, 32, 0.28)';
+  const COLOR_DANGER = '#ff5a36';
+
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
   const speedEl = document.getElementById('speed');
@@ -166,7 +263,7 @@
   const overOverlay = document.getElementById('overOverlay');
   const finalScoreEl = document.getElementById('finalScore');
 
-  const BEST_KEY = 'neonSnakeBest';
+  const BEST_KEY = 'amberSnakeBest';
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
   bestEl.textContent = best;
 
@@ -297,7 +394,7 @@
 
     if (head.x === food.x && head.y === food.y) {
       score += 10;
-      spawnParticles(food.x, food.y, '#39ff88');
+      spawnParticles(food.x, food.y, COLOR_PHOSPHOR_BRIGHT);
       if (score % 50 === 0) {
         level++;
         interval = Math.max(MIN_INTERVAL, BASE_INTERVAL - (level - 1) * 10);
@@ -316,8 +413,8 @@
   function endGame() {
     running = false;
     gameOver = true;
-    spawnParticles(snake[0].x, snake[0].y, '#ff3860');
-    finalScoreEl.textContent = `Score: ${score}  (Best: ${best})`;
+    spawnParticles(snake[0].x, snake[0].y, COLOR_DANGER);
+    finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${best})`;
     overOverlay.classList.remove('hidden');
     drawParticleBurst();
   }
@@ -345,7 +442,7 @@
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = 'rgba(36,48,74,0.5)';
+    ctx.strokeStyle = COLOR_GRID;
     ctx.lineWidth = 1;
     for (let i = 1; i < GRID; i++) {
       ctx.beginPath();
@@ -360,9 +457,9 @@
 
     const foodPulse = 0.5 + 0.5 * Math.sin(performance.now() / 150);
     ctx.save();
-    ctx.shadowColor = '#00d4ff';
-    ctx.shadowBlur = 12 + foodPulse * 8;
-    ctx.fillStyle = '#00d4ff';
+    ctx.shadowColor = COLOR_DANGER;
+    ctx.shadowBlur = 10 + foodPulse * 8;
+    ctx.fillStyle = COLOR_DANGER;
     ctx.beginPath();
     ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
     ctx.fill();
@@ -370,9 +467,9 @@
 
     snake.forEach((seg, i) => {
       const t = i / snake.length;
-      ctx.fillStyle = i === 0 ? '#39ff88' : `rgba(57, 255, 136, ${1 - t * 0.6})`;
-      ctx.shadowColor = '#39ff88';
-      ctx.shadowBlur = i === 0 ? 14 : 4;
+      ctx.fillStyle = i === 0 ? COLOR_PHOSPHOR_BRIGHT : `rgba(255, 176, 0, ${1 - t * 0.65})`;
+      ctx.shadowColor = COLOR_PHOSPHOR;
+      ctx.shadowBlur = i === 0 ? 16 : 5;
       const pad = 1.5;
       ctx.fillRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - pad * 2, CELL - pad * 2);
     });
