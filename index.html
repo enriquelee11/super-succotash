@@ -30,10 +30,12 @@
     color: var(--phosphor);
     font-family: 'Space Mono', 'Courier New', monospace;
     display: flex;
-    align-items: center;
+    align-items: safe center;
     justify-content: center;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
+  body { padding: 20px 0; }
   .display-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -51,8 +53,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
-    padding: 22px 26px 28px;
+    gap: 14px;
+    padding: 18px 22px 22px;
     background:
       linear-gradient(155deg, var(--cabinet-hi) 0%, var(--cabinet) 40%, var(--cabinet-lo) 100%);
     border-radius: 18px;
@@ -192,12 +194,12 @@
 
   .touch-controls {
     display: grid;
-    grid-template-columns: repeat(3, 50px);
-    grid-template-rows: repeat(3, 50px);
-    gap: 8px;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 6px;
   }
   .touch-controls button {
-    width: 50px; height: 50px; padding: 0; font-size: 16px;
+    width: 44px; height: 44px; padding: 0; font-size: 15px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, var(--phosphor-bright), var(--phosphor) 70%);
     box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
@@ -215,7 +217,7 @@
     </div>
     <div class="screen-frame">
       <div class="board-wrap">
-        <canvas id="board" width="480" height="480"></canvas>
+        <canvas id="board" width="432" height="432"></canvas>
         <div id="startOverlay" class="overlay">
           <h2 class="display-font">AMBER<br/>SNAKE</h2>
           <p>ARROWS OR WASD TO MOVE.<br/>EAT THE PELLETS.<br/>DON'T HIT THE WALLS OR YOURSELF.</p>
