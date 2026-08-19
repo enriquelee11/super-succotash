@@ -146,11 +146,21 @@
     align-items: center;
     justify-content: center;
     gap: 14px;
-    background: rgba(6, 6, 16, 0.92);
     text-align: center;
     padding: 20px;
     z-index: 4;
   }
+  .overlay .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: rgba(6, 6, 16, 0.85);
+    border-radius: 12px;
+    padding: 22px 26px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(53,240,255,0.1);
+  }
+  #overOverlay, #winOverlay { background: rgba(6, 6, 16, 0.4); }
   .overlay h2 {
     margin: 0;
     font-size: 17px;
@@ -216,21 +226,27 @@
       <div class="board-wrap">
         <canvas id="board" width="640" height="360"></canvas>
         <div id="startOverlay" class="overlay">
-          <h2 class="display-font">PULSE<br/>DASH</h2>
-          <p>ONE BUTTON. TAP, CLICK, OR PRESS SPACE.<br/>
-          STAY ON BEAT &mdash; EVERY OBSTACLE AND PORTAL IS TIMED TO THE MUSIC.<br/>
-          HIT ANYTHING AND YOU'RE BACK TO THE START.<br/>
-          PORTALS SHIFT YOU BETWEEN CUBE, SHIP, BALL, UFO, WAVE, ROBOT &amp; SPIDER MODES.</p>
-          <button id="startBtn">INSERT COIN</button>
+          <div class="panel">
+            <h2 class="display-font">PULSE<br/>DASH</h2>
+            <p>ONE BUTTON. TAP, CLICK, OR PRESS SPACE.<br/>
+            STAY ON BEAT &mdash; EVERY OBSTACLE AND PORTAL IS TIMED TO THE MUSIC.<br/>
+            HIT ANYTHING AND YOU'RE BACK TO THE START.<br/>
+            PORTALS SHIFT YOU BETWEEN CUBE, SHIP, BALL, UFO, WAVE, ROBOT &amp; SPIDER MODES.</p>
+            <button id="startBtn">INSERT COIN</button>
+          </div>
         </div>
         <div id="overOverlay" class="overlay hidden">
-          <h2 class="display-font danger">CRASHED</h2>
-          <p id="crashInfo">0%</p>
+          <div class="panel">
+            <h2 class="display-font danger">CRASHED</h2>
+            <p id="crashInfo">0%</p>
+          </div>
         </div>
         <div id="winOverlay" class="overlay hidden">
-          <h2 class="display-font">LEVEL<br/>CLEAR</h2>
-          <p id="winInfo"></p>
-          <button id="againBtn">PLAY AGAIN</button>
+          <div class="panel">
+            <h2 class="display-font">LEVEL<br/>CLEAR</h2>
+            <p id="winInfo"></p>
+            <button id="againBtn">PLAY AGAIN</button>
+          </div>
         </div>
       </div>
     </div>
@@ -757,7 +773,7 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = 'rgba(53,240,255,0.06)';
+    ctx.strokeStyle = 'rgba(53,240,255,0.12)';
     ctx.lineWidth = 1;
     const gridOff = off % 40;
     for (let x = -gridOff; x < W; x += 40) {
@@ -765,7 +781,7 @@
     }
   }
 
-  function drawGroundCeil(color) {
+  function drawGroundCeil(off, color) {
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 10;
     ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, CEIL_Y); ctx.lineTo(W, CEIL_Y); ctx.stroke();
@@ -773,6 +789,16 @@
     ctx.fillStyle = 'rgba(10,11,24,0.9)';
     ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
     ctx.fillRect(0, 0, W, CEIL_Y);
+
+    // scrolling tread marks: an unmistakable "this is moving" cue even with no obstacles in view
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([16, 20]);
+    ctx.lineDashOffset = -off;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y + 11); ctx.lineTo(W, GROUND_Y + 11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, CEIL_Y - 11); ctx.lineTo(W, CEIL_Y - 11); ctx.stroke();
+    ctx.restore();
   }
 
   function drawObstacles(off, color) {
@@ -884,7 +910,7 @@
     const off = worldOffset();
     const color = MODE_COLORS[mode] || '#35f0ff';
     drawBackdrop(off);
-    drawGroundCeil(color);
+    drawGroundCeil(off, color);
     drawObstacles(off, color);
     if (state === 'playing') drawPlayer(color);
     drawParticles();
@@ -921,7 +947,7 @@
     demoT += dt;
 
     drawBackdrop(demoOffset);
-    drawGroundCeil(MODE_COLORS.cube);
+    drawGroundCeil(demoOffset, MODE_COLORS.cube);
     drawObstacles(demoOffset, MODE_COLORS.cube);
     drawAttractPlayer();
 
