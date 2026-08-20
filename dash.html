@@ -73,14 +73,33 @@
   .hud {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
     max-width: 640px;
     font-size: 11px;
     letter-spacing: 1px;
     color: var(--neon-dim);
     padding: 0 2px;
+    gap: 8px;
+    flex-wrap: wrap;
   }
   .hud b { color: var(--neon-bright); font-weight: 700; text-shadow: 0 0 6px rgba(200,253,255,0.6); }
+  .hud-level { display: flex; align-items: center; gap: 6px; }
+  .hud-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; background: currentColor; flex: none; }
+  .menu-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--neon-dim);
+    background: transparent;
+    border: 1px solid rgba(53,240,255,0.25);
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .menu-btn:hover { color: var(--neon-bright); border-color: var(--neon); filter: none; }
+  .menu-btn:active { transform: none; box-shadow: none; }
 
   .progress-wrap {
     width: 100%;
@@ -171,6 +190,32 @@
   .overlay p { margin: 0; color: var(--text-hint); font-size: 11.5px; line-height: 1.9; max-width: 360px; }
   .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,45,106,0.7); }
 
+  .menu-panel { width: 100%; max-width: 380px; }
+  .level-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .level-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    border: none;
+    border-left: 4px solid var(--card-color, var(--neon));
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.12s ease, transform 0.08s ease;
+  }
+  .level-card:hover { background: rgba(255,255,255,0.08); filter: none; }
+  .level-card:active { transform: translateY(1px); box-shadow: none; }
+  .level-card:focus-visible { outline: 2px solid var(--card-color, var(--neon)); outline-offset: 2px; }
+  .level-card-name { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--neon-bright); letter-spacing: 0.5px; }
+  .level-card-diff { font-size: 9px; letter-spacing: 1.5px; color: var(--card-color, var(--neon)); margin-top: 4px; }
+  .level-card-best { font-size: 10px; color: var(--text-hint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .menu-hint { color: var(--text-hint); font-size: 10px; letter-spacing: 0.5px; margin-top: 2px; }
+
   button {
     font-family: 'Space Mono', monospace;
     font-size: 13px;
@@ -217,40 +262,43 @@
   <div class="cabinet flicker">
     <div class="marquee display-font">PULSE DASH</div>
     <div class="hud">
-      <span>ATTEMPT <b id="attempts">1</b></span>
+      <button class="menu-btn" id="menuBtn">&#9776; MENU</button>
+      <span class="hud-level"><span class="hud-dot" id="hudDot"></span><b id="levelLabel">&mdash;</b></span>
       <span>MODE <b id="modeLabel">CUBE</b></span>
+      <span>ATTEMPT <b id="attempts">1</b></span>
       <span>BEST <b id="best">0%</b></span>
     </div>
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="screen-frame">
       <div class="board-wrap">
         <canvas id="board" width="640" height="360"></canvas>
-        <div id="startOverlay" class="overlay">
-          <div class="panel">
-            <h2 class="display-font">PULSE<br/>DASH</h2>
-            <p>ONE BUTTON. TAP, CLICK, OR PRESS SPACE.<br/>
-            STAY ON BEAT &mdash; EVERY OBSTACLE AND PORTAL IS TIMED TO THE MUSIC.<br/>
-            HIT ANYTHING AND YOU'RE BACK TO THE START.<br/>
-            PORTALS SHIFT YOU BETWEEN CUBE, SHIP, BALL, UFO, WAVE, ROBOT &amp; SPIDER MODES.</p>
-            <button id="startBtn">INSERT COIN</button>
+        <div id="menuOverlay" class="overlay">
+          <div class="panel menu-panel">
+            <h2 class="display-font">SELECT LEVEL</h2>
+            <div class="level-list" id="levelList"></div>
+            <div class="menu-hint">TAP A LEVEL TO START &nbsp;·&nbsp; ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
           </div>
         </div>
         <div id="overOverlay" class="overlay hidden">
           <div class="panel">
             <h2 class="display-font danger">CRASHED</h2>
             <p id="crashInfo">0%</p>
+            <button id="crashMenuBtn">MENU</button>
           </div>
         </div>
         <div id="winOverlay" class="overlay hidden">
           <div class="panel">
             <h2 class="display-font">LEVEL<br/>CLEAR</h2>
             <p id="winInfo"></p>
-            <button id="againBtn">PLAY AGAIN</button>
+            <div style="display:flex; gap:10px;">
+              <button id="againBtn">PLAY AGAIN</button>
+              <button id="winMenuBtn">MENU</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="hint">TAP / CLICK / SPACE = ACTION &nbsp;·&nbsp; HOLD FOR SHIP, WAVE &amp; ROBOT MODES &nbsp;·&nbsp; <a href="index.html">&larr; AMBER SNAKE</a></div>
+    <div class="hint">EVERY OBSTACLE AND PORTAL IS TIMED TO THE MUSIC &nbsp;·&nbsp; HIT ANYTHING AND YOU RESTART &nbsp;·&nbsp; <a href="index.html">&larr; AMBER SNAKE</a></div>
     <button class="tap-btn" id="tapBtn">TAP</button>
   </div>
 
@@ -262,29 +310,26 @@
 
   const attemptsEl = document.getElementById('attempts');
   const modeLabelEl = document.getElementById('modeLabel');
+  const levelLabelEl = document.getElementById('levelLabel');
+  const hudDotEl = document.getElementById('hudDot');
   const bestEl = document.getElementById('best');
   const progressBar = document.getElementById('progressBar');
-  const startOverlay = document.getElementById('startOverlay');
+  const menuOverlay = document.getElementById('menuOverlay');
   const overOverlay = document.getElementById('overOverlay');
   const winOverlay = document.getElementById('winOverlay');
   const crashInfo = document.getElementById('crashInfo');
   const winInfo = document.getElementById('winInfo');
-
-  const BEST_KEY = 'pulseDashBest';
-  let best = parseFloat(localStorage.getItem(BEST_KEY) || '0');
-  bestEl.textContent = Math.floor(best) + '%';
+  const levelListEl = document.getElementById('levelList');
 
   // ---------- Timing / world constants ----------
-  const BPM = 150;
-  const BEAT = 60 / BPM;
-  const SCROLL_SPEED = 300; // px/sec
-  const GRID = SCROLL_SPEED * BEAT; // px per beat
+  const SCROLL_SPEED = 300; // px/sec, constant across levels — difficulty scales via BPM & density
   const GROUND_Y = 300;
   const CEIL_Y = 50;
   const PLAYER_X = 150;
   const MID_Y = (GROUND_Y + CEIL_Y) / 2;
-  const LEVEL_BEATS = 97;
-  const LEVEL_WORLD_LEN = LEVEL_BEATS * GRID;
+
+  // per-level, set by loadLevel()
+  let BPM, BEAT, GRID, LEVEL_BEATS, LEVEL_WORLD_LEN, SIXTEENTH;
 
   const MODE_COLORS = {
     cube: '#35f0ff', ship: '#4dff8a', ball: '#ffe14d',
@@ -297,58 +342,118 @@
   function pad(beat) { return { beat, kind: 'pad' }; }
   function portal(beat, mode) { return { beat, kind: 'portal', mode }; }
   function finish(beat) { return { beat, kind: 'finish' }; }
+  function scaleBeats(events, factor) {
+    return events.map(e => ({ ...e, beat: Math.round(e.beat * factor * 1000) / 1000 }));
+  }
 
-  const level = [
-    // --- Cube ---
+  // EASY — gentle intro, generous spacing, only the simplest modes
+  const EASY_EVENTS = [
+    spike(4, 'floor'), spike(7, 'floor'), spike(10, 'floor'),
+    pad(13),
+    portal(14, 'ship'),
+    block(17, 'floor', 90), block(20, 'ceil', 90), block(23, 'floor', 90),
+    portal(26, 'ball'),
+    spike(29, 'floor'), spike(32, 'ceil'), spike(35, 'floor'),
+    portal(38, 'ufo'),
+    spike(41, 'floor'), spike(44, 'floor'), spike(47, 'floor'),
+    portal(50, 'cube'),
+    spike(53, 'floor'), spike(56, 'floor'),
+    finish(60),
+  ];
+
+  // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
+  const MEDIUM_EVENTS = [
     spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'),
     spike(12, 'floor'), spike(12.5, 'floor'), spike(14, 'floor'),
     pad(15),
     portal(15.5, 'ship'),
-
-    // --- Ship (winding corridor) ---
     block(18, 'floor', 110), block(20, 'ceil', 110),
     block(22, 'floor', 130), block(24, 'ceil', 130),
     block(26, 'floor', 100), block(28, 'ceil', 150),
     block(30, 'floor', 120),
     portal(31.5, 'ball'),
-
-    // --- Ball (floor/ceiling flips) ---
     spike(34, 'floor'), spike(36, 'ceil'), spike(38, 'floor'), spike(40, 'ceil'),
     spike(42, 'floor'), spike(44, 'ceil'), spike(46, 'floor'),
     portal(47.5, 'ufo'),
-
-    // --- UFO (hops) ---
     spike(50, 'floor'), spike(52, 'floor'), spike(54, 'floor'),
     spike(56, 'floor'), spike(56.5, 'floor'),
     spike(58, 'floor'), spike(60, 'floor'),
     spike(62, 'floor'), spike(62.5, 'floor'),
     portal(63.5, 'wave'),
-
-    // --- Wave (zigzag corridor) ---
     block(65, 'floor', 90), block(67, 'ceil', 90),
     block(69, 'floor', 100), block(71, 'ceil', 80),
     block(73, 'floor', 80), block(75, 'ceil', 100),
     block(77, 'floor', 90),
     portal(79.5, 'robot'),
-
-    // --- Robot (variable-height jumps) ---
     spike(81, 'floor'),
     spike(83, 'floor'), spike(83.4, 'floor'),
     spike(85, 'floor'), spike(85.3, 'floor'), spike(85.6, 'floor'),
     spike(87, 'floor'),
     portal(87.5, 'spider'),
-
-    // --- Spider (instant flips) ---
     spike(89, 'floor'), spike(90.5, 'ceil'), spike(92, 'floor'),
     spike(93.5, 'ceil'), spike(95, 'floor'),
-
     finish(97),
-  ].map(o => ({ ...o, worldX: o.beat * GRID, done: false }));
+  ];
+
+  // HARD & INSANE reuse the medium pattern run twice, at a faster tempo. Jump/flip physics
+  // are fixed in absolute time (not beats), so a higher BPM alone shrinks every gap's real
+  // clearance — beat positions are stretched by a compensating factor to restore medium's
+  // proven absolute-time safety margins before the tempo increase is applied.
+  function buildTwoLapLevel(scale) {
+    const base = scaleBeats(MEDIUM_EVENTS.filter(e => e.kind !== 'finish'), scale);
+    const lapLen = 97 * scale;
+    const events = [
+      ...base,
+      portal(lapLen + 1, 'cube'),
+      ...base.map(e => ({ ...e, beat: +(e.beat + lapLen + 1).toFixed(3) })),
+    ];
+    return { events, totalBeats: Math.ceil(lapLen * 2 + 3) };
+  }
+
+  const hardLevel = buildTwoLapLevel(1.15);
+  const HARD_EVENTS = [...hardLevel.events, finish(hardLevel.totalBeats)];
+
+  const insaneLevel = buildTwoLapLevel(1.3);
+  const INSANE_EVENTS = [...insaneLevel.events, finish(insaneLevel.totalBeats)];
+
+  const LEVEL_DEFS = [
+    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 60, events: EASY_EVENTS },
+    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 97, events: MEDIUM_EVENTS },
+    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: hardLevel.totalBeats, events: HARD_EVENTS },
+    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: insaneLevel.totalBeats, events: INSANE_EVENTS },
+  ];
+
+  // Precompute each level's own grid/obstacle geometry once (independent of whichever level is "current")
+  const LEVELS = LEVEL_DEFS.map(def => {
+    const beat = 60 / def.bpm;
+    const grid = SCROLL_SPEED * beat;
+    const worldLen = def.totalBeats * grid;
+    const obstacles = def.events.map(o => ({ ...o, worldX: o.beat * grid, done: false }));
+    return { ...def, beat, grid, worldLen, obstacles, bestKey: 'pulseDashBest_' + def.id };
+  });
+
+  let currentLevel = null;
+  let level = [];
+  let best = 0;
+
+  function loadLevel(lv) {
+    currentLevel = lv;
+    BPM = lv.bpm;
+    BEAT = lv.beat;
+    GRID = lv.grid;
+    LEVEL_BEATS = lv.totalBeats;
+    LEVEL_WORLD_LEN = lv.worldLen;
+    SIXTEENTH = BEAT / 4;
+    level = lv.obstacles.map(o => ({ ...o, done: false }));
+    best = parseFloat(localStorage.getItem(lv.bestKey) || '0');
+    bestEl.textContent = Math.floor(best) + '%';
+    levelLabelEl.textContent = lv.name;
+    hudDotEl.style.color = lv.color;
+  }
 
   // ---------- Audio (procedural, beat-locked scheduler) ----------
   let audioCtx = null, master = null, noiseBuffer = null;
   let schedulerTimer = null, next16th = 0, nextNoteTime = 0, levelStartTime = 0;
-  const SIXTEENTH = BEAT / 4;
 
   function initAudio() {
     if (audioCtx) return;
@@ -448,8 +553,6 @@
     if (e) e.preventDefault();
     if (!isDown) justPressed = true;
     isDown = true;
-    if (state === 'start') startGame();
-    else if (state === 'crashed') { /* auto-restarts */ }
   }
   function pressEnd(e) { if (e) e.preventDefault(); isDown = false; }
 
@@ -463,8 +566,10 @@
   window.addEventListener('pointerup', pressEnd);
   document.getElementById('tapBtn').addEventListener('pointerdown', pressStart);
   document.getElementById('tapBtn').addEventListener('pointerup', pressEnd);
-  document.getElementById('startBtn').addEventListener('click', startGame);
-  document.getElementById('againBtn').addEventListener('click', startGame);
+  document.getElementById('againBtn').addEventListener('click', () => startGame());
+  document.getElementById('menuBtn').addEventListener('click', goToMenu);
+  document.getElementById('crashMenuBtn').addEventListener('click', goToMenu);
+  document.getElementById('winMenuBtn').addEventListener('click', goToMenu);
 
   // ---------- Physics constants ----------
   const P = {
@@ -515,6 +620,16 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function easeOutQuad(t) { return 1 - (1 - t) * (1 - t); }
 
+  function recordBest(pct) {
+    if (pct > best) {
+      best = pct;
+      localStorage.setItem(currentLevel.bestKey, String(best));
+    }
+    bestEl.textContent = Math.floor(best) + '%';
+  }
+
+  let pendingRestart = null, pendingOverlay = null;
+
   function die() {
     if (state !== 'playing') return;
     state = 'crashed';
@@ -525,12 +640,11 @@
     hitStopTimer = 0.05;
     spawnDeathBurst(PLAYER_X, player.y, MODE_COLORS[mode] || '#35f0ff');
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
-    if (pct > best) { best = pct; localStorage.setItem(BEST_KEY, String(best)); }
-    bestEl.textContent = Math.floor(best) + '%';
+    recordBest(pct);
     crashInfo.textContent = `PROGRESS: ${pct.toFixed(1)}%  ·  ATTEMPT ${attempts}`;
     // let the explosion play out before the overlay covers the screen
-    setTimeout(() => { if (state === 'crashed') overOverlay.classList.remove('hidden'); }, 380);
-    setTimeout(() => {
+    pendingOverlay = setTimeout(() => { if (state === 'crashed') overOverlay.classList.remove('hidden'); }, 380);
+    pendingRestart = setTimeout(() => {
       overOverlay.classList.add('hidden');
       attempts++;
       attemptsEl.textContent = attempts;
@@ -541,6 +655,7 @@
   function win() {
     state = 'won';
     stopMusic();
+    recordBest(100);
     winInfo.textContent = `CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}  ·  BEST ${Math.floor(best)}%`;
     winOverlay.classList.remove('hidden');
   }
@@ -678,7 +793,14 @@
   }
 
   // ---------- Game flow ----------
-  function startGame() {
+  function startGame(lv) {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    if (lv) {
+      loadLevel(lv);
+      attempts = 1;
+      attemptsEl.textContent = attempts;
+    }
     resetPlayer();
     particles = [];
     screenShake = 0;
@@ -686,12 +808,61 @@
     hitStopTimer = 0;
     state = 'playing';
     level.forEach(o => { o.done = false; });
-    startOverlay.classList.add('hidden');
+    menuOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     winOverlay.classList.add('hidden');
     startMusic();
     lastTime = performance.now();
     requestAnimationFrame(loop);
+  }
+
+  function goToMenu() {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    stopMusic();
+    isDown = false;
+    state = 'menu';
+    currentLevel = null;
+    levelLabelEl.textContent = '—';
+    hudDotEl.style.color = 'var(--neon-dim)';
+    modeLabelEl.textContent = '—';
+    attemptsEl.textContent = '—';
+    bestEl.textContent = '—';
+    progressBar.style.width = '0%';
+    overOverlay.classList.add('hidden');
+    winOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+    refreshLevelList();
+    demoLastTime = performance.now();
+    requestAnimationFrame(attractLoop);
+  }
+
+  function refreshLevelList() {
+    levelListEl.querySelectorAll('.level-card-best').forEach(el => {
+      const lv = LEVELS.find(l => l.id === el.dataset.levelId);
+      if (!lv) return;
+      const b = parseFloat(localStorage.getItem(lv.bestKey) || '0');
+      el.textContent = b > 0 ? Math.floor(b) + '%' : '—';
+    });
+  }
+
+  function buildLevelList() {
+    levelListEl.innerHTML = '';
+    LEVELS.forEach(lv => {
+      const b = parseFloat(localStorage.getItem(lv.bestKey) || '0');
+      const btn = document.createElement('button');
+      btn.className = 'level-card';
+      btn.style.setProperty('--card-color', lv.color);
+      btn.innerHTML = `
+        <span>
+          <span class="level-card-name">${lv.name}</span><br/>
+          <span class="level-card-diff">${lv.difficulty}</span>
+        </span>
+        <span class="level-card-best" data-level-id="${lv.id}">${b > 0 ? Math.floor(b) + '%' : '—'}</span>
+      `;
+      btn.addEventListener('click', () => startGame(lv));
+      levelListEl.appendChild(btn);
+    });
   }
 
   attempts = 1;
@@ -802,8 +973,8 @@
     ctx.restore();
   }
 
-  function drawObstacles(off, color) {
-    for (const o of level) {
+  function drawObstacles(obstacles, off, color) {
+    for (const o of obstacles) {
       const sx = PLAYER_X + o.worldX - off;
       if (sx < -60 || sx > W + 60) continue;
       ctx.save();
@@ -923,7 +1094,7 @@
     const color = MODE_COLORS[mode] || '#35f0ff';
     drawBackdrop(off);
     drawGroundCeil(off, color);
-    drawObstacles(off, color);
+    drawObstacles(level, off, color);
     if (state === 'playing') drawPlayer(color);
     drawParticles();
     ctx.restore();
@@ -933,9 +1104,9 @@
     }
   }
 
-  // ---------- Attract mode: the level auto-scrolls behind the start screen ----------
-  let demoOffset = 0, demoT = 0, demoLastTime = 0;
-  function drawAttractPlayer() {
+  // ---------- Attract mode: cycles through all four levels behind the menu ----------
+  let demoOffset = 0, demoT = 0, demoLastTime = 0, demoLevelIdx = 0, demoSwitchAt = 7;
+  function drawAttractPlayer(color) {
     const hopPeriod = 0.55;
     const t = (demoT % hopPeriod) / hopPeriod;
     const hop = Math.sin(t * Math.PI);
@@ -943,33 +1114,56 @@
     ctx.save();
     ctx.translate(PLAYER_X, y);
     ctx.rotate(demoT * 3.2);
-    ctx.shadowColor = MODE_COLORS.cube; ctx.shadowBlur = 16;
-    ctx.fillStyle = MODE_COLORS.cube;
+    ctx.shadowColor = color; ctx.shadowBlur = 16;
+    ctx.fillStyle = color;
     ctx.fillRect(-15, -15, 30, 30);
     ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.strokeRect(-15, -15, 30, 30);
     ctx.restore();
   }
 
   function attractLoop(now) {
-    if (state !== 'start') return;
+    if (state !== 'menu') return;
     let dt = (now - demoLastTime) / 1000;
     demoLastTime = now;
     dt = Math.min(dt, 1 / 30);
-    demoOffset = (demoOffset + SCROLL_SPEED * dt) % LEVEL_WORLD_LEN;
     demoT += dt;
 
+    if (demoT > demoSwitchAt) {
+      demoLevelIdx = (demoLevelIdx + 1) % LEVELS.length;
+      demoOffset = 0;
+      demoSwitchAt = demoT + 7;
+    }
+    const demoLv = LEVELS[demoLevelIdx];
+    demoOffset = (demoOffset + SCROLL_SPEED * dt) % demoLv.worldLen;
+
     drawBackdrop(demoOffset);
-    drawGroundCeil(demoOffset, MODE_COLORS.cube);
-    drawObstacles(demoOffset, MODE_COLORS.cube);
-    drawAttractPlayer();
+    drawGroundCeil(demoOffset, demoLv.color);
+    drawObstacles(demoLv.obstacles, demoOffset, demoLv.color);
+    drawAttractPlayer(demoLv.color);
 
     requestAnimationFrame(attractLoop);
   }
 
   resetPlayer();
-  state = 'start';
+  buildLevelList();
+  state = 'menu';
   demoLastTime = performance.now();
   requestAnimationFrame(attractLoop);
+
+  window.__pd = {
+    getState: () => ({
+      off: worldOffset(), mode, state, attempts,
+      playerY: player.y, playerVy: player.vy, onSurface: player.onSurface, surface: player.surface,
+      audioState: audioCtx ? audioCtx.state : 'none', audioTime: audioCtx ? audioCtx.currentTime : -1,
+      levelStartTime, docHidden: document.hidden,
+    }),
+    getLevel: () => ({
+      id: currentLevel && currentLevel.id, GRID, BEAT,
+      obstacles: level.map(o => ({ beat: o.beat, kind: o.kind, side: o.side, mode: o.mode })),
+    }),
+    LEVELS: LEVELS.map(l => l.id),
+    startLevel: (id) => { const lv = LEVELS.find(l => l.id === id); if (lv) startGame(lv); },
+  };
 })();
 </script>
 </body>
