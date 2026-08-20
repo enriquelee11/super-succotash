@@ -240,6 +240,79 @@
   .level-card-bars i.lit { background: var(--card-color, var(--neon)); box-shadow: 0 0 5px var(--card-color, var(--neon)); }
   .level-card-best { font-size: 10px; color: var(--text-hint); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .menu-hint { color: var(--text-hint); font-size: 10px; letter-spacing: 0.5px; margin-top: 2px; }
+  .icons-open-btn { align-self: center; margin-top: 2px; }
+
+  .icons-panel { gap: 12px; }
+  .icon-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .icon-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-hint);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 6px 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: none;
+    transition: none;
+  }
+  .icon-tab:hover { filter: none; color: var(--neon-bright); }
+  .icon-tab:active { transform: none; box-shadow: none; }
+  .icon-tab.active {
+    color: var(--tab-color, var(--neon-bright));
+    border-color: var(--tab-color, var(--neon));
+    box-shadow: 0 0 8px var(--tab-color, transparent);
+  }
+  .icon-preview {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .icon-swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-width: 260px; }
+  .icon-swatch {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: none;
+    cursor: pointer;
+  }
+  .icon-swatch:hover { filter: brightness(1.1); }
+  .icon-swatch:active { transform: none; box-shadow: none; }
+  .icon-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+  .icon-color-row { display: flex; align-items: center; gap: 10px; }
+  .icon-color-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-hint); }
+  .icon-color-input {
+    width: 36px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .icon-finish-row { display: flex; gap: 8px; }
+  .finish-btn {
+    font-size: 10px;
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--text-hint);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+  }
+  .finish-btn:hover { filter: none; color: var(--neon-bright); }
+  .finish-btn:active { transform: none; box-shadow: none; }
+  .finish-btn.active {
+    color: #071018;
+    background: linear-gradient(180deg, var(--neon-bright), var(--neon) 75%);
+    border-color: transparent;
+    box-shadow: 0 0 12px rgba(53,240,255,0.3);
+  }
 
   button {
     font-family: 'Space Mono', monospace;
@@ -302,7 +375,28 @@
           <div class="panel menu-panel">
             <h2 class="display-font">SELECT LEVEL</h2>
             <div class="level-list" id="levelList"></div>
+            <button class="menu-btn icons-open-btn" id="iconsBtn" type="button">&#9998; ICONS</button>
             <div class="menu-hint">TAP A LEVEL TO START &nbsp;·&nbsp; ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
+          </div>
+        </div>
+        <div id="iconsOverlay" class="overlay hidden">
+          <div class="panel menu-panel icons-panel">
+            <h2 class="display-font">CUSTOMIZE ICONS</h2>
+            <div class="icon-tabs" id="iconTabs"></div>
+            <canvas id="iconPreview" class="icon-preview" width="120" height="120"></canvas>
+            <div class="icon-swatches" id="iconSwatches"></div>
+            <div class="icon-color-row">
+              <label class="icon-color-label" for="iconColorInput">CUSTOM</label>
+              <input type="color" id="iconColorInput" class="icon-color-input" />
+            </div>
+            <div class="icon-finish-row" id="iconFinishRow">
+              <button class="finish-btn" data-finish="neon" type="button">NEON</button>
+              <button class="finish-btn" data-finish="matte" type="button">MATTE</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button id="iconResetBtn" type="button">RESET ALL</button>
+              <button id="iconBackBtn" type="button">BACK</button>
+            </div>
           </div>
         </div>
         <div id="overOverlay" class="overlay hidden">
@@ -341,6 +435,7 @@
   const bestEl = document.getElementById('best');
   const progressBar = document.getElementById('progressBar');
   const menuOverlay = document.getElementById('menuOverlay');
+  const iconsOverlay = document.getElementById('iconsOverlay');
   const overOverlay = document.getElementById('overOverlay');
   const winOverlay = document.getElementById('winOverlay');
   const crashInfo = document.getElementById('crashInfo');
@@ -366,6 +461,20 @@
     ufo: '#ff5fd1', wave: '#5f9bff', robot: '#c07bff', spider: '#ffffff',
     dual: '#ff6b35',
   };
+  const MODES_LIST = ['cube', 'ship', 'ball', 'ufo', 'wave', 'robot', 'spider', 'dual'];
+
+  // ---------- Icon customization (color + finish per mode, persisted locally) ----------
+  // only the player's own rendered icon uses these overrides — portals, HUD dots, and other
+  // mode-color-coded UI intentionally keep MODE_COLORS for consistent signaling
+  const ICON_PREFS_KEY = 'pulseDashIconPrefs';
+  function loadIconPrefs() {
+    try { return JSON.parse(localStorage.getItem(ICON_PREFS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  let iconPrefs = loadIconPrefs();
+  function saveIconPrefs() { localStorage.setItem(ICON_PREFS_KEY, JSON.stringify(iconPrefs)); }
+  function iconColor(m) { return (iconPrefs[m] && iconPrefs[m].color) || MODE_COLORS[m] || '#35f0ff'; }
+  function iconFinish(m) { return (iconPrefs[m] && iconPrefs[m].finish) || 'neon'; }
 
   // ---------- Level authoring ----------
   function spike(beat, side, lane) { return { beat, kind: 'spike', side, lane }; }
@@ -770,7 +879,7 @@
     screenShake = 1;
     flashAlpha = 1;
     hitStopTimer = 0.05;
-    const deathColor = MODE_COLORS[mode] || '#35f0ff';
+    const deathColor = iconColor(mode);
     spawnDeathBurst(PLAYER_X, player.y, deathColor);
     if (mode === 'dual') spawnDeathBurst(PLAYER_X, player2.y, deathColor);
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
@@ -1052,6 +1161,144 @@
     });
   }
 
+  // ---------- Icons customization UI ----------
+  const ICON_SWATCHES = [
+    '#35f0ff', '#4dff8a', '#ffe14d', '#ff5fd1', '#5f9bff', '#c07bff',
+    '#ffffff', '#ff6b35', '#ff2d6a', '#b026ff', '#ff9f35', '#ff3b3b',
+  ];
+  const iconTabsEl = document.getElementById('iconTabs');
+  const iconSwatchesEl = document.getElementById('iconSwatches');
+  const iconColorInput = document.getElementById('iconColorInput');
+  const iconFinishRow = document.getElementById('iconFinishRow');
+  const iconPreviewCanvas = document.getElementById('iconPreview');
+  const iconPreviewCtx = iconPreviewCanvas.getContext('2d');
+  let selectedIconMode = 'cube';
+
+  function buildIconTabs() {
+    iconTabsEl.innerHTML = '';
+    MODES_LIST.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'icon-tab';
+      btn.type = 'button';
+      btn.textContent = m.toUpperCase();
+      btn.dataset.mode = m;
+      btn.addEventListener('click', () => { selectedIconMode = m; refreshIconsUI(); });
+      iconTabsEl.appendChild(btn);
+    });
+  }
+
+  function buildIconSwatches() {
+    iconSwatchesEl.innerHTML = '';
+    ICON_SWATCHES.forEach(c => {
+      const sw = document.createElement('button');
+      sw.className = 'icon-swatch';
+      sw.type = 'button';
+      sw.style.background = c;
+      sw.dataset.color = c;
+      sw.addEventListener('click', () => setIconColor(c));
+      iconSwatchesEl.appendChild(sw);
+    });
+  }
+
+  function setIconColor(c) {
+    iconPrefs[selectedIconMode] = iconPrefs[selectedIconMode] || {};
+    iconPrefs[selectedIconMode].color = c;
+    saveIconPrefs();
+    refreshIconsUI();
+  }
+
+  function setIconFinish(f) {
+    iconPrefs[selectedIconMode] = iconPrefs[selectedIconMode] || {};
+    iconPrefs[selectedIconMode].finish = f;
+    saveIconPrefs();
+    refreshIconsUI();
+  }
+
+  // simplified representative shapes for the preview swatch — deliberately not a reuse of
+  // the full drawPlayer() logic, since that's tied to the live game's ctx/player state
+  function drawIconPreview() {
+    const pctx = iconPreviewCtx;
+    const w = iconPreviewCanvas.width, h = iconPreviewCanvas.height;
+    pctx.clearRect(0, 0, w, h);
+    pctx.save();
+    pctx.translate(w / 2, h / 2);
+    const m = selectedIconMode;
+    const color = iconColor(m);
+    const s = 46;
+    pctx.shadowColor = color;
+    pctx.shadowBlur = iconFinish(m) === 'matte' ? 0 : 16;
+    pctx.fillStyle = color;
+    pctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    pctx.lineWidth = 1.5;
+
+    if (m === 'dual') {
+      [-16, 16].forEach(dy => {
+        pctx.save();
+        pctx.translate(0, dy);
+        pctx.fillRect(-s * 0.32, -s * 0.32, s * 0.64, s * 0.64);
+        pctx.strokeRect(-s * 0.32, -s * 0.32, s * 0.64, s * 0.64);
+        pctx.restore();
+      });
+    } else if (m === 'cube' || m === 'robot') {
+      pctx.fillRect(-s / 2, -s / 2, s, s);
+      pctx.strokeRect(-s / 2, -s / 2, s, s);
+    } else if (m === 'ball') {
+      pctx.beginPath(); pctx.arc(0, 0, s / 2, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+    } else if (m === 'ufo') {
+      pctx.beginPath(); pctx.ellipse(0, 6, s * 0.55, s * 0.26, 0, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+      pctx.beginPath(); pctx.arc(0, -2, s * 0.3, Math.PI, 0); pctx.fill(); pctx.stroke();
+    } else if (m === 'ship') {
+      pctx.beginPath();
+      pctx.moveTo(-s * 0.5, 0); pctx.lineTo(s * 0.4, -s * 0.3); pctx.lineTo(s * 0.5, 0); pctx.lineTo(s * 0.4, s * 0.3);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    } else if (m === 'wave') {
+      pctx.beginPath();
+      pctx.moveTo(s * 0.42, 0); pctx.lineTo(-s * 0.38, -s * 0.3); pctx.lineTo(-s * 0.12, 0); pctx.lineTo(-s * 0.38, s * 0.3);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    } else if (m === 'spider') {
+      pctx.beginPath();
+      pctx.moveTo(0, -s * 0.42); pctx.lineTo(s * 0.42, 0); pctx.lineTo(0, s * 0.42); pctx.lineTo(-s * 0.42, 0);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    }
+    pctx.restore();
+  }
+
+  function refreshIconsUI() {
+    const activeColor = iconColor(selectedIconMode);
+    const activeFinish = iconFinish(selectedIconMode);
+    iconTabsEl.querySelectorAll('.icon-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === selectedIconMode);
+      btn.style.setProperty('--tab-color', iconColor(btn.dataset.mode));
+    });
+    iconSwatchesEl.querySelectorAll('.icon-swatch').forEach(sw => {
+      sw.classList.toggle('active', sw.dataset.color.toLowerCase() === activeColor.toLowerCase());
+    });
+    iconColorInput.value = /^#[0-9a-f]{6}$/i.test(activeColor) ? activeColor : '#35f0ff';
+    iconFinishRow.querySelectorAll('.finish-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.finish === activeFinish);
+    });
+    drawIconPreview();
+  }
+
+  iconColorInput.addEventListener('input', () => setIconColor(iconColorInput.value));
+  iconFinishRow.querySelectorAll('.finish-btn').forEach(btn => {
+    btn.addEventListener('click', () => setIconFinish(btn.dataset.finish));
+  });
+  document.getElementById('iconsBtn').addEventListener('click', () => {
+    menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.remove('hidden');
+    refreshIconsUI();
+  });
+  document.getElementById('iconBackBtn').addEventListener('click', () => {
+    iconsOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+  });
+  document.getElementById('iconResetBtn').addEventListener('click', () => {
+    iconPrefs = {};
+    saveIconPrefs();
+    refreshIconsUI();
+  });
+
   attempts = 1;
   attemptsEl.textContent = attempts;
 
@@ -1280,13 +1527,14 @@
 
   function drawPlayer(color) {
     const s = player.size;
+    const glow = iconFinish(mode) === 'matte' ? 0 : 16;
 
     if (mode === 'dual') {
       [player, player2].forEach(p => {
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle);
-        ctx.shadowColor = color; ctx.shadowBlur = 16;
+        ctx.shadowColor = color; ctx.shadowBlur = glow;
         drawCubeBody(p.size, color, false);
         ctx.restore();
       });
@@ -1295,7 +1543,7 @@
 
     ctx.save();
     ctx.translate(player.x, player.y);
-    ctx.shadowColor = color; ctx.shadowBlur = 16;
+    ctx.shadowColor = color; ctx.shadowBlur = glow;
     ctx.fillStyle = color;
 
     if (mode === 'cube') {
@@ -1479,7 +1727,7 @@
         ctx.translate(-W / 2, -H / 2);
       }
     }
-    const color = MODE_COLORS[mode] || '#35f0ff';
+    const color = iconColor(mode);
     drawBackdrop(off);
     if (mode === 'dual') drawDualStage(off, color); else drawGroundCeil(off, color);
     drawObstacles(level, off, color);
@@ -1532,6 +1780,9 @@
 
   resetPlayer();
   buildLevelList();
+  buildIconTabs();
+  buildIconSwatches();
+  refreshIconsUI();
   state = 'menu';
   demoLastTime = performance.now();
   requestAnimationFrame(attractLoop);

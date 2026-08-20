@@ -40,6 +40,7 @@ A one-button, music-synced rhythm platformer inspired by Geometry Dash.
 - UFO mode has real hazards on the ceiling as well as the floor, so camping at max altitude is no longer a free pass — you have to genuinely navigate
 - Hitting an obstacle is instant failure — you restart the current level from the beginning
 - Portals shift you between eight vehicle modes as you progress: cube, ship, ball, UFO, wave, robot, spider, and dual — each with its own movement physics
+- An ICONS button in the menu opens an icon customization screen — pick a color (presets or a full color picker) and a finish (Neon glow or flat Matte) for each vehicle mode independently, with a live preview; saved locally (`localStorage`) and applied to your own icon in-game while portals and other mode indicators keep their signature colors for clarity
 - A MENU button lets you back out to level select at any time; best completion percentage is saved per level (`localStorage`)
 
 ## General
