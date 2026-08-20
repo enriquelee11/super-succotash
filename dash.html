@@ -235,7 +235,7 @@
   .level-card-name { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--neon-bright); letter-spacing: 0.5px; }
   .level-card-diff-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
   .level-card-diff { font-size: 9px; letter-spacing: 1.5px; color: var(--card-color, var(--neon)); }
-  .level-card-bars { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+  .level-card-bars { display: flex; align-items: flex-end; gap: 1.5px; height: 13px; }
   .level-card-bars i { display: block; width: 3px; border-radius: 1px; background: rgba(255,255,255,0.12); }
   .level-card-bars i.lit { background: var(--card-color, var(--neon)); box-shadow: 0 0 5px var(--card-color, var(--neon)); }
   .level-card-best { font-size: 10px; color: var(--text-hint); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -353,17 +353,26 @@
   const PLAYER_X = 150;
   const MID_Y = (GROUND_Y + CEIL_Y) / 2;
 
+  // dual mode splits the channel into two stacked mini-lanes, each with its own floor/ceiling
+  const DUAL_CEIL_A = 50, DUAL_GROUND_A = 165;
+  const DUAL_CEIL_B = 185, DUAL_GROUND_B = 300;
+
   // per-level, set by loadLevel()
   let BPM, BEAT, GRID, LEVEL_BEATS, LEVEL_WORLD_LEN, SIXTEENTH;
 
   const MODE_COLORS = {
     cube: '#35f0ff', ship: '#4dff8a', ball: '#ffe14d',
     ufo: '#ff5fd1', wave: '#5f9bff', robot: '#c07bff', spider: '#ffffff',
+    dual: '#ff6b35',
   };
 
   // ---------- Level authoring ----------
-  function spike(beat, side) { return { beat, kind: 'spike', side }; }
-  function block(beat, side, depth) { return { beat, kind: 'block', side, depth }; }
+  function spike(beat, side, lane) { return { beat, kind: 'spike', side, lane }; }
+  function block(beat, side, depth, lane) { return { beat, kind: 'block', side, depth, lane }; }
+  // dual-mode convenience: a floor spike in lane A and/or lane B at the same beat
+  function dspike(beat, lanes) {
+    return lanes.split('').map(l => spike(beat, 'floor', l));
+  }
   function pad(beat) { return { beat, kind: 'pad' }; }
   function portal(beat, mode) { return { beat, kind: 'portal', mode }; }
   function finish(beat) { return { beat, kind: 'finish' }; }
@@ -420,13 +429,14 @@
     finish(97),
   ];
 
-  // HARD & INSANE reuse the medium pattern run twice, at a faster tempo. Jump/flip physics
-  // are fixed in absolute time (not beats), so a higher BPM alone shrinks every gap's real
-  // clearance — beat positions are stretched by a compensating factor to restore medium's
-  // proven absolute-time safety margins before the tempo increase is applied.
-  function buildTwoLapLevel(scale) {
-    const base = scaleBeats(MEDIUM_EVENTS.filter(e => e.kind !== 'finish'), scale);
-    const lapLen = 97 * scale;
+  // HARD, INSANE & APOCALYPSE reuse an earlier pattern run twice, at a faster tempo. Jump/flip
+  // physics are fixed in absolute time (not beats), so a higher BPM alone shrinks every gap's
+  // real clearance — beat positions are stretched by a compensating factor to restore the
+  // base pattern's proven absolute-time safety margins before the tempo increase is applied.
+  function buildTwoLapLevel(baseEventsWithFinish, scale) {
+    const lapLenRaw = baseEventsWithFinish.find(e => e.kind === 'finish').beat;
+    const base = scaleBeats(baseEventsWithFinish.filter(e => e.kind !== 'finish'), scale);
+    const lapLen = lapLenRaw * scale;
     const events = [
       ...base,
       portal(lapLen + 1, 'cube'),
@@ -435,17 +445,94 @@
     return { events, totalBeats: Math.ceil(lapLen * 2 + 3) };
   }
 
-  const hardLevel = buildTwoLapLevel(1.15);
+  const hardLevel = buildTwoLapLevel(MEDIUM_EVENTS, 1.15);
   const HARD_EVENTS = [...hardLevel.events, finish(hardLevel.totalBeats)];
 
-  const insaneLevel = buildTwoLapLevel(1.3);
+  const insaneLevel = buildTwoLapLevel(MEDIUM_EVENTS, 1.3);
   const INSANE_EVENTS = [...insaneLevel.events, finish(insaneLevel.totalBeats)];
+
+  // Places a small, self-contained "section" (authored with its own local beat numbers
+  // starting near 0) at an absolute position, optionally stretched by `scale` first — this
+  // keeps every section's internal spacing hand-verifiable in isolation while composition
+  // arithmetic (where it starts, how long it ran) is computed by the engine, not by hand.
+  function placeSection(localEvents, scale, startAt) {
+    const scaled = scaleBeats(localEvents, scale);
+    const shift = startAt - Math.min(...scaled.map(e => e.beat));
+    const events = scaled.map(e => ({ ...e, beat: +(e.beat + shift).toFixed(3) }));
+    const endBeat = Math.max(...events.map(e => e.beat));
+    return { events, endBeat };
+  }
+
+  // NIGHTMARE — introduces dual mode: two synchronized cubes in stacked mini-lanes, one
+  // shared tap. Dual's jump cycle is short (~0.365s) so even tight cadences stay safely
+  // clearable; the reused cube/ship/ufo/wave/robot sections are scaled ×1.2 to preserve
+  // medium's proven absolute-time margins at the faster 180 BPM.
+  const nSecCube = [
+    spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    spike(10, 'floor'), spike(10.5, 'floor'), spike(12, 'floor'),
+    pad(13), portal(13.5, 'ship'),
+  ];
+  const nSecShip = [
+    block(0, 'floor', 110), block(2, 'ceil', 110), block(4, 'floor', 130), block(6, 'ceil', 130),
+    block(8, 'floor', 100), block(10, 'ceil', 150), block(12, 'floor', 120),
+    portal(13.5, 'dual'),
+  ];
+  const nSecDual1 = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'),
+    portal(13.5, 'ufo'),
+  ];
+  const nSecUfo = [
+    spike(0, 'floor'), spike(2, 'floor'), spike(4, 'floor'),
+    spike(6, 'floor'), spike(6.5, 'floor'),
+    spike(8, 'floor'), spike(10, 'floor'),
+    spike(12, 'floor'), spike(12.5, 'floor'),
+    portal(13.5, 'wave'),
+  ];
+  const nSecWave = [
+    block(0, 'floor', 90), block(2, 'ceil', 90),
+    block(4, 'floor', 100), block(6, 'ceil', 80),
+    block(8, 'floor', 80), block(10, 'ceil', 100),
+    block(12, 'floor', 90),
+    portal(13.5, 'robot'),
+  ];
+  const nSecRobot = [
+    spike(0, 'floor'),
+    spike(2, 'floor'), spike(2.4, 'floor'),
+    spike(4, 'floor'), spike(4.3, 'floor'), spike(4.6, 'floor'),
+    spike(6, 'floor'),
+    portal(6.5, 'dual'),
+  ];
+  const nSecDual2 = [
+    ...dspike(0, 'AB'), ...dspike(1.5, 'A'), ...dspike(3, 'B'), ...dspike(4.5, 'AB'),
+    ...dspike(6, 'A'), ...dspike(7.5, 'B'), ...dspike(9, 'AB'), ...dspike(10.5, 'A'),
+    ...dspike(12, 'AB'),
+  ];
+
+  const n1 = placeSection(nSecCube, 1.2, 2);
+  const n2 = placeSection(nSecShip, 1.2, n1.endBeat + 2);
+  const n3 = placeSection(nSecDual1, 1, n2.endBeat + 2);
+  const n4 = placeSection(nSecUfo, 1.2, n3.endBeat + 2);
+  const n5 = placeSection(nSecWave, 1.2, n4.endBeat + 2);
+  const n6 = placeSection(nSecRobot, 1.2, n5.endBeat + 2);
+  const n7 = placeSection(nSecDual2, 1, n6.endBeat + 2);
+  const nightmareFinishBeat = Math.ceil(n7.endBeat + 3);
+  const NIGHTMARE_EVENTS = [
+    ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events,
+    finish(nightmareFinishBeat),
+  ];
+
+  // APOCALYPSE — the nightmare pattern (dual sections included) run twice, faster still.
+  const apocalypseLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.15);
+  const APOCALYPSE_EVENTS = [...apocalypseLevel.events, finish(apocalypseLevel.totalBeats)];
 
   const LEVEL_DEFS = [
     { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 60, events: EASY_EVENTS },
     { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 97, events: MEDIUM_EVENTS },
     { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: hardLevel.totalBeats, events: HARD_EVENTS },
     { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: insaneLevel.totalBeats, events: INSANE_EVENTS },
+    { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
+    { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseLevel.totalBeats, events: APOCALYPSE_EVENTS },
   ];
 
   // Precompute each level's own grid/obstacle geometry once (independent of whichever level is "current")
@@ -605,10 +692,11 @@
     ufoGravity: 2200, ufoHop: -560,
     waveSpeed: 380,
     spiderFlipDur: 0.14,
+    dualGravity: 3400, dualJump: -620,
   };
 
   // ---------- Player ----------
-  let player, mode, state, attempts;
+  let player, player2, mode, state, attempts;
   let particles = [], screenShake = 0, flashAlpha = 0, hitStopTimer = 0;
 
   function resetPlayer() {
@@ -619,6 +707,7 @@
       holdTime: 0, jumping: false,
       trail: [],
     };
+    player2 = null;
     mode = 'cube';
     modeLabelEl.textContent = 'CUBE';
   }
@@ -630,7 +719,11 @@
     player.angle = 0;
     player.jumping = false;
     player.flipping = false;
-    if (newMode === 'cube' || newMode === 'robot') {
+    if (newMode === 'dual') {
+      player.y = DUAL_GROUND_A - player.size / 2;
+      player.onSurface = true;
+      player2 = { x: PLAYER_X, y: DUAL_GROUND_B - player.size / 2, vy: 0, angle: 0, onSurface: true, size: player.size };
+    } else if (newMode === 'cube' || newMode === 'robot') {
       player.y = GROUND_Y - player.size / 2;
       player.onSurface = true;
       player.surface = 1;
@@ -663,7 +756,9 @@
     screenShake = 1;
     flashAlpha = 1;
     hitStopTimer = 0.05;
-    spawnDeathBurst(PLAYER_X, player.y, MODE_COLORS[mode] || '#35f0ff');
+    const deathColor = MODE_COLORS[mode] || '#35f0ff';
+    spawnDeathBurst(PLAYER_X, player.y, deathColor);
+    if (mode === 'dual') spawnDeathBurst(PLAYER_X, player2.y, deathColor);
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
     recordBest(pct);
     crashInfo.textContent = `PROGRESS: ${pct.toFixed(1)}%  ·  ATTEMPT ${attempts}`;
@@ -779,18 +874,47 @@
     }
   }
 
+  function updateCubeLane(p, groundY, ceilY, dt) {
+    const restY = groundY - p.size / 2;
+    const topY = ceilY + p.size / 2;
+    if (justPressed && p.onSurface) { p.vy = P.dualJump; p.onSurface = false; }
+    p.vy += P.dualGravity * dt;
+    p.y += p.vy * dt;
+    if (p.y >= restY) { p.y = restY; p.vy = 0; p.onSurface = true; }
+    if (p.y <= topY) { p.y = topY; p.vy = Math.max(p.vy, 0); }
+    p.angle += dt * (SCROLL_SPEED / p.size) * (p.onSurface ? 1 : 1.6);
+  }
+
+  function updateDual(dt) {
+    updateCubeLane(player, DUAL_GROUND_A, DUAL_CEIL_A, dt);
+    updateCubeLane(player2, DUAL_GROUND_B, DUAL_CEIL_B, dt);
+  }
+
   const MODE_UPDATE = {
     cube: updateCube, robot: updateRobot, ship: updateShip,
     ball: updateBall, ufo: updateUfo, wave: updateWave, spider: updateSpider,
+    dual: updateDual,
   };
 
   // ---------- Obstacle geometry / collision ----------
   function obstacleRect(o, sx) {
     if (o.kind === 'spike') {
+      if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        const y = o.side === 'floor' ? ground - 20 : ceil;
+        return { x: sx - 11, y, w: 22, h: 20 };
+      }
       const y = o.side === 'floor' ? GROUND_Y - 32 : CEIL_Y;
       return { x: sx - 15, y, w: 30, h: 32 };
     }
     if (o.kind === 'block') {
+      if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        const y = o.side === 'floor' ? ground - o.depth : ceil;
+        return { x: sx - 14, y, w: 28, h: o.depth };
+      }
       const y = o.side === 'floor' ? GROUND_Y - o.depth : CEIL_Y;
       return { x: sx - 18, y, w: 36, h: o.depth };
     }
@@ -798,9 +922,10 @@
     return null;
   }
 
-  function playerRect() {
-    const s = player.size * 0.74; // forgiving hitbox, smaller than the visual sprite
-    return { x: player.x - s / 2, y: player.y - s / 2, w: s, h: s };
+  function playerRect(p) {
+    p = p || player;
+    const s = p.size * 0.74; // forgiving hitbox, smaller than the visual sprite
+    return { x: p.x - s / 2, y: p.y - s / 2, w: s, h: s };
   }
 
   function inset(r, amt) {
@@ -871,7 +996,7 @@
     });
   }
 
-  const BAR_HEIGHTS = [4, 6.5, 9, 12];
+  const BAR_HEIGHTS = [3, 5, 7, 9, 11, 13];
 
   function buildLevelList() {
     levelListEl.innerHTML = '';
@@ -940,6 +1065,7 @@
     (MODE_UPDATE[mode] || updateCube)(dt);
 
     const pRect = playerRect();
+    const pRect2 = mode === 'dual' ? playerRect(player2) : null;
     for (const o of level) {
       const sx = PLAYER_X + o.worldX - off;
       if (sx < -60 || sx > W + 60) continue;
@@ -964,7 +1090,9 @@
       }
       const r = obstacleRect(o, sx);
       const hit = r && inset(r, 3);
-      if (hit && overlap(pRect, hit)) { die(); return; }
+      if (!hit) continue;
+      const targetRect = o.lane === 'B' ? pRect2 : pRect;
+      if (targetRect && overlap(targetRect, hit)) { die(); return; }
     }
 
     progressBar.style.width = clamp((off / LEVEL_WORLD_LEN) * 100, 0, 100) + '%';
@@ -1006,6 +1134,34 @@
     ctx.restore();
   }
 
+  // dual mode: two stacked mini-lanes (A on top, B on bottom) with a divider between them
+  function drawDualStage(off, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 10;
+    [[DUAL_CEIL_A, DUAL_GROUND_A], [DUAL_CEIL_B, DUAL_GROUND_B]].forEach(([ceil, ground]) => {
+      ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(W, ground); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, ceil); ctx.lineTo(W, ceil); ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(10,11,24,0.9)';
+    ctx.fillRect(0, 0, W, DUAL_CEIL_A);
+    ctx.fillRect(0, DUAL_GROUND_A, W, DUAL_CEIL_B - DUAL_GROUND_A);
+    ctx.fillRect(0, DUAL_GROUND_B, W, H - DUAL_GROUND_B);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2.5;
+    ctx.setLineDash([12, 16]); ctx.lineDashOffset = -off;
+    ctx.beginPath(); ctx.moveTo(0, DUAL_GROUND_A - 8); ctx.lineTo(W, DUAL_GROUND_A - 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, DUAL_GROUND_B - 8); ctx.lineTo(W, DUAL_GROUND_B - 8); ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    const dividerY = (DUAL_GROUND_A + DUAL_CEIL_B) / 2;
+    ctx.beginPath(); ctx.moveTo(0, dividerY); ctx.lineTo(W, dividerY); ctx.stroke();
+    ctx.restore();
+  }
+
   function drawObstacles(obstacles, off, color) {
     for (const o of obstacles) {
       const sx = PLAYER_X + o.worldX - off;
@@ -1013,12 +1169,22 @@
       ctx.save();
       if (o.kind === 'spike') {
         const up = o.side === 'floor';
-        const baseY = up ? GROUND_Y : CEIL_Y;
-        const tipY = up ? GROUND_Y - 32 : CEIL_Y + 32;
+        let baseY, tipY, halfW;
+        if (o.lane) {
+          const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+          const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+          baseY = up ? ground : ceil;
+          tipY = up ? ground - 20 : ceil + 20;
+          halfW = 11;
+        } else {
+          baseY = up ? GROUND_Y : CEIL_Y;
+          tipY = up ? GROUND_Y - 32 : CEIL_Y + 32;
+          halfW = 15;
+        }
         ctx.fillStyle = '#ff2d6a'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 12;
         ctx.beginPath();
-        ctx.moveTo(sx - 15, baseY);
-        ctx.lineTo(sx + 15, baseY);
+        ctx.moveTo(sx - halfW, baseY);
+        ctx.lineTo(sx + halfW, baseY);
         ctx.lineTo(sx, tipY);
         ctx.closePath(); ctx.fill();
       } else if (o.kind === 'block') {
@@ -1065,6 +1231,19 @@
 
   function drawPlayer(color) {
     const s = player.size;
+
+    if (mode === 'dual') {
+      [player, player2].forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.shadowColor = color; ctx.shadowBlur = 16;
+        drawCubeBody(p.size, color, false);
+        ctx.restore();
+      });
+      return;
+    }
+
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.shadowColor = color; ctx.shadowBlur = 16;
@@ -1253,7 +1432,7 @@
     }
     const color = MODE_COLORS[mode] || '#35f0ff';
     drawBackdrop(off);
-    drawGroundCeil(off, color);
+    if (mode === 'dual') drawDualStage(off, color); else drawGroundCeil(off, color);
     drawObstacles(level, off, color);
     if (state === 'playing') drawPlayer(color);
     drawParticles();

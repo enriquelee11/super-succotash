@@ -28,14 +28,16 @@ A neon-amber take on classic Snake.
 A one-button, music-synced rhythm platformer inspired by Geometry Dash.
 
 - **Tap, click, or press Space** — jump / fly / flip (hold for ship, wave, and robot modes)
-- Start screen is a level-select menu — choose from four levels of increasing difficulty:
+- Start screen is a level-select menu (scrollable) — choose from six levels of increasing difficulty:
   - **Warm Up** (Easy, 120 BPM) — a gentle intro using only the simplest modes
   - **Pulse Dash** (Medium, 150 BPM) — a full tour through all seven vehicle modes
   - **Overdrive** (Hard, 170 BPM) — the same pattern run twice at a faster tempo
   - **Redline** (Insane, 190 BPM) — pushed further still
+  - **Nightmare** (180 BPM) — introduces **dual mode**: two synchronized cubes in stacked split lanes, controlled by the same single tap
+  - **Apocalypse** (205 BPM) — the nightmare pattern, dual sections included, run twice at a faster tempo
 - Every obstacle, jump pad, and portal is timed to a procedurally generated soundtrack (Web Audio API), so the whole level plays in lockstep with the beat
 - Hitting an obstacle is instant failure — you restart the current level from the beginning
-- Portals shift you between seven vehicle modes as you progress: cube, ship, ball, UFO, wave, robot, and spider — each with its own movement physics
+- Portals shift you between eight vehicle modes as you progress: cube, ship, ball, UFO, wave, robot, spider, and dual — each with its own movement physics
 - A MENU button lets you back out to level select at any time; best completion percentage is saved per level (`localStorage`)
 
 ## General
