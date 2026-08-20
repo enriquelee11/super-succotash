@@ -18,6 +18,7 @@ python3 -m http.server 8000
 - Click-to-move interface with legal move highlights, last-move and check highlighting, and a promotion piece picker
 - Move list in simplified algebraic notation, captured-piece tray with material difference
 - Play as White or Black, undo, and start a new game at any time
+- Optional chess clock with selectable time controls (1, 3, 5, 10, 15, 30 minutes, or no limit) — the game ends immediately if a side's clock runs out
 
 ## Notes
 

@@ -96,6 +96,28 @@
     letter-spacing: 0;
     color: var(--success);
   }
+  .clock-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: var(--panel-hi);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock-badge.active-clock {
+    background: var(--accent);
+    color: #0c1220;
+    border-color: var(--accent);
+  }
+  .clock-badge.low-time {
+    background: var(--danger);
+    color: #2a0a0a;
+    border-color: var(--danger);
+  }
 
   .board-frame {
     padding: 10px;
@@ -265,6 +287,14 @@
   button:disabled { opacity: 0.45; cursor: not-allowed; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #0c1220; }
   button.primary:hover { filter: brightness(1.08); background: var(--accent); }
+  button.active { background: var(--accent); border-color: var(--accent); color: #0c1220; }
+  button.active:hover { background: var(--accent); filter: brightness(1.08); }
+
+  .time-control-hint {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
 
   .move-list {
     max-height: 260px;
@@ -339,11 +369,17 @@
 
     <div class="layout">
       <div class="board-col">
-        <div class="captured-row" id="capturedTop"><span class="adv" id="advTop"></span></div>
+        <div class="captured-row" id="capturedTop">
+          <span class="clock-badge hidden" id="clockTop">10:00</span>
+          <span class="adv" id="advTop"></span>
+        </div>
         <div class="board-frame">
           <div class="board" id="board"></div>
         </div>
-        <div class="captured-row" id="capturedBottom"><span class="adv" id="advBottom"></span></div>
+        <div class="captured-row" id="capturedBottom">
+          <span class="clock-badge hidden" id="clockBottom">10:00</span>
+          <span class="adv" id="advBottom"></span>
+        </div>
         <div class="status-line" id="statusLine">White to move</div>
       </div>
 
@@ -356,6 +392,12 @@
           </div>
           <input type="range" id="ratingSlider" min="0" max="2000" step="10" value="800" />
           <div class="rating-ticks"><span>0</span><span>500</span><span>1000</span><span>1500</span><span>2000</span></div>
+        </div>
+
+        <div class="panel">
+          <h2>Time Control</h2>
+          <div class="btn-row" id="timeControlRow"></div>
+          <p class="time-control-hint">Changing this starts a new game.</p>
         </div>
 
         <div class="panel">
@@ -788,6 +830,15 @@
   const TIER_LABELS = [
     [400, 'Beginner'], [800, 'Novice'], [1200, 'Intermediate'], [1600, 'Advanced'], [2001, 'Expert'],
   ];
+  const TIME_PRESETS = [
+    { label: '1 min', minutes: 1 },
+    { label: '3 min', minutes: 3 },
+    { label: '5 min', minutes: 5 },
+    { label: '10 min', minutes: 10 },
+    { label: '15 min', minutes: 15 },
+    { label: '30 min', minutes: 30 },
+    { label: 'No limit', minutes: null },
+  ];
 
   let gameState = createInitialState();
   let humanColor = 'w';
@@ -798,6 +849,12 @@
   let moveLog = [];
   let gameOver = false;
   let boardLocked = false;
+
+  let baseMinutes = null;
+  let whiteMs = 0;
+  let blackMs = 0;
+  let clockIntervalId = null;
+  let lastTickTime = 0;
 
   const boardEl = document.getElementById('board');
   const statusEl = document.getElementById('statusLine');
@@ -815,6 +872,81 @@
   const advBottomEl = document.getElementById('advBottom');
   const promoOverlay = document.getElementById('promoOverlay');
   const promoChoices = document.getElementById('promoChoices');
+  const clockTopEl = document.getElementById('clockTop');
+  const clockBottomEl = document.getElementById('clockBottom');
+  const timeControlRow = document.getElementById('timeControlRow');
+
+  TIME_PRESETS.forEach(preset => {
+    const btn = document.createElement('button');
+    btn.textContent = preset.label;
+    if (preset.minutes === baseMinutes) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      baseMinutes = preset.minutes;
+      timeControlRow.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      newGame();
+    });
+    timeControlRow.appendChild(btn);
+  });
+
+  function formatClock(ms) {
+    const total = Math.ceil(ms / 1000);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function stopClockInterval() {
+    if (clockIntervalId !== null) {
+      clearInterval(clockIntervalId);
+      clockIntervalId = null;
+    }
+  }
+
+  function startClockInterval() {
+    stopClockInterval();
+    if (baseMinutes === null) return;
+    lastTickTime = performance.now();
+    clockIntervalId = setInterval(clockTick, 200);
+  }
+
+  function clockTick() {
+    if (gameOver || baseMinutes === null) { stopClockInterval(); return; }
+    const now = performance.now();
+    const delta = now - lastTickTime;
+    lastTickTime = now;
+    if (gameState.turn === 'w') whiteMs = Math.max(0, whiteMs - delta);
+    else blackMs = Math.max(0, blackMs - delta);
+    renderClocks();
+    if (whiteMs <= 0 || blackMs <= 0) {
+      stopClockInterval();
+      gameOver = true;
+      const loser = whiteMs <= 0 ? 'w' : 'b';
+      statusMessage = `Time's up — ${loser === 'w' ? 'Black' : 'White'} wins`;
+      render();
+    }
+  }
+
+  function renderClocks() {
+    if (baseMinutes === null) {
+      clockTopEl.classList.add('hidden');
+      clockBottomEl.classList.add('hidden');
+      return;
+    }
+    clockTopEl.classList.remove('hidden');
+    clockBottomEl.classList.remove('hidden');
+    const flipped = humanColor === 'b';
+    const topColor = flipped ? 'w' : 'b';
+    const bottomColor = flipped ? 'b' : 'w';
+    const topMs = topColor === 'w' ? whiteMs : blackMs;
+    const bottomMs = bottomColor === 'w' ? whiteMs : blackMs;
+    clockTopEl.textContent = formatClock(topMs);
+    clockBottomEl.textContent = formatClock(bottomMs);
+    clockTopEl.classList.toggle('active-clock', !gameOver && gameState.turn === topColor);
+    clockBottomEl.classList.toggle('active-clock', !gameOver && gameState.turn === bottomColor);
+    clockTopEl.classList.toggle('low-time', topMs > 0 && topMs <= 10000);
+    clockBottomEl.classList.toggle('low-time', bottomMs > 0 && bottomMs <= 10000);
+  }
 
   function tierFor(rating) {
     for (const [max, label] of TIER_LABELS) if (rating < max) return label;
@@ -961,6 +1093,7 @@
     renderCaptured();
     renderMoveList();
     renderStatus();
+    renderClocks();
     undoBtn.disabled = history.length === 0 || boardLocked;
   }
 
@@ -1032,7 +1165,7 @@
     const legalAtTime = legalMoves(gameState, gameState.turn);
     const san = computeSAN(move, legalAtTime, gameState);
     const mover = gameState.turn;
-    history.push(gameState);
+    history.push({ state: gameState, whiteMs, blackMs });
     gameState = applyMove(gameState, move);
     lastMove = { from: move.from, to: move.to };
 
@@ -1063,6 +1196,7 @@
     } else {
       gameOver = false;
     }
+    if (gameOver) stopClockInterval();
     render();
     if (!gameOver && gameState.turn !== humanColor) {
       scheduleBotMove();
@@ -1088,23 +1222,30 @@
   }
 
   function newGame() {
+    stopClockInterval();
     gameState = createInitialState();
     selected = null; legalTargets = []; lastMove = null;
     history = []; moveLog = []; gameOver = false; boardLocked = false;
     statusMessage = '';
+    whiteMs = baseMinutes !== null ? baseMinutes * 60000 : 0;
+    blackMs = baseMinutes !== null ? baseMinutes * 60000 : 0;
     thinkingBadge.classList.add('hidden');
     render();
+    startClockInterval();
     if (gameState.turn !== humanColor) scheduleBotMove();
   }
 
   function undo() {
     if (history.length === 0 || boardLocked) return;
-    gameState = history.pop(); moveLog.pop();
+    let snap = history.pop(); moveLog.pop();
+    gameState = snap.state; whiteMs = snap.whiteMs; blackMs = snap.blackMs;
     if (gameState.turn !== humanColor && history.length > 0) {
-      gameState = history.pop(); moveLog.pop();
+      snap = history.pop(); moveLog.pop();
+      gameState = snap.state; whiteMs = snap.whiteMs; blackMs = snap.blackMs;
     }
     gameOver = false; selected = null; legalTargets = []; lastMove = null;
     render();
+    startClockInterval();
     if (gameState.turn !== humanColor) scheduleBotMove();
   }
 
