@@ -36,6 +36,8 @@ A one-button, music-synced rhythm platformer inspired by Geometry Dash.
   - **Nightmare** (180 BPM) — introduces **dual mode**: two synchronized cubes in stacked split lanes, controlled by the same single tap
   - **Apocalypse** (205 BPM) — the nightmare pattern, dual sections included, run twice at a faster tempo
 - Every obstacle, jump pad, and portal is timed to a procedurally generated soundtrack (Web Audio API), so the whole level plays in lockstep with the beat
+- Speed portals push the scroll pace faster or slower mid-level (the music keeps its own tempo — only the gameplay pace changes, like Geometry Dash's speed portals)
+- UFO mode has real hazards on the ceiling as well as the floor, so camping at max altitude is no longer a free pass — you have to genuinely navigate
 - Hitting an obstacle is instant failure — you restart the current level from the beginning
 - Portals shift you between eight vehicle modes as you progress: cube, ship, ball, UFO, wave, robot, spider, and dual — each with its own movement physics
 - A MENU button lets you back out to level select at any time; best completion percentage is saved per level (`localStorage`)
