@@ -1149,21 +1149,6 @@
   state = 'menu';
   demoLastTime = performance.now();
   requestAnimationFrame(attractLoop);
-
-  window.__pd = {
-    getState: () => ({
-      off: worldOffset(), mode, state, attempts,
-      playerY: player.y, playerVy: player.vy, onSurface: player.onSurface, surface: player.surface,
-      audioState: audioCtx ? audioCtx.state : 'none', audioTime: audioCtx ? audioCtx.currentTime : -1,
-      levelStartTime, docHidden: document.hidden,
-    }),
-    getLevel: () => ({
-      id: currentLevel && currentLevel.id, GRID, BEAT,
-      obstacles: level.map(o => ({ beat: o.beat, kind: o.kind, side: o.side, mode: o.mode })),
-    }),
-    LEVELS: LEVELS.map(l => l.id),
-    startLevel: (id) => { const lv = LEVELS.find(l => l.id === id); if (lv) startGame(lv); },
-  };
 })();
 </script>
 </body>
