@@ -194,6 +194,33 @@
   .overlay p { margin: 0; color: var(--text-hint); font-size: 11.5px; line-height: 1.9; max-width: 360px; }
   .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,45,106,0.7); }
 
+  .home-panel { width: 100%; max-width: 380px; }
+  .home-row { display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .home-play-btn {
+    font-size: 20px;
+    padding: 20px 46px;
+    letter-spacing: 3px;
+    box-shadow: 0 4px 0 #0d5460, 0 0 26px rgba(53,240,255,0.45);
+  }
+  .home-icons-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    font-size: 16px;
+    background: rgba(255,255,255,0.04);
+    color: var(--neon-bright);
+    border: 1px solid rgba(53,240,255,0.3);
+    box-shadow: none;
+  }
+  .home-icons-btn span { font-size: 8px; letter-spacing: 1px; }
+  .home-icons-btn:hover { filter: none; border-color: var(--neon); background: rgba(255,255,255,0.08); }
+  .home-icons-btn:active { transform: translateY(1px); box-shadow: none; }
+
   .menu-panel { width: 100%; max-width: 380px; }
   .level-list {
     display: flex;
@@ -371,11 +398,24 @@
     <div class="screen-frame">
       <div class="board-wrap">
         <canvas id="board" width="640" height="360"></canvas>
-        <div id="menuOverlay" class="overlay">
+        <div id="homeOverlay" class="overlay">
+          <div class="panel home-panel">
+            <h2 class="display-font">PULSE DASH</h2>
+            <div class="home-row">
+              <button class="home-icons-btn" id="homeIconsBtn" type="button" aria-label="Customize icons">&#9998;<span>ICONS</span></button>
+              <button class="home-play-btn display-font" id="homePlayBtn" type="button">PLAY</button>
+            </div>
+            <div class="menu-hint">ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
+          </div>
+        </div>
+        <div id="menuOverlay" class="overlay hidden">
           <div class="panel menu-panel">
             <h2 class="display-font">SELECT LEVEL</h2>
             <div class="level-list" id="levelList"></div>
-            <button class="menu-btn icons-open-btn" id="iconsBtn" type="button">&#9998; ICONS</button>
+            <div style="display:flex; gap:10px;">
+              <button class="menu-btn" id="menuBackBtn" type="button">&#8592; BACK</button>
+              <button class="menu-btn icons-open-btn" id="iconsBtn" type="button">&#9998; ICONS</button>
+            </div>
             <div class="menu-hint">TAP A LEVEL TO START &nbsp;·&nbsp; ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
           </div>
         </div>
@@ -434,6 +474,7 @@
   const hudDotEl = document.getElementById('hudDot');
   const bestEl = document.getElementById('best');
   const progressBar = document.getElementById('progressBar');
+  const homeOverlay = document.getElementById('homeOverlay');
   const menuOverlay = document.getElementById('menuOverlay');
   const iconsOverlay = document.getElementById('iconsOverlay');
   const overOverlay = document.getElementById('overOverlay');
@@ -511,10 +552,8 @@
   // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
   const MEDIUM_EVENTS = [
     spike(4, 'floor'),
-    speed(4.5, 1.15),
     spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'),
     spike(12, 'floor'), spike(12.5, 'floor'), spike(14, 'floor'),
-    speed(15, 1),
     pad(15),
     portal(15.5, 'ship'),
     block(18, 'floor', 110), block(20, 'ceil', 110),
@@ -525,10 +564,13 @@
     spike(34, 'floor'), spike(36, 'ceil'), spike(38, 'floor'), spike(40, 'ceil'),
     spike(42, 'floor'), spike(44, 'ceil'), spike(46, 'floor'),
     portal(47.5, 'ufo'),
+    // speed portals sit here, roughly mid-level, instead of right at the start
+    speed(48, 1.15),
     spike(50, 'floor'), spike(52, 'ceil'), spike(54, 'floor'),
     spike(56, 'ceil'), spike(56.5, 'ceil'),
     spike(58, 'floor'), spike(60, 'ceil'),
     spike(62, 'floor'), spike(62.5, 'floor'),
+    speed(63, 1),
     portal(63.5, 'wave'),
     block(65, 'floor', 90), block(67, 'ceil', 90),
     block(69, 'floor', 100), block(71, 'ceil', 80),
@@ -536,9 +578,10 @@
     block(77, 'floor', 90),
     portal(79.5, 'robot'),
     speed(80, 0.75),
+    // evenly-spaced single taps (was a too-tight triple cluster nobody could react to in time)
     spike(81, 'floor'),
-    spike(83, 'floor'), spike(83.4, 'floor'),
-    spike(85, 'floor'), spike(85.3, 'floor'), spike(85.6, 'floor'),
+    spike(83, 'floor'),
+    spike(85, 'floor'),
     spike(87, 'floor'),
     speed(87.3, 1),
     portal(87.5, 'spider'),
@@ -587,10 +630,8 @@
   // medium's proven absolute-time margins at the faster 180 BPM.
   const nSecCube = [
     spike(2, 'floor'),
-    speed(2.5, 1.15),
     spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
     spike(10, 'floor'), spike(10.5, 'floor'), spike(12, 'floor'),
-    speed(13, 1),
     pad(13), portal(13.5, 'ship'),
   ];
   const nSecShip = [
@@ -604,9 +645,13 @@
     portal(13.5, 'ufo'),
   ];
   const nSecUfo = [
-    spike(0, 'floor'), spike(2, 'ceil'), spike(4, 'floor'),
+    spike(0, 'floor'),
+    // speed portals live here now, roughly mid-level, instead of right at the start
+    speed(0.5, 1.15),
+    spike(2, 'ceil'), spike(4, 'floor'),
     spike(6, 'ceil'), spike(6.5, 'ceil'),
     spike(8, 'floor'), spike(10, 'ceil'),
+    speed(10.5, 1),
     spike(12, 'floor'), spike(12.5, 'floor'),
     portal(13.5, 'wave'),
   ];
@@ -1119,10 +1164,18 @@
     progressBar.style.width = '0%';
     overOverlay.classList.add('hidden');
     winOverlay.classList.add('hidden');
+    homeOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
     menuOverlay.classList.remove('hidden');
     refreshLevelList();
     demoLastTime = performance.now();
     requestAnimationFrame(attractLoop);
+  }
+
+  function goToHome() {
+    homeOverlay.classList.remove('hidden');
+    menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
   }
 
   function refreshLevelList() {
@@ -1284,20 +1337,35 @@
   iconFinishRow.querySelectorAll('.finish-btn').forEach(btn => {
     btn.addEventListener('click', () => setIconFinish(btn.dataset.finish));
   });
+  let iconsReturnTo = 'home';
   document.getElementById('iconsBtn').addEventListener('click', () => {
+    iconsReturnTo = 'menu';
     menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.remove('hidden');
+    refreshIconsUI();
+  });
+  document.getElementById('homeIconsBtn').addEventListener('click', () => {
+    iconsReturnTo = 'home';
+    homeOverlay.classList.add('hidden');
     iconsOverlay.classList.remove('hidden');
     refreshIconsUI();
   });
   document.getElementById('iconBackBtn').addEventListener('click', () => {
     iconsOverlay.classList.add('hidden');
-    menuOverlay.classList.remove('hidden');
+    if (iconsReturnTo === 'menu') { menuOverlay.classList.remove('hidden'); refreshLevelList(); }
+    else { homeOverlay.classList.remove('hidden'); }
   });
   document.getElementById('iconResetBtn').addEventListener('click', () => {
     iconPrefs = {};
     saveIconPrefs();
     refreshIconsUI();
   });
+  document.getElementById('homePlayBtn').addEventListener('click', () => {
+    homeOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+    refreshLevelList();
+  });
+  document.getElementById('menuBackBtn').addEventListener('click', goToHome);
 
   attempts = 1;
   attemptsEl.textContent = attempts;

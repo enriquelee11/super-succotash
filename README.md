@@ -28,7 +28,8 @@ A neon-amber take on classic Snake.
 A one-button, music-synced rhythm platformer inspired by Geometry Dash.
 
 - **Tap, click, or press Space** — jump / fly / flip (hold for ship, wave, and robot modes)
-- Start screen is a level-select menu (scrollable) — choose from six levels of increasing difficulty:
+- A Geometry Dash-style home screen greets you first, with a big PLAY button (opens the level-select menu) and an ICONS button (opens icon customization) side by side
+- Level select (scrollable) — choose from six levels of increasing difficulty:
   - **Warm Up** (Easy, 120 BPM) — a gentle intro using only the simplest modes
   - **Pulse Dash** (Medium, 150 BPM) — a full tour through all seven vehicle modes
   - **Overdrive** (Hard, 170 BPM) — the same pattern run twice at a faster tempo
@@ -36,7 +37,7 @@ A one-button, music-synced rhythm platformer inspired by Geometry Dash.
   - **Nightmare** (180 BPM) — introduces **dual mode**: two synchronized cubes in stacked split lanes, controlled by the same single tap
   - **Apocalypse** (205 BPM) — the nightmare pattern, dual sections included, run twice at a faster tempo
 - Every obstacle, jump pad, and portal is timed to a procedurally generated soundtrack (Web Audio API), so the whole level plays in lockstep with the beat
-- Speed portals push the scroll pace faster or slower mid-level (the music keeps its own tempo — only the gameplay pace changes, like Geometry Dash's speed portals)
+- Speed portals push the scroll pace faster or slower around the middle of each level (the music keeps its own tempo — only the gameplay pace changes, like Geometry Dash's speed portals)
 - UFO mode has real hazards on the ceiling as well as the floor, so camping at max altitude is no longer a free pass — you have to genuinely navigate
 - Hitting an obstacle is instant failure — you restart the current level from the beginning
 - Portals shift you between eight vehicle modes as you progress: cube, ship, ball, UFO, wave, robot, spider, and dual — each with its own movement physics
