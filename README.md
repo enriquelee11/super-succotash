@@ -1,4 +1,4 @@
-# Rated Chess
+# Chess Machine
 
 A browser-based chess game with a bot opponent whose playing strength you control with a rating slider (0–2000). Built with plain HTML, CSS, and JavaScript — no build step, no dependencies.
 
