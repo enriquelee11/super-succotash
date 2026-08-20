@@ -221,6 +221,71 @@
   .home-icons-btn:hover { filter: none; border-color: var(--neon); background: rgba(255,255,255,0.08); }
   .home-icons-btn:active { transform: translateY(1px); box-shadow: none; }
 
+  .account-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.03);
+    color: var(--text-hint);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: none;
+  }
+  .account-chip:hover { filter: none; border-color: var(--neon-dim); color: var(--neon-bright); }
+  .account-chip:active { transform: none; box-shadow: none; }
+  .account-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-dim); flex: none; }
+  .account-chip.logged-in .account-chip-dot { background: #4dff8a; box-shadow: 0 0 6px #4dff8a; }
+  .account-chip-edit { color: var(--neon-dim); font-size: 8px; }
+
+  .account-panel { gap: 12px; }
+  .account-current { font-size: 10px; color: var(--text-hint); max-width: 320px; line-height: 1.6; }
+  .account-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-height: 28vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-dim) transparent;
+  }
+  .account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    color: var(--neon-bright);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 9px 12px;
+    cursor: pointer;
+    box-shadow: none;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .account-row:hover { background: rgba(255,255,255,0.08); filter: none; }
+  .account-row:active { transform: translateY(1px); box-shadow: none; }
+  .account-row.active { border-color: #4dff8a; color: #4dff8a; }
+  .account-row-meta { font-size: 9px; color: var(--text-hint); white-space: nowrap; }
+  .account-new-row { display: flex; gap: 8px; width: 100%; }
+  .account-name-input {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    color: var(--neon-bright);
+    border: 1px solid rgba(53,240,255,0.25);
+    border-radius: 5px;
+  }
+  .account-name-input::placeholder { color: var(--text-hint); }
+
   .menu-panel { width: 100%; max-width: 380px; }
   .level-list {
     display: flex;
@@ -266,6 +331,7 @@
   .level-card-bars i { display: block; width: 3px; border-radius: 1px; background: rgba(255,255,255,0.12); }
   .level-card-bars i.lit { background: var(--card-color, var(--neon)); box-shadow: 0 0 5px var(--card-color, var(--neon)); }
   .level-card-best { font-size: 10px; color: var(--text-hint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .level-card-best.cleared { color: #4dff8a; text-shadow: 0 0 6px rgba(77,255,138,0.5); }
   .menu-hint { color: var(--text-hint); font-size: 10px; letter-spacing: 0.5px; margin-top: 2px; }
   .icons-open-btn { align-self: center; margin-top: 2px; }
 
@@ -405,7 +471,28 @@
               <button class="home-icons-btn" id="homeIconsBtn" type="button" aria-label="Customize icons">&#9998;<span>ICONS</span></button>
               <button class="home-play-btn display-font" id="homePlayBtn" type="button">PLAY</button>
             </div>
+            <button class="account-chip" id="accountChipBtn" type="button">
+              <span class="account-chip-dot"></span>
+              <span id="accountChipLabel">GUEST</span>
+              <span class="account-chip-edit">SWITCH</span>
+            </button>
             <div class="menu-hint">ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
+          </div>
+        </div>
+        <div id="accountOverlay" class="overlay hidden">
+          <div class="panel menu-panel account-panel">
+            <h2 class="display-font">ACCOUNTS</h2>
+            <div class="account-current" id="accountCurrentLabel">Playing as GUEST — progress isn't saved to a profile</div>
+            <div class="account-list" id="accountList"></div>
+            <div class="account-new-row">
+              <input type="text" id="accountNameInput" class="account-name-input" placeholder="NEW NAME" maxlength="16" />
+              <button id="accountCreateBtn" type="button">CREATE</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="menu-btn" id="accountGuestBtn" type="button">PLAY AS GUEST</button>
+              <button class="menu-btn" id="accountBackBtn" type="button">&#8592; BACK</button>
+            </div>
+            <div class="menu-hint">LOCAL PROFILES ON THIS DEVICE &nbsp;·&nbsp; NO PASSWORD, NO SERVER — JUST SEPARATE SAVES</div>
           </div>
         </div>
         <div id="menuOverlay" class="overlay hidden">
@@ -477,6 +564,7 @@
   const homeOverlay = document.getElementById('homeOverlay');
   const menuOverlay = document.getElementById('menuOverlay');
   const iconsOverlay = document.getElementById('iconsOverlay');
+  const accountOverlay = document.getElementById('accountOverlay');
   const overOverlay = document.getElementById('overOverlay');
   const winOverlay = document.getElementById('winOverlay');
   const crashInfo = document.getElementById('crashInfo');
@@ -504,16 +592,63 @@
   };
   const MODES_LIST = ['cube', 'ship', 'ball', 'ufo', 'wave', 'robot', 'spider', 'dual'];
 
+  // ---------- Accounts ----------
+  // named local profiles, stored only in this browser's localStorage — there's no server for
+  // this static game to talk to, so this isn't a real cross-device login, just a way for
+  // separate players sharing a device to keep separate best%/icon saves. Switching accounts
+  // repoints every localStorage read/write at that account's own namespaced keys.
+  const ACCOUNTS_KEY = 'pulseDashAccounts';
+  const ACTIVE_ACCOUNT_KEY = 'pulseDashActiveAccount';
+  function loadAccounts() {
+    try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveAccountList() { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); }
+  function accountSlug(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  let accounts = loadAccounts();
+  let currentAccount = localStorage.getItem(ACTIVE_ACCOUNT_KEY) || null;
+  if (currentAccount && !accounts.includes(currentAccount)) currentAccount = null;
+
+  function bestKeyFor(levelId) {
+    return currentAccount ? `pulseDashAcct_${accountSlug(currentAccount)}_best_${levelId}` : `pulseDashBest_${levelId}`;
+  }
+  function iconPrefsKeyForAccount() {
+    return currentAccount ? `pulseDashAcct_${accountSlug(currentAccount)}_iconPrefs` : 'pulseDashIconPrefs';
+  }
+  function completedCountFor(name) {
+    const slug = accountSlug(name);
+    return LEVELS.filter(lv => parseFloat(localStorage.getItem(`pulseDashAcct_${slug}_best_${lv.id}`) || '0') >= 100).length;
+  }
+  function createAccount(name) {
+    const trimmed = name.trim().slice(0, 16);
+    if (!trimmed) return false;
+    if (!accounts.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
+      accounts.push(trimmed);
+      saveAccountList();
+    }
+    switchAccount(trimmed);
+    return true;
+  }
+  function switchAccount(name) {
+    currentAccount = name;
+    if (name) localStorage.setItem(ACTIVE_ACCOUNT_KEY, name);
+    else localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+    iconPrefs = loadIconPrefs();
+    refreshAccountUI();
+    refreshLevelList();
+    refreshIconsUI();
+  }
+
   // ---------- Icon customization (color + finish per mode, persisted locally) ----------
   // only the player's own rendered icon uses these overrides — portals, HUD dots, and other
   // mode-color-coded UI intentionally keep MODE_COLORS for consistent signaling
-  const ICON_PREFS_KEY = 'pulseDashIconPrefs';
   function loadIconPrefs() {
-    try { return JSON.parse(localStorage.getItem(ICON_PREFS_KEY)) || {}; }
+    try { return JSON.parse(localStorage.getItem(iconPrefsKeyForAccount())) || {}; }
     catch (e) { return {}; }
   }
   let iconPrefs = loadIconPrefs();
-  function saveIconPrefs() { localStorage.setItem(ICON_PREFS_KEY, JSON.stringify(iconPrefs)); }
+  function saveIconPrefs() { localStorage.setItem(iconPrefsKeyForAccount(), JSON.stringify(iconPrefs)); }
   function iconColor(m) { return (iconPrefs[m] && iconPrefs[m].color) || MODE_COLORS[m] || '#35f0ff'; }
   function iconFinish(m) { return (iconPrefs[m] && iconPrefs[m].finish) || 'neon'; }
 
@@ -694,6 +829,29 @@
   const apocalypseLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.15);
   const APOCALYPSE_EVENTS = [...apocalypseLevel.events, finish(apocalypseLevel.totalBeats)];
 
+  // EXTREME DEMON — the true final gauntlet. Nightmare's full pattern run twice at 225 BPM,
+  // the highest tempo yet, with the same small safety buffer above the exact compensating
+  // ratio (225/180=1.25) that hard/insane/apocalypse all use above their own base tempo —
+  // the difficulty escalation comes from being the longest level in the game (two full
+  // nightmare laps plus an all-new dual-mode finale storm found nowhere else), the fastest
+  // music, and back-to-back dual-mode sections at the very end with zero room for a mistake,
+  // not from shaving any single jump/tap's margin below what's proven fair.
+  const extremeLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.26);
+  const nSecFinale = [
+    ...dspike(0, 'AB'),
+    ...dspike(1.5, 'A'), ...dspike(3, 'B'),
+    ...dspike(4.5, 'AB'),
+    ...dspike(6, 'A'), ...dspike(7.5, 'B'),
+    ...dspike(9, 'AB'),
+    ...dspike(10.5, 'A'), ...dspike(12, 'B'),
+    ...dspike(13.5, 'AB'),
+    ...dspike(15, 'A'), ...dspike(16.5, 'B'),
+    ...dspike(18, 'AB'),
+  ];
+  const extremeFinale = placeSection(nSecFinale, 1, extremeLevel.totalBeats + 2);
+  const extremeFinishBeat = Math.ceil(extremeFinale.endBeat + 3);
+  const EXTREME_EVENTS = [...extremeLevel.events, ...extremeFinale.events, finish(extremeFinishBeat)];
+
   const LEVEL_DEFS = [
     { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 60, events: EASY_EVENTS },
     { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 97, events: MEDIUM_EVENTS },
@@ -701,6 +859,7 @@
     { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: insaneLevel.totalBeats, events: INSANE_EVENTS },
     { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
     { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseLevel.totalBeats, events: APOCALYPSE_EVENTS },
+    { id: 'extreme', name: 'EXTREME DEMON', difficulty: 'EXTREME', color: '#ffd700', bpm: 225, totalBeats: extremeFinishBeat, events: EXTREME_EVENTS },
   ];
 
   // Precompute each level's own grid/obstacle geometry once (independent of whichever level is "current")
@@ -709,7 +868,7 @@
     const grid = SCROLL_SPEED * beat;
     const worldLen = def.totalBeats * grid;
     const obstacles = def.events.map(o => ({ ...o, worldX: o.beat * grid, done: false }));
-    return { ...def, beat, grid, worldLen, obstacles, bestKey: 'pulseDashBest_' + def.id };
+    return { ...def, beat, grid, worldLen, obstacles };
   });
 
   let currentLevel = null;
@@ -725,7 +884,7 @@
     LEVEL_WORLD_LEN = lv.worldLen;
     SIXTEENTH = BEAT / 4;
     level = lv.obstacles.map(o => ({ ...o, done: false }));
-    best = parseFloat(localStorage.getItem(lv.bestKey) || '0');
+    best = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
     bestEl.textContent = Math.floor(best) + '%';
     levelLabelEl.textContent = lv.name;
     hudDotEl.style.color = lv.color;
@@ -909,7 +1068,7 @@
   function recordBest(pct) {
     if (pct > best) {
       best = pct;
-      localStorage.setItem(currentLevel.bestKey, String(best));
+      localStorage.setItem(bestKeyFor(currentLevel.id), String(best));
     }
     bestEl.textContent = Math.floor(best) + '%';
   }
@@ -1141,7 +1300,10 @@
     currentSpeedMult = 1;
     state = 'playing';
     level.forEach(o => { o.done = false; });
+    homeOverlay.classList.add('hidden');
     menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     winOverlay.classList.add('hidden');
     startMusic();
@@ -1166,6 +1328,7 @@
     winOverlay.classList.add('hidden');
     homeOverlay.classList.add('hidden');
     iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
     menuOverlay.classList.remove('hidden');
     refreshLevelList();
     demoLastTime = performance.now();
@@ -1176,14 +1339,18 @@
     homeOverlay.classList.remove('hidden');
     menuOverlay.classList.add('hidden');
     iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
   }
+
+  function formatBest(b) { return b >= 100 ? '✓ CLEAR' : (b > 0 ? Math.floor(b) + '%' : '—'); }
 
   function refreshLevelList() {
     levelListEl.querySelectorAll('.level-card-best').forEach(el => {
       const lv = LEVELS.find(l => l.id === el.dataset.levelId);
       if (!lv) return;
-      const b = parseFloat(localStorage.getItem(lv.bestKey) || '0');
-      el.textContent = b > 0 ? Math.floor(b) + '%' : '—';
+      const b = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
+      el.textContent = formatBest(b);
+      el.classList.toggle('cleared', b >= 100);
     });
   }
 
@@ -1192,9 +1359,12 @@
   function buildLevelList() {
     levelListEl.innerHTML = '';
     LEVELS.forEach((lv, idx) => {
-      const b = parseFloat(localStorage.getItem(lv.bestKey) || '0');
+      const b = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
+      // scale the lit-bar count to the tier's position among ALL levels, not a fixed index,
+      // so adding/removing tiers doesn't require resizing BAR_HEIGHTS itself
+      const litCount = Math.ceil((idx + 1) / LEVELS.length * BAR_HEIGHTS.length);
       const bars = BAR_HEIGHTS.map((h, i) =>
-        `<i class="${i <= idx ? 'lit' : ''}" style="height:${h}px"></i>`
+        `<i class="${i < litCount ? 'lit' : ''}" style="height:${h}px"></i>`
       ).join('');
       const btn = document.createElement('button');
       btn.className = 'level-card';
@@ -1207,12 +1377,64 @@
             <span class="level-card-diff">${lv.difficulty}</span>
           </span>
         </span>
-        <span class="level-card-best" data-level-id="${lv.id}">${b > 0 ? Math.floor(b) + '%' : '—'}</span>
+        <span class="level-card-best${b >= 100 ? ' cleared' : ''}" data-level-id="${lv.id}">${formatBest(b)}</span>
       `;
       btn.addEventListener('click', () => startGame(lv));
       levelListEl.appendChild(btn);
     });
   }
+
+  // ---------- Account UI ----------
+  const accountChipBtn = document.getElementById('accountChipBtn');
+  const accountChipLabel = document.getElementById('accountChipLabel');
+  const accountCurrentLabel = document.getElementById('accountCurrentLabel');
+  const accountListEl = document.getElementById('accountList');
+  const accountNameInput = document.getElementById('accountNameInput');
+
+  function refreshAccountUI() {
+    accountChipLabel.textContent = currentAccount || 'GUEST';
+    accountChipBtn.classList.toggle('logged-in', !!currentAccount);
+    accountCurrentLabel.textContent = currentAccount
+      ? `Playing as ${currentAccount} — ${completedCountFor(currentAccount)}/${LEVELS.length} levels cleared`
+      : "Playing as GUEST — progress isn't saved to a profile";
+    buildAccountList();
+  }
+
+  function buildAccountList() {
+    accountListEl.innerHTML = '';
+    accounts.forEach(name => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'account-row' + (name === currentAccount ? ' active' : '');
+      row.innerHTML = `
+        <span>${name}</span>
+        <span class="account-row-meta">${completedCountFor(name)}/${LEVELS.length} cleared${name === currentAccount ? ' · ACTIVE' : ''}</span>
+      `;
+      row.addEventListener('click', () => { switchAccount(name); goToHome(); });
+      accountListEl.appendChild(row);
+    });
+  }
+
+  accountChipBtn.addEventListener('click', () => {
+    homeOverlay.classList.add('hidden');
+    accountOverlay.classList.remove('hidden');
+    refreshAccountUI();
+    accountNameInput.value = '';
+  });
+  document.getElementById('accountBackBtn').addEventListener('click', goToHome);
+  document.getElementById('accountGuestBtn').addEventListener('click', () => {
+    switchAccount(null);
+    goToHome();
+  });
+  document.getElementById('accountCreateBtn').addEventListener('click', () => {
+    if (createAccount(accountNameInput.value)) {
+      accountNameInput.value = '';
+      goToHome();
+    }
+  });
+  accountNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('accountCreateBtn').click();
+  });
 
   // ---------- Icons customization UI ----------
   const ICON_SWATCHES = [
@@ -1851,6 +2073,7 @@
   buildIconTabs();
   buildIconSwatches();
   refreshIconsUI();
+  refreshAccountUI();
   state = 'menu';
   demoLastTime = performance.now();
   requestAnimationFrame(attractLoop);
