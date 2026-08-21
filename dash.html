@@ -745,27 +745,75 @@
     finish(97),
   ];
 
-  // HARD, INSANE & APOCALYPSE reuse an earlier pattern run twice, at a faster tempo. Jump/flip
-  // physics are fixed in absolute time (not beats), so a higher BPM alone shrinks every gap's
-  // real clearance — beat positions are stretched by a compensating factor to restore the
-  // base pattern's proven absolute-time safety margins before the tempo increase is applied.
-  function buildTwoLapLevel(baseEventsWithFinish, scale) {
-    const lapLenRaw = baseEventsWithFinish.find(e => e.kind === 'finish').beat;
-    const base = scaleBeats(baseEventsWithFinish.filter(e => e.kind !== 'finish'), scale);
-    const lapLen = lapLenRaw * scale;
-    const events = [
-      ...base,
-      portal(lapLen + 1, 'cube'),
-      ...base.map(e => ({ ...e, beat: +(e.beat + lapLen + 1).toFixed(3) })),
-    ];
-    return { events, totalBeats: Math.ceil(lapLen * 2 + 3) };
-  }
+  // HARD — unique pattern with tighter spacing, more saws and orbs
+  const HARD_EVENTS = [
+    platform(2, 70), orb(3.5, 'yellow'),
+    spike(5, 'floor'), spike(7, 'floor'), spike(9, 'floor'),
+    saw(11, 'floor'), spike(13, 'floor'),
+    pad(14), portal(14.5, 'ship'),
+    block(17, 'floor', 110), block(19, 'ceil', 110), block(21, 'floor', 120),
+    block(23, 'ceil', 120), block(25, 'floor', 100),
+    portal(26.5, 'ball'),
+    spike(29, 'floor'), spike(31, 'ceil'), spike(33, 'floor'),
+    saw(35, 'ceil'), spike(37, 'floor'), spike(39, 'ceil'),
+    portal(40.5, 'ufo'),
+    speed(41, 1.2),
+    orb(41.5, 'pink'),
+    spike(43, 'floor'), spike(45, 'ceil'), spike(47, 'floor'),
+    spike(49, 'ceil'), saw(51, 'floor'),
+    speed(52, 1),
+    portal(52.5, 'wave'),
+    block(54, 'floor', 100), block(56, 'ceil', 100), block(58, 'floor', 110),
+    block(60, 'ceil', 90), block(62, 'floor', 95),
+    portal(63.5, 'robot'),
+    speed(64, 0.85),
+    platform(64.5, 60), orb(65, 'red'),
+    spike(66, 'floor'), spike(68, 'floor'), spike(70, 'floor'),
+    spike(72, 'floor'), spike(72.5, 'floor'), spike(74, 'floor'),
+    saw(76, 'floor'),
+    speed(76.5, 1),
+    portal(77.5, 'spider'),
+    spike(79, 'floor'), spike(80.5, 'ceil'), spike(82, 'floor'),
+    spike(83.5, 'ceil'), spike(85, 'floor'),
+    finish(86),
+  ];
 
-  const hardLevel = buildTwoLapLevel(MEDIUM_EVENTS, 1.15);
-  const HARD_EVENTS = [...hardLevel.events, finish(hardLevel.totalBeats)];
-
-  const insaneLevel = buildTwoLapLevel(MEDIUM_EVENTS, 1.3);
-  const INSANE_EVENTS = [...insaneLevel.events, finish(insaneLevel.totalBeats)];
+  // INSANE — even more challenging with complex patterns and more obstacles
+  const INSANE_EVENTS = [
+    platform(1, 70), orb(2.5, 'yellow'), orb(3.5, 'pink'),
+    spike(4, 'floor'), spike(5, 'floor'), spike(6, 'floor'), spike(7, 'floor'),
+    saw(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
+    pad(11), portal(11.5, 'ship'),
+    block(14, 'floor', 110), block(16, 'ceil', 110), block(18, 'floor', 120),
+    block(20, 'ceil', 120), block(22, 'floor', 100), block(24, 'ceil', 130),
+    block(26, 'floor', 110),
+    portal(27.5, 'ball'),
+    spike(30, 'floor'), spike(31, 'ceil'), spike(32, 'floor'), spike(33, 'ceil'),
+    spike(34, 'floor'), saw(35, 'ceil'), spike(36, 'floor'), spike(37, 'ceil'),
+    portal(38.5, 'ufo'),
+    speed(39, 1.25),
+    orb(39.5, 'red'),
+    spike(41, 'floor'), spike(42, 'ceil'), spike(43, 'floor'), spike(44, 'ceil'),
+    spike(45, 'floor'), spike(46, 'ceil'), spike(47, 'floor'), saw(48, 'floor'),
+    spike(49, 'ceil'), spike(50, 'floor'),
+    speed(50.5, 1),
+    portal(51.5, 'wave'),
+    block(53, 'floor', 100), block(54, 'ceil', 100), block(55, 'floor', 110),
+    block(56, 'ceil', 90), block(57, 'floor', 95), block(58, 'ceil', 105),
+    block(59, 'floor', 85),
+    portal(60.5, 'robot'),
+    speed(61, 0.8),
+    platform(61.5, 60), orb(62, 'yellow'), orb(63, 'red'),
+    spike(64, 'floor'), spike(65, 'floor'), spike(66, 'floor'), spike(67, 'floor'),
+    spike(68, 'floor'), spike(69, 'floor'), saw(70, 'floor'), spike(71, 'floor'),
+    spike(72, 'floor'), spike(72.5, 'floor'), spike(73, 'floor'),
+    speed(73.5, 1),
+    portal(74.5, 'spider'),
+    spike(76, 'floor'), spike(77, 'ceil'), spike(78, 'floor'), spike(79, 'ceil'),
+    spike(80, 'floor'), saw(81, 'ceil'), spike(82, 'floor'), spike(83, 'ceil'),
+    spike(84, 'floor'),
+    finish(85),
+  ];
 
   // Places a small, self-contained "section" (authored with its own local beat numbers
   // starting near 0) at an absolute position, optionally stretched by `scale` first — this
@@ -874,9 +922,9 @@
 
   const LEVEL_DEFS = [
     { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 60, events: EASY_EVENTS },
-    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 97, events: MEDIUM_EVENTS },
-    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: hardLevel.totalBeats, events: HARD_EVENTS },
-    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: insaneLevel.totalBeats, events: INSANE_EVENTS },
+    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 98, events: MEDIUM_EVENTS },
+    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 87, events: HARD_EVENTS },
+    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 86, events: INSANE_EVENTS },
     { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
     { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseLevel.totalBeats, events: APOCALYPSE_EVENTS },
     { id: 'extreme', name: 'EXTREME DEMON', difficulty: 'EXTREME', color: '#ffd700', bpm: 225, totalBeats: extremeFinishBeat, events: EXTREME_EVENTS },
