@@ -1713,13 +1713,14 @@
         continue;
       }
       if (o.kind === 'orb') {
-        // active trigger: only fires on a fresh tap while overlapping — never a death hazard,
-        // ignoring it just means falling on through under normal gravity
         const r = obstacleRect(o, sx);
-        if (!o.done && justPressed && overlap(pRect, r)) {
-          o.done = true;
-          player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
-          if (mode === 'cube' || mode === 'robot') player.onSurface = false;
+        if (!o.done && overlap(pRect, r)) {
+          // must tap while overlapping to activate — ignoring it just means falling through
+          if (justPressed) {
+            o.done = true;
+            player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
+            if (mode === 'cube' || mode === 'robot') player.onSurface = false;
+          }
         }
         continue;
       }
