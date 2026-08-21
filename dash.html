@@ -921,6 +921,21 @@
     ...dspike(6, 'A'), ...dspike(7.5, 'B'), ...dspike(9, 'AB'), ...dspike(10.5, 'A'),
     ...dspike(12, 'AB'),
   ];
+  // MONSTER BOSS ARENA: menacing geometry with eyes, teeth, and claws
+  const nSecMonster = [
+    // monster's eyes: tall platforms
+    platform(0, 100), platform(1.5, 100),
+    // descending spikes: angry face
+    spike(3, 'floor'), spike(4, 'floor'), spike(5, 'floor'),
+    saw(6, 'floor'),
+    spike(7, 'floor'), spike(8, 'floor'), spike(9, 'floor'),
+    // upper jaw
+    spike(10.5, 'ceil'), saw(11, 'ceil'), spike(11.5, 'ceil'),
+    // lower jaw
+    spike(13, 'floor'), spike(13.5, 'floor'), saw(14, 'floor'),
+    // claws reaching down
+    spike(15, 'floor'), spike(15.5, 'floor'), spike(16, 'floor'),
+  ];
 
   const n1 = placeSection(nSecCube, 1.2, 2);
   const n2 = placeSection(nSecShip, 1.2, n1.endBeat + 2);
@@ -929,9 +944,10 @@
   const n5 = placeSection(nSecWave, 1.2, n4.endBeat + 2);
   const n6 = placeSection(nSecRobot, 1.2, n5.endBeat + 2);
   const n7 = placeSection(nSecDual2, 1, n6.endBeat + 2);
-  const nightmareFinishBeat = Math.ceil(n7.endBeat + 3);
+  const n8 = placeSection(nSecMonster, 1, n7.endBeat + 3);
+  const nightmareFinishBeat = Math.ceil(n8.endBeat + 3);
   const NIGHTMARE_EVENTS = [
-    ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events,
+    ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events, ...n8.events,
     finish(nightmareFinishBeat),
   ];
 
@@ -948,6 +964,7 @@
   // not from shaving any single jump/tap's margin below what's proven fair.
   const extremeLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.26);
   const nSecFinale = [
+    // HELLISH GAUNTLET: final monster form with dense dual-mode nightmare
     ...dspike(0, 'AB'),
     ...dspike(1.5, 'A'), ...dspike(3, 'B'),
     ...dspike(4.5, 'AB'),
@@ -957,6 +974,9 @@
     ...dspike(13.5, 'AB'),
     ...dspike(15, 'A'), ...dspike(16.5, 'B'),
     ...dspike(18, 'AB'),
+    // monster's final assault: rapid alternating pattern
+    ...dspike(19.5, 'A'), ...dspike(20, 'B'), ...dspike(20.5, 'A'), ...dspike(21, 'B'),
+    ...dspike(21.5, 'A'), ...dspike(22, 'B'),
   ];
   const extremeFinale = placeSection(nSecFinale, 1, extremeLevel.totalBeats + 2);
   const extremeFinishBeat = Math.ceil(extremeFinale.endBeat + 3);
