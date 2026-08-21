@@ -815,6 +815,19 @@
     finish(85),
   ];
 
+  // Helper for APOCALYPSE and EXTREME: run a pattern twice at different speeds
+  function buildTwoLapLevel(baseEventsWithFinish, scale) {
+    const lapLenRaw = baseEventsWithFinish.find(e => e.kind === 'finish').beat;
+    const base = scaleBeats(baseEventsWithFinish.filter(e => e.kind !== 'finish'), scale);
+    const lapLen = lapLenRaw * scale;
+    const events = [
+      ...base,
+      portal(lapLen + 1, 'cube'),
+      ...base.map(e => ({ ...e, beat: +(e.beat + lapLen + 1).toFixed(3) })),
+    ];
+    return { events, totalBeats: Math.ceil(lapLen * 2 + 3) };
+  }
+
   // Places a small, self-contained "section" (authored with its own local beat numbers
   // starting near 0) at an absolute position, optionally stretched by `scale` first — this
   // keeps every section's internal spacing hand-verifiable in isolation while composition
