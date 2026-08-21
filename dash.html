@@ -530,7 +530,8 @@
           <div class="panel">
             <h2 class="display-font danger">CRASHED</h2>
             <p id="crashInfo">0%</p>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+              <button id="crashResumeBtn">RESUME</button>
               <button id="crashPracticeBtn">PRACTICE</button>
               <button id="crashMenuBtn">MENU</button>
             </div>
@@ -1136,6 +1137,11 @@
   document.getElementById('tapBtn').addEventListener('pointerup', pressEnd);
   document.getElementById('againBtn').addEventListener('click', () => startGame());
   document.getElementById('menuBtn').addEventListener('click', goToMenu);
+  document.getElementById('crashResumeBtn').addEventListener('click', () => {
+    attempts++;
+    attemptsEl.textContent = attempts;
+    startGame();
+  });
   document.getElementById('crashPracticeBtn').addEventListener('click', () => {
     attempts++;
     attemptsEl.textContent = attempts;
