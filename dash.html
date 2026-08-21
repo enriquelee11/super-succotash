@@ -1714,15 +1714,10 @@
       }
       if (o.kind === 'orb') {
         const r = obstacleRect(o, sx);
-        if (!o.done && overlap(pRect, r)) {
-          if (justPressed) {
-            o.done = true;
-            player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
-            if (mode === 'cube' || mode === 'robot') player.onSurface = false;
-          } else {
-            die();
-            return;
-          }
+        if (!o.done && justPressed && overlap(pRect, r)) {
+          o.done = true;
+          player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
+          if (mode === 'cube' || mode === 'robot') player.onSurface = false;
         }
         continue;
       }
