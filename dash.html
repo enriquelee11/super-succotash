@@ -1715,22 +1715,22 @@
       if (o.kind === 'orb') {
         const r = obstacleRect(o, sx);
         if (!o.done && overlap(pRect, r)) {
-          // must tap while overlapping to activate — ignoring it just means falling through
           if (justPressed) {
             o.done = true;
             player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
             if (mode === 'cube' || mode === 'robot') player.onSurface = false;
+          } else {
+            die();
+            return;
           }
         }
         continue;
       }
       if (o.kind === 'platform') {
-        // one-way solid: safe to rest on/above the top surface (groundYAt() already stops a
-        // landable mode's fall exactly there); overlapping it while below that line means the
-        // side or underside was hit instead, which is still a crash
         const r = obstacleRect(o, sx);
         const landable = mode === 'cube' || mode === 'robot' || mode === 'ball' || mode === 'spider';
         const footY = pRect.y + pRect.h;
+        // landable modes can pass through from above (they land via groundYAt); side/underside hits are fatal
         if (landable && footY <= r.y + 4) continue;
         const hit = inset(r, 3);
         if (overlap(pRect, hit)) { die(); return; }
