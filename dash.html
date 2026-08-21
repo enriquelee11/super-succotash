@@ -530,7 +530,10 @@
           <div class="panel">
             <h2 class="display-font danger">CRASHED</h2>
             <p id="crashInfo">0%</p>
-            <button id="crashMenuBtn">MENU</button>
+            <div style="display:flex; gap:10px;">
+              <button id="crashPracticeBtn">PRACTICE</button>
+              <button id="crashMenuBtn">MENU</button>
+            </div>
           </div>
         </div>
         <div id="winOverlay" class="overlay hidden">
@@ -1133,7 +1136,16 @@
   document.getElementById('tapBtn').addEventListener('pointerup', pressEnd);
   document.getElementById('againBtn').addEventListener('click', () => startGame());
   document.getElementById('menuBtn').addEventListener('click', goToMenu);
-  document.getElementById('crashMenuBtn').addEventListener('click', goToMenu);
+  document.getElementById('crashPracticeBtn').addEventListener('click', () => {
+    attempts++;
+    attemptsEl.textContent = attempts;
+    practiceRetry();
+  });
+  document.getElementById('crashMenuBtn').addEventListener('click', () => {
+    attempts++;
+    attemptsEl.textContent = attempts;
+    goToMenu();
+  });
   document.getElementById('winMenuBtn').addEventListener('click', goToMenu);
 
   // ---------- Physics constants ----------
@@ -1157,6 +1169,14 @@
   // ---------- Player ----------
   let player, player2, mode, state, attempts;
   let particles = [], screenShake = 0, flashAlpha = 0, hitStopTimer = 0;
+
+  // ---------- Practice Mode & Checkpoints ----------
+  let practiceMode = false;
+  let checkpointBeat = 0;
+  const CHECKPOINT_INTERVAL = 15; // checkpoint every 15 beats
+  function getCheckpointBeat(currentBeat) {
+    return Math.floor(currentBeat / CHECKPOINT_INTERVAL) * CHECKPOINT_INTERVAL;
+  }
 
   function resetPlayer() {
     player = {
@@ -1220,15 +1240,11 @@
     if (mode === 'dual') spawnDeathBurst(PLAYER_X, player2.y, deathColor);
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
     recordBest(pct);
+    const currentBeat = worldOffset() / GRID;
+    checkpointBeat = getCheckpointBeat(currentBeat);
     crashInfo.textContent = `PROGRESS: ${pct.toFixed(1)}%  ·  ATTEMPT ${attempts}`;
     // let the explosion play out before the overlay covers the screen
     pendingOverlay = setTimeout(() => { if (state === 'crashed') overOverlay.classList.remove('hidden'); }, 380);
-    pendingRestart = setTimeout(() => {
-      overOverlay.classList.add('hidden');
-      attempts++;
-      attemptsEl.textContent = attempts;
-      startGame();
-    }, 1250);
   }
 
   function win() {
@@ -1453,6 +1469,8 @@
       loadLevel(lv);
       attempts = 1;
       attemptsEl.textContent = attempts;
+      practiceMode = false;
+      checkpointBeat = 0;
     }
     resetPlayer();
     particles = [];
@@ -1469,6 +1487,25 @@
     accountOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     winOverlay.classList.add('hidden');
+    startMusic();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function practiceRetry() {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    practiceMode = true;
+    resetPlayer();
+    particles = [];
+    screenShake = 0;
+    flashAlpha = 0;
+    hitStopTimer = 0;
+    currentOff = checkpointBeat * GRID;
+    currentSpeedMult = 1;
+    state = 'playing';
+    level.forEach(o => { o.done = false; });
+    overOverlay.classList.add('hidden');
     startMusic();
     lastTime = performance.now();
     requestAnimationFrame(loop);
