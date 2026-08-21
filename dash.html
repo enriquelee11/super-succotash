@@ -659,6 +659,16 @@
   function dspike(beat, lanes) {
     return lanes.split('').map(l => spike(beat, 'floor', l));
   }
+  // a solid platform you can land ON TOP OF (one-way: safe from above, still a hazard if you
+  // clip its side/underside) — floor-anchored, raised `depth` px above the ground
+  function platform(beat, depth) { return { beat, kind: 'platform', depth }; }
+  // rotating saw blade — a hazard like spike/block, but round, spinning, and can also float
+  // in open air (side: 'float') instead of being mounted to the floor or ceiling
+  function saw(beat, side, lane, floatY) { return { beat, kind: 'saw', side, lane, floatY }; }
+  // click/tap orb: does nothing unless tapped while overlapping it, in which case it fires an
+  // upward boost sized by color (pink=small, yellow=medium, red=high); ignore it and you just
+  // keep falling — never a death hazard. y defaults to a comfortably reachable mid-air height.
+  function orb(beat, color, y) { return { beat, kind: 'orb', color, y: y || (GROUND_Y - 90) }; }
   function pad(beat) { return { beat, kind: 'pad' }; }
   function portal(beat, mode) { return { beat, kind: 'portal', mode }; }
   // speed portal: multiplies the scroll pace from this point on (until the next one) — the
@@ -686,6 +696,13 @@
 
   // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
   const MEDIUM_EVENTS = [
+    // a blue platform you can jump up onto (safe from above, still a hazard if mistimed) and a
+    // click orb (tap while overlapping for a boost, ignore it and just keep falling) — both
+    // introduced in the free lead-in before the first spike. Orbs only appear in hop-based
+    // modes (cube/robot/ufo/dual): ball/spider treat every tap as a surface flip, so an orb
+    // there would corrupt which side they're resting on.
+    platform(1.5, 70),
+    orb(3, 'yellow'),
     spike(4, 'floor'),
     spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'),
     spike(12, 'floor'), spike(12.5, 'floor'), spike(14, 'floor'),
@@ -722,6 +739,7 @@
     portal(87.5, 'spider'),
     spike(89, 'floor'), spike(90.5, 'ceil'), spike(92, 'floor'),
     spike(93.5, 'ceil'), spike(95, 'floor'),
+    saw(96, 'floor'),
     finish(97),
   ];
 
@@ -787,8 +805,8 @@
     spike(6, 'ceil'), spike(6.5, 'ceil'),
     spike(8, 'floor'), spike(10, 'ceil'),
     speed(10.5, 1),
-    spike(12, 'floor'), spike(12.5, 'floor'),
-    portal(13.5, 'wave'),
+    spike(12, 'floor'), spike(13, 'floor'),
+    portal(14.5, 'wave'),
   ];
   const nSecWave = [
     block(0, 'floor', 90), block(2, 'ceil', 90),
@@ -1013,7 +1031,11 @@
   // ---------- Physics constants ----------
   const P = {
     cubeGravity: 2600, cubeJump: -760,
-    robotGravity: 2600, robotJump: -650, robotHoldAccel: -2800, robotMaxHold: 0.15,
+    // a quick tap barely holds long enough for robotHoldAccel to matter, giving a short hop;
+    // holding through robotMaxHold keeps piling on upward accel (net robotHoldAccel+robotGravity
+    // is still negative — it doesn't just cancel gravity, it actively climbs) for a much taller,
+    // longer jump — "jump higher when you hold, lower when you tap fast"
+    robotGravity: 2600, robotJump: -500, robotHoldAccel: -3200, robotMaxHold: 0.2,
     shipGravity: 1500, shipThrust: -1900, shipMaxV: 420,
     ballGravity: 1600, ballKick: 550,
     ufoGravity: 2200, ufoHop: -560,
@@ -1021,6 +1043,8 @@
     spiderFlipDur: 0.14,
     dualGravity: 3400, dualJump: -620,
   };
+  const ORB_STRENGTH = { pink: -700, yellow: -950, red: -1250 };
+  const ORB_COLORS = { pink: '#ff6fd8', yellow: '#ffe14d', red: '#ff2d4d' };
 
   // ---------- Player ----------
   let player, player2, mode, state, attempts;
@@ -1129,9 +1153,25 @@
     }
   }
 
+  // returns the Y a ground-based mode should land on: the normal floor line, UNLESS a platform
+  // is under the player's fixed screen X *and* its surface is at-or-below the player's current
+  // position (i.e. they jumped high enough to be above it already) — a platform never yanks a
+  // still-grounded player upward, it only catches a fall from above, exactly like landing a jump
+  function groundYAt(off, footY) {
+    let best = GROUND_Y;
+    for (const o of level) {
+      if (o.kind !== 'platform') continue;
+      const sx = PLAYER_X + o.worldX - off;
+      const r = obstacleRect(o, sx);
+      if (!r || PLAYER_X < r.x || PLAYER_X > r.x + r.w) continue;
+      if (r.y >= footY - 0.5 && r.y < best) best = r.y;
+    }
+    return best;
+  }
+
   // ---------- Per-mode physics ----------
   function updateCube(dt) {
-    const restY = GROUND_Y - player.size / 2;
+    const restY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
     if (justPressed && player.onSurface) { player.vy = P.cubeJump; player.onSurface = false; }
     player.vy += P.cubeGravity * dt;
     player.y += player.vy * dt;
@@ -1141,7 +1181,7 @@
   }
 
   function updateRobot(dt) {
-    const restY = GROUND_Y - player.size / 2;
+    const restY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
     if (justPressed && player.onSurface) {
       player.vy = P.robotJump; player.onSurface = false; player.holdTime = 0;
     }
@@ -1163,7 +1203,7 @@
   }
 
   function updateBall(dt) {
-    const topY = CEIL_Y + player.size / 2, botY = GROUND_Y - player.size / 2;
+    const topY = CEIL_Y + player.size / 2, botY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
     if (justPressed) { player.surface *= -1; player.vy = P.ballKick * player.surface; }
     player.vy += P.ballGravity * player.surface * dt;
     player.y = clamp(player.y + player.vy * dt, topY, botY);
@@ -1197,7 +1237,7 @@
     } else if (justPressed) {
       player.flipping = true; player.flipT = 0;
       player.flipFrom = player.y;
-      player.flipTo = player.surface === 1 ? (CEIL_Y + player.size / 2) : (GROUND_Y - player.size / 2);
+      player.flipTo = player.surface === 1 ? (CEIL_Y + player.size / 2) : (groundYAt(currentOff, player.y + player.size / 2) - player.size / 2);
     }
   }
 
@@ -1245,6 +1285,21 @@
       const y = o.side === 'floor' ? GROUND_Y - o.depth : CEIL_Y;
       return { x: sx - 18, y, w: 36, h: o.depth };
     }
+    if (o.kind === 'platform') return { x: sx - 18, y: GROUND_Y - o.depth, w: 36, h: o.depth };
+    if (o.kind === 'saw') {
+      const r = 16;
+      let cy;
+      if (o.side === 'float') cy = o.floatY;
+      else if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        cy = o.side === 'floor' ? ground - r : ceil + r;
+      } else {
+        cy = o.side === 'floor' ? GROUND_Y - r : CEIL_Y + r;
+      }
+      return { x: sx - r, y: cy - r, w: r * 2, h: r * 2 };
+    }
+    if (o.kind === 'orb') { const r = 13; return { x: sx - r, y: o.y - r, w: r * 2, h: r * 2 }; }
     if (o.kind === 'pad') return { x: sx - 20, y: GROUND_Y - 12, w: 40, h: 12 };
     return null;
   }
@@ -1657,6 +1712,29 @@
         }
         continue;
       }
+      if (o.kind === 'orb') {
+        // active trigger: only fires on a fresh tap while overlapping — never a death hazard,
+        // ignoring it just means falling on through under normal gravity
+        const r = obstacleRect(o, sx);
+        if (!o.done && justPressed && overlap(pRect, r)) {
+          o.done = true;
+          player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
+          if (mode === 'cube' || mode === 'robot') player.onSurface = false;
+        }
+        continue;
+      }
+      if (o.kind === 'platform') {
+        // one-way solid: safe to rest on/above the top surface (groundYAt() already stops a
+        // landable mode's fall exactly there); overlapping it while below that line means the
+        // side or underside was hit instead, which is still a crash
+        const r = obstacleRect(o, sx);
+        const landable = mode === 'cube' || mode === 'robot' || mode === 'ball' || mode === 'spider';
+        const footY = pRect.y + pRect.h;
+        if (landable && footY <= r.y + 4) continue;
+        const hit = inset(r, 3);
+        if (overlap(pRect, hit)) { die(); return; }
+        continue;
+      }
       const r = obstacleRect(o, sx);
       const hit = r && inset(r, 3);
       if (!hit) continue;
@@ -1787,6 +1865,40 @@
           ctx.closePath();
           ctx.fill();
         }
+      } else if (o.kind === 'platform') {
+        const r = obstacleRect(o, sx);
+        ctx.fillStyle = '#35a7ff'; ctx.shadowColor = '#35a7ff'; ctx.shadowBlur = 10;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillRect(r.x, r.y, r.w, 3);
+      } else if (o.kind === 'saw') {
+        const r = obstacleRect(o, sx);
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2, rOuter = r.w / 2, rInner = rOuter * 0.62;
+        ctx.translate(cx, cy);
+        ctx.rotate((performance.now() / 260) % (Math.PI * 2));
+        ctx.fillStyle = '#c3cad6'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 12;
+        const teeth = 8;
+        ctx.beginPath();
+        for (let i = 0; i < teeth * 2; i++) {
+          const ang = (i / (teeth * 2)) * Math.PI * 2;
+          const rad = i % 2 === 0 ? rOuter : rInner;
+          const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#6b7280';
+        ctx.beginPath(); ctx.arc(0, 0, rOuter * 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ff2d6a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, rOuter * 0.4, 0, Math.PI * 2); ctx.stroke();
+      } else if (o.kind === 'orb') {
+        const oc = ORB_COLORS[o.color] || ORB_COLORS.yellow;
+        const pulse = 0.85 + 0.15 * Math.sin(performance.now() / 180);
+        const r = 13 * pulse;
+        ctx.fillStyle = oc; ctx.shadowColor = oc; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.arc(sx, o.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, o.y, r * 0.5, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
     }
