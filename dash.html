@@ -795,9 +795,8 @@
 
   // INSANE — even more challenging with complex patterns and more obstacles
   const INSANE_EVENTS = [
-    platform(1, 70), orb(2.5, 'yellow'), orb(3.5, 'pink'),
-    spike(4, 'floor'), spike(5, 'floor'), spike(6, 'floor'), spike(7, 'floor'),
-    saw(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
+    platform(1, 70), orb(2.5, 'yellow'), spike(3, 'floor'), orb(3.5, 'pink'), spike(4, 'floor'),
+    spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'),
     pad(11), portal(11.5, 'ship'),
     // ship: complex staircase with saws
     block(13, 'floor', 75), block(14, 'floor', 95), block(15, 'floor', 115), block(16, 'floor', 135),
