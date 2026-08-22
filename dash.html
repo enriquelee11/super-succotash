@@ -685,26 +685,22 @@
 
   // EASY — gentle intro, generous spacing, only the simplest modes
   const EASY_EVENTS = [
-    spike(6, 'floor'), spike(9, 'floor'), spike(12, 'floor'),
-    pad(15),
-    portal(16, 'ship'),
-    // ship: simple but decorative
-    block(19, 'floor', 80), block(21, 'ceil', 90), block(23, 'floor', 95),
-    block(25, 'ceil', 85), platform(26.5, 60),
-    portal(28, 'ball'),
-    spike(31, 'floor'), spike(34, 'ceil'), spike(37, 'floor'),
-    portal(40, 'ufo'),
-    // ufo: decorative platforms and orb
-    platform(41.5, 50), orb(42, 'pink'),
-    spike(43, 'floor'), spike(46, 'floor'), spike(49, 'floor'),
-    portal(52, 'cube'),
-    spike(55, 'floor'), spike(58, 'floor'),
-    // monster: eyes and teeth
-    platform(60, 80), platform(61, 80),
-    spike(62, 'floor'), spike(63, 'floor'), spike(64, 'floor'),
-    spike(65, 'ceil'), spike(66, 'ceil'),
-    spike(67, 'floor'), spike(68, 'floor'), spike(69, 'floor'),
-    finish(70),
+    spike(6, 'floor'), spike(10, 'floor'),
+    pad(14),
+    portal(15, 'ship'),
+    // ship: minimal obstacles
+    block(18, 'floor', 80), block(21, 'ceil', 90),
+    portal(24, 'ball'),
+    spike(27, 'floor'), spike(31, 'floor'),
+    portal(34, 'ufo'),
+    // ufo: simple platform and orb
+    platform(36, 50), orb(37, 'pink'),
+    spike(40, 'floor'),
+    portal(43, 'cube'),
+    spike(46, 'floor'),
+    // monster: simple finale
+    spike(49, 'floor'), spike(52, 'floor'),
+    finish(54),
   ];
 
   // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
@@ -992,7 +988,7 @@
   const EXTREME_EVENTS = [...e1.events, ...e2.events, ...e3.events, ...e4.events, ...e5.events, ...e6.events, finish(extremeFinishBeat)];
 
   const LEVEL_DEFS = [
-    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 70, events: EASY_EVENTS },
+    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 54, events: EASY_EVENTS },
     { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 115, events: MEDIUM_EVENTS },
     { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 109, events: HARD_EVENTS },
     { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 108, events: INSANE_EVENTS },
