@@ -968,12 +968,7 @@
     spike(15, 'floor'), spike(15.5, 'floor'), spike(16, 'floor'),
   ];
 
-  // intro monster for NIGHTMARE: simple warning
-  const nSecMonsterIntro = [
-    spike(0, 'floor'), spike(1.5, 'floor'),
-  ];
-  const n0 = placeSection(nSecMonsterIntro, 1, 0);
-  const n1 = placeSection(nSecCube, 1.2, n0.endBeat + 1);
+  const n1 = placeSection(nSecCube, 1.2, 1);
   const n2 = placeSection(nSecShip, 1.2, n1.endBeat + 2);
   const n3 = placeSection(nSecDual1, 1, n2.endBeat + 2);
   const n4 = placeSection(nSecUfo, 1.2, n3.endBeat + 2);
@@ -983,40 +978,115 @@
   const n8 = placeSection(nSecMonster, 1, n7.endBeat + 3);
   const nightmareFinishBeat = Math.ceil(n8.endBeat + 3);
   const NIGHTMARE_EVENTS = [
-    ...n0.events, ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events, ...n8.events,
+    ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events, ...n8.events,
     finish(nightmareFinishBeat),
   ];
 
-  // APOCALYPSE — the nightmare pattern (dual sections included) run twice, faster still.
-  const apocalypseLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.15);
-  const APOCALYPSE_EVENTS = [...apocalypseLevel.events, finish(apocalypseLevel.totalBeats)];
-
-  // EXTREME DEMON — the true final gauntlet. Nightmare's full pattern run twice at 225 BPM,
-  // the highest tempo yet, with the same small safety buffer above the exact compensating
-  // ratio (225/180=1.25) that hard/insane/apocalypse all use above their own base tempo —
-  // the difficulty escalation comes from being the longest level in the game (two full
-  // nightmare laps plus an all-new dual-mode finale storm found nowhere else), the fastest
-  // music, and back-to-back dual-mode sections at the very end with zero room for a mistake,
-  // not from shaving any single jump/tap's margin below what's proven fair.
-  const extremeLevel = buildTwoLapLevel(NIGHTMARE_EVENTS, 1.26);
-  const nSecFinale = [
-    // HELLISH GAUNTLET: final monster form with dense dual-mode nightmare
-    ...dspike(0, 'AB'),
-    ...dspike(1.5, 'A'), ...dspike(3, 'B'),
-    ...dspike(4.5, 'AB'),
-    ...dspike(6, 'A'), ...dspike(7.5, 'B'),
-    ...dspike(9, 'AB'),
-    ...dspike(10.5, 'A'), ...dspike(12, 'B'),
-    ...dspike(13.5, 'AB'),
-    ...dspike(15, 'A'), ...dspike(16.5, 'B'),
-    ...dspike(18, 'AB'),
-    // monster's final assault: rapid alternating pattern
-    ...dspike(19.5, 'A'), ...dspike(20, 'B'), ...dspike(20.5, 'A'), ...dspike(21, 'B'),
-    ...dspike(21.5, 'A'), ...dspike(22, 'B'),
+  // APOCALYPSE — unique gauntlet: simpler single-pass version with varied obstacles
+  const aSecCube = [
+    spike(2, 'floor'),
+    spike(4, 'floor'), spike(6, 'floor'),
+    pad(8), portal(8.5, 'ship'),
   ];
-  const extremeFinale = placeSection(nSecFinale, 1, extremeLevel.totalBeats + 2);
-  const extremeFinishBeat = Math.ceil(extremeFinale.endBeat + 3);
-  const EXTREME_EVENTS = [...extremeLevel.events, ...extremeFinale.events, finish(extremeFinishBeat)];
+  const aSecShip = [
+    block(0, 'floor', 85), block(1.5, 'floor', 110), block(3, 'ceil', 120),
+    block(4.5, 'floor', 100), platform(6, 70),
+    portal(7.5, 'ufo'),
+  ];
+  const aSecUfo = [
+    spike(0, 'floor'),
+    orb(1, 'yellow'),
+    spike(2, 'ceil'), spike(4, 'floor'),
+    spike(6, 'ceil'),
+    portal(8, 'wave'),
+  ];
+  const aSecWave = [
+    block(0, 'floor', 85), block(1.5, 'ceil', 110),
+    block(3, 'floor', 90), block(4.5, 'ceil', 105),
+    block(6, 'floor', 95),
+    portal(8, 'robot'),
+  ];
+  const aSecRobot = [
+    spike(0, 'floor'),
+    orb(1, 'red'),
+    spike(2, 'floor'), spike(3.5, 'floor'),
+    spike(5, 'floor'),
+    portal(6.5, 'dual'),
+  ];
+  const aSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'AB'),
+    // monster finale
+    platform(10, 95), platform(11, 95),
+    spike(12, 'floor'), spike(13, 'floor'),
+    spike(14, 'ceil'), spike(15, 'ceil'),
+    spike(16, 'floor'), spike(17, 'floor'), spike(18, 'floor'),
+  ];
+  const a1 = placeSection(aSecCube, 1.1, 1);
+  const a2 = placeSection(aSecShip, 1.1, a1.endBeat + 1);
+  const a3 = placeSection(aSecUfo, 1.1, a2.endBeat + 1);
+  const a4 = placeSection(aSecWave, 1.1, a3.endBeat + 1);
+  const a5 = placeSection(aSecRobot, 1.1, a4.endBeat + 1);
+  const a6 = placeSection(aSecDual, 1, a5.endBeat + 1);
+  const apocalypseFinishBeat = Math.ceil(a6.endBeat + 2);
+  const APOCALYPSE_EVENTS = [
+    ...a1.events, ...a2.events, ...a3.events, ...a4.events, ...a5.events, ...a6.events,
+    finish(apocalypseFinishBeat),
+  ];
+
+  // EXTREME DEMON — ultimate challenge: unique gauntlet with intense dual-mode finale
+  const eSecCube = [
+    spike(2, 'floor'),
+    spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    pad(10), portal(10.5, 'ship'),
+  ];
+  const eSecShip = [
+    block(0, 'floor', 90), block(1.5, 'floor', 120), block(3, 'ceil', 130),
+    block(4.5, 'ceil', 100), block(6, 'floor', 115), platform(7.5, 75),
+    portal(9, 'ufo'),
+  ];
+  const eSecUfo = [
+    spike(0, 'floor'),
+    orb(1.5, 'red'),
+    spike(2.5, 'ceil'), spike(4, 'floor'), spike(5.5, 'ceil'),
+    spike(7, 'floor'),
+    portal(9, 'wave'),
+  ];
+  const eSecWave = [
+    block(0, 'floor', 95), block(1.5, 'ceil', 120), saw(2.5, 'floor'),
+    block(3.5, 'floor', 100), block(5, 'ceil', 110),
+    block(6, 'floor', 90), block(7.5, 'ceil', 115),
+    portal(9, 'robot'),
+  ];
+  const eSecRobot = [
+    spike(0, 'floor'),
+    orb(1.5, 'red'),
+    spike(2.5, 'floor'), spike(4, 'floor'), spike(5.5, 'floor'),
+    spike(7, 'floor'),
+    portal(8.5, 'dual'),
+  ];
+  const eSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(3.5, 'B'), ...dspike(5, 'AB'),
+    ...dspike(6.5, 'A'), ...dspike(8, 'B'), ...dspike(9.5, 'AB'),
+    ...dspike(11, 'AB'), ...dspike(12.5, 'AB'),
+    // ultimate monster: fearsome finale
+    platform(14, 100), platform(15, 100),
+    spike(16, 'floor'), spike(17, 'floor'), spike(18, 'floor'),
+    saw(19, 'floor'),
+    spike(20, 'ceil'), spike(21, 'ceil'), spike(22, 'ceil'),
+    spike(23, 'floor'), spike(24, 'floor'), spike(25, 'floor'),
+  ];
+  const e1 = placeSection(eSecCube, 1.15, 1);
+  const e2 = placeSection(eSecShip, 1.15, e1.endBeat + 1);
+  const e3 = placeSection(eSecUfo, 1.15, e2.endBeat + 1);
+  const e4 = placeSection(eSecWave, 1.15, e3.endBeat + 1);
+  const e5 = placeSection(eSecRobot, 1.15, e4.endBeat + 1);
+  const e6 = placeSection(eSecDual, 1, e5.endBeat + 1);
+  const extremeFinishBeat = Math.ceil(e6.endBeat + 2);
+  const EXTREME_EVENTS = [
+    ...e1.events, ...e2.events, ...e3.events, ...e4.events, ...e5.events, ...e6.events,
+    finish(extremeFinishBeat),
+  ];
 
   const LEVEL_DEFS = [
     { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 70, events: EASY_EVENTS },
@@ -1024,7 +1094,7 @@
     { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 109, events: HARD_EVENTS },
     { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 108, events: INSANE_EVENTS },
     { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
-    { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseLevel.totalBeats, events: APOCALYPSE_EVENTS },
+    { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseFinishBeat, events: APOCALYPSE_EVENTS },
     { id: 'extreme', name: 'EXTREME DEMON', difficulty: 'EXTREME', color: '#ffd700', bpm: 225, totalBeats: extremeFinishBeat, events: EXTREME_EVENTS },
   ];
 
