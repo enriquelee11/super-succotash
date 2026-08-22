@@ -968,12 +968,9 @@
     spike(15, 'floor'), spike(15.5, 'floor'), spike(16, 'floor'),
   ];
 
-  // intro monster for NIGHTMARE
+  // intro monster for NIGHTMARE: simple warning
   const nSecMonsterIntro = [
-    platform(0, 90), platform(1, 90),
-    spike(2, 'floor'), spike(2.5, 'floor'), spike(3, 'floor'),
-    spike(4, 'ceil'), spike(4.5, 'ceil'),
-    spike(5, 'floor'),
+    spike(0, 'floor'), spike(1.5, 'floor'),
   ];
   const n0 = placeSection(nSecMonsterIntro, 1, 0);
   const n1 = placeSection(nSecCube, 1.2, n0.endBeat + 1);
