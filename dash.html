@@ -699,7 +699,12 @@
     spike(43, 'floor'), spike(46, 'floor'), spike(49, 'floor'),
     portal(52, 'cube'),
     spike(55, 'floor'), spike(58, 'floor'),
-    finish(62),
+    // monster: eyes and teeth
+    platform(60, 80), platform(61, 80),
+    spike(62, 'floor'), spike(63, 'floor'), spike(64, 'floor'),
+    spike(65, 'ceil'), spike(66, 'ceil'),
+    spike(67, 'floor'), spike(68, 'floor'), spike(69, 'floor'),
+    finish(70),
   ];
 
   // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
@@ -754,7 +759,14 @@
     spike(91, 'floor'), spike(92.5, 'ceil'), spike(94, 'floor'),
     spike(95.5, 'ceil'), spike(97, 'floor'),
     saw(98, 'floor'),
-    finish(99),
+    // monster: menacing boss arena
+    platform(100, 90), platform(101.5, 90),
+    spike(103, 'floor'), spike(104, 'floor'), spike(105, 'floor'),
+    saw(106, 'floor'),
+    spike(107.5, 'ceil'), spike(108.5, 'ceil'),
+    spike(110, 'floor'), spike(111, 'floor'),
+    spike(112, 'floor'), spike(113, 'floor'), spike(114, 'floor'),
+    finish(115),
   ];
 
   // HARD — unique pattern with tighter spacing, more saws and orbs
@@ -794,7 +806,14 @@
     portal(79.5, 'spider'),
     spike(81, 'floor'), spike(82.5, 'ceil'), spike(84, 'floor'),
     spike(85.5, 'ceil'), spike(87, 'floor'),
-    finish(88),
+    // monster: complex boss arena
+    platform(89, 95), platform(90.5, 95),
+    spike(92, 'floor'), spike(93, 'floor'), spike(94, 'floor'),
+    saw(95, 'floor'),
+    spike(96.5, 'ceil'), saw(97.5, 'ceil'), spike(98.5, 'ceil'),
+    spike(100, 'floor'), spike(101, 'floor'), saw(102, 'floor'),
+    spike(103.5, 'floor'), spike(104.5, 'floor'), spike(105, 'floor'),
+    finish(106),
   ];
 
   // INSANE — even more challenging with complex patterns and more obstacles
@@ -830,7 +849,15 @@
     speed(75.5, 1),
     portal(76.5, 'spider'),
     spike(78, 'floor'), spike(80, 'ceil'), spike(82, 'floor'), spike(84, 'ceil'), spike(86, 'floor'),
-    finish(87),
+    // monster: ultimate boss arena
+    platform(88, 100), platform(89.5, 100),
+    spike(91, 'floor'), spike(92, 'floor'), spike(93, 'floor'),
+    saw(94, 'floor'),
+    spike(95, 'floor'), spike(96, 'floor'), spike(97, 'floor'),
+    spike(98.5, 'ceil'), saw(99, 'ceil'), spike(99.5, 'ceil'),
+    spike(101, 'floor'), spike(101.5, 'floor'), saw(102, 'floor'),
+    spike(103, 'floor'), spike(103.5, 'floor'), spike(104, 'floor'),
+    finish(105),
   ];
 
   // Helper for APOCALYPSE and EXTREME: run a pattern twice at different speeds
@@ -981,10 +1008,10 @@
   const EXTREME_EVENTS = [...extremeLevel.events, ...extremeFinale.events, finish(extremeFinishBeat)];
 
   const LEVEL_DEFS = [
-    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 60, events: EASY_EVENTS },
-    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 98, events: MEDIUM_EVENTS },
-    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 87, events: HARD_EVENTS },
-    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 86, events: INSANE_EVENTS },
+    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 70, events: EASY_EVENTS },
+    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 115, events: MEDIUM_EVENTS },
+    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 106, events: HARD_EVENTS },
+    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 105, events: INSANE_EVENTS },
     { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
     { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseLevel.totalBeats, events: APOCALYPSE_EVENTS },
     { id: 'extreme', name: 'EXTREME DEMON', difficulty: 'EXTREME', color: '#ffd700', bpm: 225, totalBeats: extremeFinishBeat, events: EXTREME_EVENTS },
