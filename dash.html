@@ -1315,12 +1315,27 @@
     spawnDeathBurst(PLAYER_X, player.y, deathColor);
     if (mode === 'dual') spawnDeathBurst(PLAYER_X, player2.y, deathColor);
     const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
-    recordBest(pct);
+    if (!practiceMode) recordBest(pct);
     const currentBeat = worldOffset() / GRID;
     checkpointBeat = getCheckpointBeat(currentBeat);
-    crashInfo.textContent = `PROGRESS: ${pct.toFixed(1)}%  ·  ATTEMPT ${attempts}`;
-    // let the explosion play out before the overlay covers the screen
-    pendingOverlay = setTimeout(() => { if (state === 'crashed') overOverlay.classList.remove('hidden'); }, 380);
+    attempts++;
+    // auto-restart from checkpoint after explosion animation
+    pendingOverlay = setTimeout(() => {
+      if (state === 'crashed') {
+        resetPlayer();
+        particles = [];
+        screenShake = 0;
+        flashAlpha = 0;
+        hitStopTimer = 0;
+        currentOff = checkpointBeat * GRID;
+        currentSpeedMult = 1;
+        state = 'playing';
+        level.forEach(o => { o.done = false; });
+        startMusic();
+        lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+    }, 380);
   }
 
   function win() {
