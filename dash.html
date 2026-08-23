@@ -1319,6 +1319,7 @@
     const currentBeat = worldOffset() / GRID;
     checkpointBeat = getCheckpointBeat(currentBeat);
     attempts++;
+    attemptsEl.textContent = attempts;
     // auto-restart from checkpoint after explosion animation
     pendingOverlay = setTimeout(() => {
       if (state === 'crashed') {
