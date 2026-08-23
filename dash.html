@@ -1024,37 +1024,109 @@
     finish(nightmareFinishBeat),
   ];
 
-  // APOCALYPSE — challenging tour through all modes
-  const aSecCube = [spike(2, 'floor'), spike(5, 'floor'), spike(8, 'floor'), spike(11, 'floor'), pad(13), portal(13.5, 'ship')];
-  const aSecShip = [block(0, 'floor', 95), block(2, 'ceil', 110), block(4, 'floor', 100), block(6, 'ceil', 105), block(8, 'floor', 95), block(10, 'ceil', 100), portal(12, 'ufo')];
-  const aSecUfo = [spike(0, 'floor'), orb(2, 'yellow'), spike(4, 'ceil'), spike(6, 'floor'), spike(8, 'ceil'), spike(10, 'floor'), portal(12, 'wave')];
-  const aSecWave = [block(0, 'floor', 90), block(2, 'ceil', 105), block(4, 'floor', 95), block(6, 'ceil', 100), block(8, 'floor', 90), block(10, 'ceil', 95), portal(12, 'robot')];
-  const aSecRobot = [spike(0, 'floor'), orb(2, 'red'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'), portal(12, 'dual')];
-  const aSecDual = [...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'), ...dspike(8, 'A'), ...dspike(10, 'B')];
+  // APOCALYPSE — extended challenging tour through all modes (1.5 min = 307 beats @ 205 BPM)
+  const aSecCube = [
+    spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
+    pad(18), portal(18.5, 'ship'),
+  ];
+  const aSecShip = [
+    block(0, 'floor', 95), block(2, 'ceil', 110), block(4, 'floor', 100), block(6, 'ceil', 105),
+    block(8, 'floor', 95), block(10, 'ceil', 100), block(12, 'floor', 105), block(14, 'ceil', 95),
+    block(16, 'floor', 100), block(18, 'ceil', 110),
+    portal(21, 'ufo'),
+  ];
+  const aSecUfo = [
+    spike(0, 'floor'), orb(2, 'yellow'), spike(4, 'ceil'), spike(6, 'floor'),
+    spike(8, 'ceil'), spike(10, 'floor'), spike(12, 'ceil'), spike(14, 'floor'),
+    spike(16, 'ceil'), spike(18, 'floor'),
+    portal(21, 'wave'),
+  ];
+  const aSecWave = [
+    block(0, 'floor', 90), block(2, 'ceil', 105), block(4, 'floor', 95), block(6, 'ceil', 100),
+    block(8, 'floor', 90), block(10, 'ceil', 95), block(12, 'floor', 100), block(14, 'ceil', 105),
+    block(16, 'floor', 90), block(18, 'ceil', 100),
+    portal(21, 'robot'),
+  ];
+  const aSecRobot = [
+    spike(0, 'floor'), orb(2, 'red'), spike(4, 'floor'), spike(6, 'floor'),
+    spike(8, 'floor'), spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'),
+    spike(16, 'floor'), spike(18, 'floor'),
+    portal(21, 'dual'),
+  ];
+  const aSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'),
+  ];
+  const aSecMonster = [
+    platform(0, 100), platform(2, 100),
+    spike(3, 'floor'), spike(4, 'floor'), spike(5, 'floor'),
+    spike(6, 'ceil'), spike(7, 'ceil'),
+    spike(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
+    spike(11, 'ceil'), spike(12, 'ceil'),
+  ];
   const a1 = placeSection(aSecCube, 1, 9);
-  const a2 = placeSection(aSecShip, 1, a1.endBeat + 1);
-  const a3 = placeSection(aSecUfo, 1, a2.endBeat + 1);
-  const a4 = placeSection(aSecWave, 1, a3.endBeat + 1);
-  const a5 = placeSection(aSecRobot, 1, a4.endBeat + 1);
-  const a6 = placeSection(aSecDual, 1, a5.endBeat + 1);
-  const apocalypseFinishBeat = Math.ceil(a6.endBeat + 1);
-  const APOCALYPSE_EVENTS = [...a1.events, ...a2.events, ...a3.events, ...a4.events, ...a5.events, ...a6.events, finish(apocalypseFinishBeat)];
+  const a2 = placeSection(aSecShip, 1, a1.endBeat + 2);
+  const a3 = placeSection(aSecUfo, 1, a2.endBeat + 2);
+  const a4 = placeSection(aSecWave, 1, a3.endBeat + 2);
+  const a5 = placeSection(aSecRobot, 1, a4.endBeat + 2);
+  const a6 = placeSection(aSecDual, 1, a5.endBeat + 2);
+  const a7 = placeSection(aSecMonster, 1, a6.endBeat + 3);
+  const apocalypseFinishBeat = Math.ceil(a7.endBeat + 1);
+  const APOCALYPSE_EVENTS = [...a1.events, ...a2.events, ...a3.events, ...a4.events, ...a5.events, ...a6.events, ...a7.events, finish(apocalypseFinishBeat)];
 
-  // EXTREME DEMON — hardest challenge: demanding but fair
-  const eSecCube = [spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'), spike(10, 'floor'), pad(12), portal(12.5, 'ship')];
-  const eSecShip = [block(0, 'floor', 100), block(1.5, 'ceil', 115), block(3, 'floor', 105), block(4.5, 'ceil', 100), block(6, 'floor', 95), block(7.5, 'ceil', 110), block(9, 'floor', 100), block(10.5, 'ceil', 105), portal(13, 'ufo')];
-  const eSecUfo = [spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'ceil'), spike(5, 'floor'), spike(7, 'ceil'), spike(9, 'floor'), spike(11, 'ceil'), portal(14, 'wave')];
-  const eSecWave = [block(0, 'floor', 95), block(1.5, 'ceil', 110), block(3, 'floor', 100), block(4.5, 'ceil', 105), block(6, 'floor', 95), block(7.5, 'ceil', 100), block(9, 'floor', 105), block(10.5, 'ceil', 95), portal(13, 'robot')];
-  const eSecRobot = [spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'floor'), spike(5, 'floor'), spike(7, 'floor'), spike(9, 'floor'), spike(11, 'floor'), portal(13, 'dual')];
-  const eSecDual = [...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'), ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), platform(14, 100), platform(15, 100)];
+  // EXTREME DEMON — hardest challenge: demanding but fair (1.5 min = 337 beats @ 225 BPM)
+  const eSecCube = [
+    spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
+    spike(18, 'floor'), pad(20), portal(20.5, 'ship'),
+  ];
+  const eSecShip = [
+    block(0, 'floor', 100), block(1.5, 'ceil', 115), block(3, 'floor', 105), block(4.5, 'ceil', 100),
+    block(6, 'floor', 95), block(7.5, 'ceil', 110), block(9, 'floor', 100), block(10.5, 'ceil', 105),
+    block(12, 'floor', 95), block(13.5, 'ceil', 110), block(15, 'floor', 100),
+    portal(17.5, 'ufo'),
+  ];
+  const eSecUfo = [
+    spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'ceil'), spike(5, 'floor'),
+    spike(7, 'ceil'), spike(9, 'floor'), spike(11, 'ceil'), spike(13, 'floor'),
+    spike(15, 'ceil'), spike(17, 'floor'),
+    portal(20, 'wave'),
+  ];
+  const eSecWave = [
+    block(0, 'floor', 95), block(1.5, 'ceil', 110), block(3, 'floor', 100), block(4.5, 'ceil', 105),
+    block(6, 'floor', 95), block(7.5, 'ceil', 100), block(9, 'floor', 105), block(10.5, 'ceil', 95),
+    block(12, 'floor', 100), block(13.5, 'ceil', 105), block(15, 'floor', 95),
+    portal(17.5, 'robot'),
+  ];
+  const eSecRobot = [
+    spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'floor'), spike(5, 'floor'),
+    spike(7, 'floor'), spike(9, 'floor'), spike(11, 'floor'), spike(13, 'floor'),
+    spike(15, 'floor'), spike(17, 'floor'),
+    portal(20, 'dual'),
+  ];
+  const eSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'), platform(20, 100), platform(21, 100),
+  ];
+  const eSecMonster = [
+    platform(0, 110), platform(2, 110),
+    spike(3, 'floor'), spike(4, 'floor'), spike(5, 'floor'),
+    spike(6, 'ceil'), spike(7, 'ceil'),
+    spike(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
+    spike(11, 'ceil'), spike(12, 'ceil'),
+  ];
   const e1 = placeSection(eSecCube, 1.05, 9);
-  const e2 = placeSection(eSecShip, 1.05, e1.endBeat + 1);
-  const e3 = placeSection(eSecUfo, 1.05, e2.endBeat + 1);
-  const e4 = placeSection(eSecWave, 1.05, e3.endBeat + 1);
-  const e5 = placeSection(eSecRobot, 1.05, e4.endBeat + 1);
-  const e6 = placeSection(eSecDual, 1, e5.endBeat + 1);
-  const extremeFinishBeat = Math.ceil(e6.endBeat + 1);
-  const EXTREME_EVENTS = [...e1.events, ...e2.events, ...e3.events, ...e4.events, ...e5.events, ...e6.events, finish(extremeFinishBeat)];
+  const e2 = placeSection(eSecShip, 1.05, e1.endBeat + 2);
+  const e3 = placeSection(eSecUfo, 1.05, e2.endBeat + 2);
+  const e4 = placeSection(eSecWave, 1.05, e3.endBeat + 2);
+  const e5 = placeSection(eSecRobot, 1.05, e4.endBeat + 2);
+  const e6 = placeSection(eSecDual, 1, e5.endBeat + 2);
+  const e7 = placeSection(eSecMonster, 1, e6.endBeat + 3);
+  const extremeFinishBeat = Math.ceil(e7.endBeat + 1);
+  const EXTREME_EVENTS = [...e1.events, ...e2.events, ...e3.events, ...e4.events, ...e5.events, ...e6.events, ...e7.events, finish(extremeFinishBeat)];
 
   const LEVEL_DEFS = [
     { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 180, events: EASY_EVENTS },
