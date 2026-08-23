@@ -1,0 +1,2477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Pulse Dash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cabinet: #141225;
+    --cabinet-hi: #241f42;
+    --cabinet-lo: #0a0916;
+    --screen: #0a0b18;
+    --screen-edge: #050510;
+    --neon: #35f0ff;
+    --neon-bright: #c8fdff;
+    --neon-dim: #1c6b78;
+    --danger: #ff2d6a;
+    --text-hint: #8f8ad0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--cabinet-lo);
+    color: var(--neon);
+    font-family: 'Space Mono', 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .display-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flicker { animation: flicker 6s infinite; }
+  }
+  @keyframes flicker {
+    0%, 93%, 100% { opacity: 1; }
+    94% { opacity: 0.94; }
+    95% { opacity: 1; }
+    96% { opacity: 0.9; }
+    97% { opacity: 1; }
+  }
+
+  .cabinet {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 26px 28px;
+    background: linear-gradient(155deg, var(--cabinet-hi) 0%, var(--cabinet) 40%, var(--cabinet-lo) 100%);
+    border-radius: 18px;
+    box-shadow:
+      0 0 0 2px var(--cabinet-lo),
+      0 18px 50px rgba(0,0,0,0.65),
+      inset 0 2px 0 rgba(255,255,255,0.04);
+  }
+
+  .marquee {
+    text-align: center;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: var(--cabinet-lo);
+    background: linear-gradient(180deg, var(--neon-bright), var(--neon) 70%);
+    padding: 10px 22px;
+    border-radius: 6px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 22px rgba(53,240,255,0.35);
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 640px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--neon-dim);
+    padding: 0 2px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .hud b { color: var(--neon-bright); font-weight: 700; text-shadow: 0 0 6px rgba(200,253,255,0.6); }
+  .hud-level { display: flex; align-items: center; gap: 6px; }
+  .hud-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; background: currentColor; flex: none; }
+  .menu-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--neon-dim);
+    background: transparent;
+    border: 1px solid rgba(53,240,255,0.25);
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .menu-btn:hover { color: var(--neon-bright); border-color: var(--neon); filter: none; }
+  .menu-btn:active { transform: none; box-shadow: none; }
+
+  .progress-wrap {
+    width: 100%;
+    max-width: 640px;
+    height: 8px;
+    background: rgba(53,240,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(53,240,255,0.15);
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--neon-dim), var(--neon-bright));
+    box-shadow: 0 0 10px rgba(53,240,255,0.6);
+    transition: width 0.05s linear;
+  }
+
+  .screen-frame {
+    position: relative;
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--screen-edge);
+    box-shadow: inset 0 0 0 1px rgba(53,240,255,0.08);
+  }
+  .board-wrap {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--screen);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px rgba(53,240,255,0.4);
+  }
+  .board-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode: multiply;
+  }
+  .board-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    z-index: 3;
+  }
+  canvas {
+    display: block;
+    background: var(--screen);
+    position: relative;
+    z-index: 1;
+    touch-action: none;
+    cursor: pointer;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .overlay .panel {
+    max-height: 85vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: rgba(6, 6, 16, 0.85);
+    border-radius: 12px;
+    padding: 22px 26px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(53,240,255,0.1);
+  }
+  #overOverlay, #winOverlay { background: rgba(6, 6, 16, 0.4); }
+  .overlay h2 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--neon-bright);
+    text-shadow: 0 0 14px rgba(200,253,255,0.7);
+  }
+  .overlay p { margin: 0; color: var(--text-hint); font-size: 11.5px; line-height: 1.9; max-width: 360px; }
+  .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,45,106,0.7); }
+
+  .home-panel { width: 100%; max-width: 380px; }
+  .home-row { display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .home-play-btn {
+    font-size: 20px;
+    padding: 20px 46px;
+    letter-spacing: 3px;
+    box-shadow: 0 4px 0 #0d5460, 0 0 26px rgba(53,240,255,0.45);
+  }
+  .home-icons-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    font-size: 16px;
+    background: rgba(255,255,255,0.04);
+    color: var(--neon-bright);
+    border: 1px solid rgba(53,240,255,0.3);
+    box-shadow: none;
+  }
+  .home-icons-btn span { font-size: 8px; letter-spacing: 1px; }
+  .home-icons-btn:hover { filter: none; border-color: var(--neon); background: rgba(255,255,255,0.08); }
+  .home-icons-btn:active { transform: translateY(1px); box-shadow: none; }
+
+  .account-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    background: rgba(255,255,255,0.03);
+    color: var(--text-hint);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: none;
+  }
+  .account-chip:hover { filter: none; border-color: var(--neon-dim); color: var(--neon-bright); }
+  .account-chip:active { transform: none; box-shadow: none; }
+  .account-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-dim); flex: none; }
+  .account-chip.logged-in .account-chip-dot { background: #4dff8a; box-shadow: 0 0 6px #4dff8a; }
+  .account-chip-edit { color: var(--neon-dim); font-size: 8px; }
+
+  .account-panel { gap: 12px; }
+  .account-current { font-size: 10px; color: var(--text-hint); max-width: 320px; line-height: 1.6; }
+  .account-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-height: 28vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-dim) transparent;
+  }
+  .account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    color: var(--neon-bright);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 9px 12px;
+    cursor: pointer;
+    box-shadow: none;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .account-row:hover { background: rgba(255,255,255,0.08); filter: none; }
+  .account-row:active { transform: translateY(1px); box-shadow: none; }
+  .account-row.active { border-color: #4dff8a; color: #4dff8a; }
+  .account-row-meta { font-size: 9px; color: var(--text-hint); white-space: nowrap; }
+  .account-new-row { display: flex; gap: 8px; width: 100%; }
+  .account-name-input {
+    flex: 1;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    color: var(--neon-bright);
+    border: 1px solid rgba(53,240,255,0.25);
+    border-radius: 5px;
+  }
+  .account-name-input::placeholder { color: var(--text-hint); }
+
+  .menu-panel { width: 100%; max-width: 380px; }
+  .level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding-right: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-dim) transparent;
+  }
+  .level-list::-webkit-scrollbar { width: 6px; }
+  .level-list::-webkit-scrollbar-track { background: transparent; }
+  .level-list::-webkit-scrollbar-thumb { background: var(--neon-dim); border-radius: 3px; }
+  .level-list::-webkit-scrollbar-thumb:hover { background: var(--neon); }
+  .level-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    border: none;
+    border-left: 4px solid var(--card-color, var(--neon));
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.12s ease, transform 0.08s ease;
+  }
+  .level-card:hover { background: rgba(255,255,255,0.08); filter: none; }
+  .level-card:active { transform: translateY(1px); box-shadow: none; }
+  .level-card:focus-visible { outline: 2px solid var(--card-color, var(--neon)); outline-offset: 2px; }
+  .level-card-name { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--neon-bright); letter-spacing: 0.5px; }
+  .level-card-diff-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+  .level-card-diff { font-size: 9px; letter-spacing: 1.5px; color: var(--card-color, var(--neon)); }
+  .level-card-bars { display: flex; align-items: flex-end; gap: 1.5px; height: 13px; }
+  .level-card-bars i { display: block; width: 3px; border-radius: 1px; background: rgba(255,255,255,0.12); }
+  .level-card-bars i.lit { background: var(--card-color, var(--neon)); box-shadow: 0 0 5px var(--card-color, var(--neon)); }
+  .level-card-best { font-size: 10px; color: var(--text-hint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .level-card-best.cleared { color: #4dff8a; text-shadow: 0 0 6px rgba(77,255,138,0.5); }
+  .menu-hint { color: var(--text-hint); font-size: 10px; letter-spacing: 0.5px; margin-top: 2px; }
+  .icons-open-btn { align-self: center; margin-top: 2px; }
+
+  .icons-panel { gap: 12px; }
+  .icon-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .icon-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-hint);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 6px 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: none;
+    transition: none;
+  }
+  .icon-tab:hover { filter: none; color: var(--neon-bright); }
+  .icon-tab:active { transform: none; box-shadow: none; }
+  .icon-tab.active {
+    color: var(--tab-color, var(--neon-bright));
+    border-color: var(--tab-color, var(--neon));
+    box-shadow: 0 0 8px var(--tab-color, transparent);
+  }
+  .icon-preview {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .icon-swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-width: 260px; }
+  .icon-swatch {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: none;
+    cursor: pointer;
+  }
+  .icon-swatch:hover { filter: brightness(1.1); }
+  .icon-swatch:active { transform: none; box-shadow: none; }
+  .icon-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+  .icon-color-row { display: flex; align-items: center; gap: 10px; }
+  .icon-color-label { font-size: 9px; letter-spacing: 1.5px; color: var(--text-hint); }
+  .icon-color-input {
+    width: 36px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .icon-finish-row { display: flex; gap: 8px; }
+  .finish-btn {
+    font-size: 10px;
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--text-hint);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+  }
+  .finish-btn:hover { filter: none; color: var(--neon-bright); }
+  .finish-btn:active { transform: none; box-shadow: none; }
+  .finish-btn.active {
+    color: #071018;
+    background: linear-gradient(180deg, var(--neon-bright), var(--neon) 75%);
+    border-color: transparent;
+    box-shadow: 0 0 12px rgba(53,240,255,0.3);
+  }
+
+  button {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(180deg, var(--neon-bright), var(--neon) 75%);
+    color: #071018;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #0d5460, 0 0 18px rgba(53,240,255,0.3);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: translateY(3px); box-shadow: 0 0 0 #0d5460, 0 0 10px rgba(53,240,255,0.3); }
+  button:focus-visible { outline: 2px solid var(--neon-bright); outline-offset: 3px; }
+
+  .hint {
+    color: var(--text-hint);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    max-width: 640px;
+    line-height: 1.7;
+  }
+  .hint a { color: var(--neon); }
+  .hidden { display: none !important; }
+
+  .tap-btn {
+    display: none;
+    width: 100%;
+    max-width: 640px;
+    min-height: 54px;
+    padding: 16px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  @media (pointer: coarse) {
+    .tap-btn { display: block; }
+  }
+</style>
+</head>
+<body>
+  <div class="cabinet flicker">
+    <div class="marquee display-font">PULSE DASH</div>
+    <div class="hud">
+      <button class="menu-btn" id="menuBtn">&#9776; MENU</button>
+      <span class="hud-level"><span class="hud-dot" id="hudDot"></span><b id="levelLabel">&mdash;</b></span>
+      <span>MODE <b id="modeLabel">CUBE</b></span>
+      <span>ATTEMPT <b id="attempts">1</b></span>
+      <span>BEST <b id="best">0%</b></span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="screen-frame">
+      <div class="board-wrap">
+        <canvas id="board" width="640" height="360"></canvas>
+        <div id="homeOverlay" class="overlay">
+          <div class="panel home-panel">
+            <h2 class="display-font">PULSE DASH</h2>
+            <div class="home-row">
+              <button class="home-icons-btn" id="homeIconsBtn" type="button" aria-label="Customize icons">&#9998;<span>ICONS</span></button>
+              <button class="home-play-btn display-font" id="homePlayBtn" type="button">PLAY</button>
+            </div>
+            <button class="account-chip" id="accountChipBtn" type="button">
+              <span class="account-chip-dot"></span>
+              <span id="accountChipLabel">GUEST</span>
+              <span class="account-chip-edit">SWITCH</span>
+            </button>
+            <div class="menu-hint">ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
+          </div>
+        </div>
+        <div id="accountOverlay" class="overlay hidden">
+          <div class="panel menu-panel account-panel">
+            <h2 class="display-font">ACCOUNTS</h2>
+            <div class="account-current" id="accountCurrentLabel">Playing as GUEST — progress isn't saved to a profile</div>
+            <div class="account-list" id="accountList"></div>
+            <div class="account-new-row">
+              <input type="text" id="accountNameInput" class="account-name-input" placeholder="NEW NAME" maxlength="16" />
+              <button id="accountCreateBtn" type="button">CREATE</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="menu-btn" id="accountGuestBtn" type="button">PLAY AS GUEST</button>
+              <button class="menu-btn" id="accountBackBtn" type="button">&#8592; BACK</button>
+            </div>
+            <div class="menu-hint">LOCAL PROFILES ON THIS DEVICE &nbsp;·&nbsp; NO PASSWORD, NO SERVER — JUST SEPARATE SAVES</div>
+          </div>
+        </div>
+        <div id="menuOverlay" class="overlay hidden">
+          <div class="panel menu-panel">
+            <h2 class="display-font">SELECT LEVEL</h2>
+            <div class="level-list" id="levelList"></div>
+            <div style="display:flex; gap:10px;">
+              <button class="menu-btn" id="menuBackBtn" type="button">&#8592; BACK</button>
+              <button class="menu-btn icons-open-btn" id="iconsBtn" type="button">&#9998; ICONS</button>
+            </div>
+            <div class="menu-hint">TAP A LEVEL TO START &nbsp;·&nbsp; ONE BUTTON: TAP / CLICK / SPACE<br/>HOLD FOR SHIP, WAVE &amp; ROBOT MODES</div>
+          </div>
+        </div>
+        <div id="iconsOverlay" class="overlay hidden">
+          <div class="panel menu-panel icons-panel">
+            <h2 class="display-font">CUSTOMIZE ICONS</h2>
+            <div class="icon-tabs" id="iconTabs"></div>
+            <canvas id="iconPreview" class="icon-preview" width="120" height="120"></canvas>
+            <div class="icon-swatches" id="iconSwatches"></div>
+            <div class="icon-color-row">
+              <label class="icon-color-label" for="iconColorInput">CUSTOM</label>
+              <input type="color" id="iconColorInput" class="icon-color-input" />
+            </div>
+            <div class="icon-finish-row" id="iconFinishRow">
+              <button class="finish-btn" data-finish="neon" type="button">NEON</button>
+              <button class="finish-btn" data-finish="matte" type="button">MATTE</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button id="iconResetBtn" type="button">RESET ALL</button>
+              <button id="iconBackBtn" type="button">BACK</button>
+            </div>
+          </div>
+        </div>
+        <div id="overOverlay" class="overlay hidden">
+          <div class="panel">
+            <h2 class="display-font danger">CRASHED</h2>
+            <p id="crashInfo">0%</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+              <button id="crashResumeBtn">RESUME</button>
+              <button id="crashPracticeBtn">PRACTICE</button>
+              <button id="crashMenuBtn">MENU</button>
+            </div>
+          </div>
+        </div>
+        <div id="winOverlay" class="overlay hidden">
+          <div class="panel">
+            <h2 class="display-font">LEVEL<br/>CLEAR</h2>
+            <p id="winInfo"></p>
+            <div style="display:flex; gap:10px;">
+              <button id="againBtn">PLAY AGAIN</button>
+              <button id="winMenuBtn">MENU</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hint">EVERY OBSTACLE AND PORTAL IS TIMED TO THE MUSIC &nbsp;·&nbsp; HIT ANYTHING AND YOU RESTART &nbsp;·&nbsp; <a href="index.html">&larr; AMBER SNAKE</a></div>
+    <button class="tap-btn" id="tapBtn" aria-label="Tap to play"></button>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const attemptsEl = document.getElementById('attempts');
+  const modeLabelEl = document.getElementById('modeLabel');
+  const levelLabelEl = document.getElementById('levelLabel');
+  const hudDotEl = document.getElementById('hudDot');
+  const bestEl = document.getElementById('best');
+  const progressBar = document.getElementById('progressBar');
+  const homeOverlay = document.getElementById('homeOverlay');
+  const menuOverlay = document.getElementById('menuOverlay');
+  const iconsOverlay = document.getElementById('iconsOverlay');
+  const accountOverlay = document.getElementById('accountOverlay');
+  const overOverlay = document.getElementById('overOverlay');
+  const winOverlay = document.getElementById('winOverlay');
+  const crashInfo = document.getElementById('crashInfo');
+  const winInfo = document.getElementById('winInfo');
+  const levelListEl = document.getElementById('levelList');
+
+  // ---------- Timing / world constants ----------
+  const SCROLL_SPEED = 300; // px/sec, constant across levels — difficulty scales via BPM & density
+  const GROUND_Y = 300;
+  const CEIL_Y = 50;
+  const PLAYER_X = 150;
+  const MID_Y = (GROUND_Y + CEIL_Y) / 2;
+
+  // dual mode splits the channel into two stacked mini-lanes, each with its own floor/ceiling
+  const DUAL_CEIL_A = 50, DUAL_GROUND_A = 165;
+  const DUAL_CEIL_B = 185, DUAL_GROUND_B = 300;
+
+  // per-level, set by loadLevel()
+  let BPM, BEAT, GRID, LEVEL_BEATS, LEVEL_WORLD_LEN, SIXTEENTH;
+
+  const MODE_COLORS = {
+    cube: '#35f0ff', ship: '#4dff8a', ball: '#ffe14d',
+    ufo: '#ff5fd1', wave: '#5f9bff', robot: '#c07bff', spider: '#ffffff',
+    dual: '#ff6b35',
+  };
+  const MODES_LIST = ['cube', 'ship', 'ball', 'ufo', 'wave', 'robot', 'spider', 'dual'];
+
+  // ---------- Accounts ----------
+  // named local profiles, stored only in this browser's localStorage — there's no server for
+  // this static game to talk to, so this isn't a real cross-device login, just a way for
+  // separate players sharing a device to keep separate best%/icon saves. Switching accounts
+  // repoints every localStorage read/write at that account's own namespaced keys.
+  const ACCOUNTS_KEY = 'pulseDashAccounts';
+  const ACTIVE_ACCOUNT_KEY = 'pulseDashActiveAccount';
+  function loadAccounts() {
+    try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveAccountList() { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); }
+  function accountSlug(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+
+  let accounts = loadAccounts();
+  let currentAccount = localStorage.getItem(ACTIVE_ACCOUNT_KEY) || null;
+  if (currentAccount && !accounts.includes(currentAccount)) currentAccount = null;
+
+  function bestKeyFor(levelId) {
+    return currentAccount ? `pulseDashAcct_${accountSlug(currentAccount)}_best_${levelId}` : `pulseDashBest_${levelId}`;
+  }
+  function iconPrefsKeyForAccount() {
+    return currentAccount ? `pulseDashAcct_${accountSlug(currentAccount)}_iconPrefs` : 'pulseDashIconPrefs';
+  }
+  function completedCountFor(name) {
+    const slug = accountSlug(name);
+    return LEVELS.filter(lv => parseFloat(localStorage.getItem(`pulseDashAcct_${slug}_best_${lv.id}`) || '0') >= 100).length;
+  }
+  function createAccount(name) {
+    const trimmed = name.trim().slice(0, 16);
+    if (!trimmed) return false;
+    if (!accounts.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
+      accounts.push(trimmed);
+      saveAccountList();
+    }
+    switchAccount(trimmed);
+    return true;
+  }
+  function switchAccount(name) {
+    currentAccount = name;
+    if (name) localStorage.setItem(ACTIVE_ACCOUNT_KEY, name);
+    else localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+    iconPrefs = loadIconPrefs();
+    refreshAccountUI();
+    refreshLevelList();
+    refreshIconsUI();
+  }
+
+  // ---------- Icon customization (color + finish per mode, persisted locally) ----------
+  // only the player's own rendered icon uses these overrides — portals, HUD dots, and other
+  // mode-color-coded UI intentionally keep MODE_COLORS for consistent signaling
+  function loadIconPrefs() {
+    try { return JSON.parse(localStorage.getItem(iconPrefsKeyForAccount())) || {}; }
+    catch (e) { return {}; }
+  }
+  let iconPrefs = loadIconPrefs();
+  function saveIconPrefs() { localStorage.setItem(iconPrefsKeyForAccount(), JSON.stringify(iconPrefs)); }
+  function iconColor(m) { return (iconPrefs[m] && iconPrefs[m].color) || MODE_COLORS[m] || '#35f0ff'; }
+  function iconFinish(m) { return (iconPrefs[m] && iconPrefs[m].finish) || 'neon'; }
+
+  // ---------- Level authoring ----------
+  function spike(beat, side, lane) { return { beat, kind: 'spike', side, lane }; }
+  function block(beat, side, depth, lane) { return { beat, kind: 'block', side, depth, lane }; }
+  // dual-mode convenience: a floor spike in lane A and/or lane B at the same beat
+  function dspike(beat, lanes) {
+    return lanes.split('').map(l => spike(beat, 'floor', l));
+  }
+  // a solid platform you can land ON TOP OF (one-way: safe from above, still a hazard if you
+  // clip its side/underside) — floor-anchored, raised `depth` px above the ground
+  function platform(beat, depth) { return { beat, kind: 'platform', depth }; }
+  // rotating saw blade — a hazard like spike/block, but round, spinning, and can also float
+  // in open air (side: 'float') instead of being mounted to the floor or ceiling
+  function saw(beat, side, lane, floatY) { return { beat, kind: 'saw', side, lane, floatY }; }
+  // click/tap orb: does nothing unless tapped while overlapping it, in which case it fires an
+  // upward boost sized by color (pink=small, yellow=medium, red=high); ignore it and you just
+  // keep falling — never a death hazard. y defaults to a comfortably reachable mid-air height.
+  function orb(beat, color, y) { return { beat, kind: 'orb', color, y: y || (GROUND_Y - 90) }; }
+  function pad(beat) { return { beat, kind: 'pad' }; }
+  function portal(beat, mode) { return { beat, kind: 'portal', mode }; }
+  // speed portal: multiplies the scroll pace from this point on (until the next one) — the
+  // music keeps its own tempo, only the visual/gameplay speed changes, like real GD
+  function speed(beat, mult) { return { beat, kind: 'speed', mult }; }
+  function finish(beat) { return { beat, kind: 'finish' }; }
+  function scaleBeats(events, factor) {
+    return events.map(e => ({ ...e, beat: Math.round(e.beat * factor * 1000) / 1000 }));
+  }
+
+  // EASY — gentle intro, generous spacing, only the simplest modes
+  const EASY_EVENTS = [
+    spike(14, 'floor'), spike(18, 'floor'),
+    pad(22),
+    portal(23, 'ship'),
+    // ship: extended
+    block(26, 'floor', 80), block(29, 'ceil', 90), block(32, 'floor', 85),
+    block(35, 'ceil', 95), block(38, 'floor', 80),
+    portal(41, 'ball'),
+    spike(44, 'floor'), spike(48, 'floor'), spike(52, 'floor'),
+    spike(56, 'floor'), spike(60, 'floor'),
+    portal(63, 'ufo'),
+    // ufo: extended platform and orb section
+    platform(65, 50), orb(66, 'pink'),
+    spike(69, 'floor'), spike(73, 'floor'),
+    spike(77, 'floor'), spike(81, 'floor'),
+    portal(84, 'cube'),
+    spike(87, 'floor'), spike(91, 'floor'),
+    spike(95, 'floor'), spike(99, 'floor'),
+    portal(102, 'wave'),
+    // wave: extended blocks
+    block(104, 'floor', 85), block(107, 'ceil', 95), block(110, 'floor', 90),
+    block(113, 'ceil', 95), block(116, 'floor', 85),
+    portal(119, 'robot'),
+    // robot: extended spikes
+    spike(121, 'floor'), spike(124, 'floor'), spike(127, 'floor'),
+    spike(130, 'floor'), spike(133, 'floor'),
+    portal(136, 'spider'),
+    // spider: extended pattern
+    spike(138, 'floor'), spike(141, 'floor'), spike(144, 'floor'),
+    spike(147, 'floor'), spike(150, 'floor'),
+    portal(153, 'dual'),
+    // dual: extended ending
+    ...dspike(155, 'AB'), ...dspike(158, 'A'), ...dspike(161, 'B'), ...dspike(164, 'AB'),
+    // monster: finale
+    platform(166, 85), platform(167, 85),
+    saw(169, 'floor'), saw(171, 'ceil'), saw(173, 'floor'), saw(175, 'ceil'), saw(177, 'floor'),
+    finish(180),
+  ];
+
+  // MEDIUM — the original Pulse Dash tour through all seven modes (bot-verified end to end)
+  const MEDIUM_EVENTS = [
+    // a blue platform you can jump up onto (safe from above, still a hazard if mistimed) and a
+    // click orb (tap while overlapping for a boost, ignore it and just keep falling) — both
+    // introduced in the free lead-in before the first spike. Orbs only appear in hop-based
+    // modes (cube/robot/ufo/dual): ball/spider treat every tap as a surface flip, so an orb
+    // there would corrupt which side they're resting on.
+    platform(11.5, 70),
+    orb(13, 'yellow'),
+    spike(14, 'floor'),
+    spike(16, 'floor'), spike(18, 'floor'), spike(20, 'floor'),
+    spike(22, 'floor'), spike(22.5, 'floor'), spike(24, 'floor'),
+    pad(25),
+    portal(25.5, 'ship'),
+    // ship: extended staircase up then down
+    block(27.5, 'floor', 70), block(28.5, 'floor', 90), block(29.5, 'floor', 110), block(30.5, 'floor', 130),
+    block(32, 'ceil', 140), block(33, 'ceil', 120), block(34, 'ceil', 100), block(35, 'ceil', 80),
+    block(36.5, 'floor', 95), block(37.5, 110), block(38.5, 'ceil', 125), platform(39.5, 60),
+    portal(43.5, 'ball'),
+    spike(46, 'floor'), spike(48, 'ceil'), spike(50, 'floor'), spike(52, 'ceil'),
+    spike(54, 'floor'), spike(56, 'ceil'), spike(58, 'floor'), spike(60, 'ceil'),
+    spike(62, 'floor'),
+    portal(65.5, 'ufo'),
+    // speed portals sit here, roughly mid-level, instead of right at the start
+    speed(66, 1.15),
+    orb(67, 'pink'),
+    platform(67.5, 50),
+    spike(68, 'floor'), spike(70, 'ceil'), spike(72, 'floor'),
+    spike(74, 'ceil'), spike(74.5, 'ceil'),
+    spike(76, 'floor'), spike(78, 'ceil'),
+    spike(80, 'floor'), spike(80.5, 'floor'),
+    spike(82, 'ceil'), spike(84, 'floor'),
+    speed(84.5, 1),
+    portal(85.5, 'wave'),
+    // wave: extended asymmetric blocks
+    block(86.5, 'floor', 100), block(87.5, 'ceil', 110),
+    block(88.5, 'floor', 85), saw(89.5, 'ceil'),
+    block(90.5, 'ceil', 95), block(91.5, 'floor', 110),
+    block(92.5, 'ceil', 75), block(93.5, 'floor', 120),
+    block(94.5, 'ceil', 90), saw(95.5, 'floor'),
+    block(96.5, 'floor', 85), block(97.5, 'ceil', 100),
+    block(98.5, 'floor', 95),
+    portal(103.5, 'robot'),
+    speed(104, 0.75),
+    // extended robot section
+    orb(104.5, 'red'),
+    spike(105, 'floor'),
+    spike(107, 'floor'),
+    spike(109, 'floor'),
+    spike(111, 'floor'),
+    spike(113, 'floor'),
+    spike(115, 'floor'),
+    speed(115.3, 1),
+    portal(115.5, 'spider'),
+    spike(117, 'floor'), spike(118.5, 'ceil'), spike(120, 'floor'),
+    spike(121.5, 'ceil'), spike(123, 'floor'),
+    spike(124.5, 'ceil'), spike(126, 'floor'),
+    saw(127, 'floor'),
+    portal(129.5, 'dual'),
+    // dual: extended finale
+    ...dspike(131, 'AB'), ...dspike(133, 'A'), ...dspike(135, 'B'), ...dspike(137, 'AB'),
+    ...dspike(139, 'A'), ...dspike(141, 'B'), ...dspike(143, 'AB'),
+    ...dspike(145, 'A'), ...dspike(147, 'B'), ...dspike(149, 'AB'),
+    // monster: extended boss arena
+    platform(151, 90), platform(152.5, 90),
+    saw(155, 'floor'), saw(157, 'ceil'), saw(159, 'floor'), saw(161, 'ceil'), saw(163, 'floor'),
+    finish(225),
+  ];
+
+  // HARD — unique pattern with tighter spacing, more saws and orbs
+  const HARD_EVENTS = [
+    // intro monster: simple warning
+    spike(10, 'floor'), spike(12, 'floor'),
+    // main level
+    platform(15, 70), orb(16.5, 'yellow'),
+    spike(18, 'floor'), spike(20, 'floor'), spike(22, 'floor'),
+    saw(24, 'floor'), spike(26, 'floor'), spike(28, 'floor'),
+    pad(29), portal(29.5, 'ship'),
+    // ship: extended zigzag pattern
+    block(31.5, 'floor', 85), block(32.5, 'floor', 105), block(33.5, 'floor', 125),
+    block(35, 'ceil', 130), block(36, 'ceil', 110), block(37, 'ceil', 90),
+    block(38.5, 'floor', 100), saw(39.5, 'ceil'), block(40.5, 'floor', 110),
+    block(42, 'ceil', 120), block(43, 'floor', 95),
+    portal(45.5, 'ball'),
+    spike(48, 'floor'), spike(50, 'ceil'), spike(52, 'floor'),
+    spike(54, 'floor'), spike(56, 'ceil'), spike(58, 'floor'),
+    spike(60, 'ceil'), spike(62, 'floor'),
+    portal(67.5, 'ufo'),
+    speed(68, 1.2),
+    orb(68.5, 'pink'),
+    platform(69, 55),
+    spike(70, 'floor'), spike(72, 'ceil'), spike(74, 'floor'),
+    spike(76, 'ceil'), saw(78, 'floor'),
+    spike(80, 'ceil'), spike(82, 'floor'),
+    spike(84, 'ceil'), spike(86, 'floor'),
+    speed(86.5, 1),
+    portal(87.5, 'wave'),
+    // wave: extended alternating pattern
+    block(88, 'floor', 85), block(89, 'ceil', 120),
+    block(90, 'floor', 110), block(91, 'ceil', 110),
+    block(92, 'ceil', 95), block(93, 'floor', 115),
+    block(94, 'ceil', 100), saw(95, 'floor'),
+    block(96, 'floor', 85), block(97, 'ceil', 110),
+    block(98, 'floor', 95), block(99, 'ceil', 100),
+    block(100, 'ceil', 100), block(101, 'floor', 105),
+    portal(104.5, 'robot'),
+    speed(105, 0.85),
+    platform(105.5, 60), orb(106, 'red'),
+    spike(107, 'floor'), spike(109, 'floor'), spike(111, 'floor'),
+    spike(113, 'floor'), spike(113.5, 'floor'), spike(115, 'floor'),
+    spike(117, 'floor'), spike(119, 'floor'),
+    saw(121, 'floor'),
+    speed(121.5, 1),
+    portal(122.5, 'spider'),
+    spike(124, 'floor'), spike(125.5, 'ceil'), spike(127, 'floor'),
+    spike(128.5, 'ceil'), spike(130, 'floor'),
+    spike(131.5, 'ceil'), spike(133, 'floor'),
+    portal(135.5, 'dual'),
+    // dual: extended finale
+    ...dspike(137, 'AB'), ...dspike(140, 'A'), ...dspike(143, 'B'), ...dspike(146, 'AB'),
+    ...dspike(149, 'A'), ...dspike(152, 'B'), ...dspike(155, 'AB'),
+    ...dspike(158, 'A'), ...dspike(161, 'B'), ...dspike(164, 'AB'),
+    // monster: extended boss arena
+    platform(167, 95), platform(168.5, 95),
+    saw(171, 'floor'), saw(173, 'ceil'), saw(175, 'floor'), saw(177, 'ceil'), saw(179, 'floor'),
+    finish(255),
+  ];
+
+  // INSANE — even more challenging with complex patterns and more obstacles
+  const INSANE_EVENTS = [
+    // intro monster: simple warning
+    spike(10, 'floor'), spike(12, 'floor'),
+    // main level
+    platform(14, 70), orb(15.5, 'yellow'), spike(16, 'floor'), orb(16.5, 'pink'), spike(17, 'floor'),
+    spike(19, 'floor'), spike(21, 'floor'), spike(23, 'floor'),
+    pad(24), portal(24.5, 'ship'),
+    // ship: extended complex staircase
+    block(26, 'floor', 75), block(27, 'floor', 95), block(28, 'floor', 115), block(29, 'floor', 135),
+    block(30.5, 'ceil', 140), block(31.5, 'ceil', 120), block(32.5, 'ceil', 100), block(33.5, 'ceil', 80),
+    saw(34.5, 'floor'), block(35.5, 'floor', 105), block(36.5, 'ceil', 95),
+    block(37.5, 'floor', 110), block(38.5, 'ceil', 125), platform(39.5, 65),
+    portal(44.5, 'ball'),
+    spike(47, 'floor'), spike(48, 'ceil'), spike(49, 'floor'), spike(50, 'ceil'),
+    spike(51, 'floor'), saw(52, 'ceil'), spike(53, 'floor'), spike(54, 'ceil'),
+    spike(55, 'floor'), spike(56, 'ceil'), spike(57, 'floor'),
+    portal(59.5, 'ufo'),
+    speed(60, 1.25),
+    orb(60.5, 'red'),
+    spike(61.5, 'floor'),
+    spike(63, 'floor'), spike(65, 'floor'), spike(67, 'floor'),
+    spike(69, 'floor'), spike(71, 'floor'),
+    spike(73, 'floor'), spike(75, 'floor'),
+    speed(75.5, 1),
+    portal(76.5, 'wave'),
+    // wave: extended alternation
+    block(77, 'floor', 90),
+    block(78.5, 'ceil', 110),
+    block(80, 'floor', 95),
+    block(81.5, 'ceil', 105),
+    block(83, 'floor', 100),
+    block(84.5, 'ceil', 95),
+    block(86, 'floor', 100),
+    block(87.5, 'ceil', 105),
+    portal(90.5, 'robot'),
+    speed(91, 0.8),
+    platform(93.5, 60), orb(94.5, 'yellow'), spike(95.3, 'floor'), orb(95.5, 'red'), spike(96.3, 'floor'),
+    spike(99, 'floor'), spike(103, 'floor'), spike(107, 'floor'),
+    speed(107.5, 1),
+    portal(108.5, 'spider'),
+    spike(110, 'floor'), spike(111.5, 'ceil'), spike(113, 'floor'), spike(114.5, 'ceil'), spike(116, 'floor'),
+    spike(117.5, 'ceil'), spike(119, 'floor'), spike(120.5, 'ceil'), spike(122, 'floor'),
+    portal(124.5, 'dual'),
+    // dual: extended challenging finale
+    ...dspike(126, 'AB'), ...dspike(128, 'A'), ...dspike(130, 'B'), ...dspike(132, 'AB'),
+    ...dspike(134, 'A'), ...dspike(136, 'B'), ...dspike(138, 'AB'), ...dspike(140, 'AB'),
+    ...dspike(142, 'A'), ...dspike(144, 'B'), ...dspike(146, 'AB'),
+    ...dspike(148, 'A'), ...dspike(150, 'B'), ...dspike(152, 'AB'),
+    // monster: extended boss arena
+    platform(154, 100), platform(155.5, 100),
+    saw(158, 'floor'), saw(160, 'ceil'), saw(162, 'floor'), saw(164, 'ceil'), saw(166, 'floor'),
+    finish(285),
+  ];
+
+  // Helper for APOCALYPSE and EXTREME: run a pattern twice at different speeds
+  function buildTwoLapLevel(baseEventsWithFinish, scale) {
+    const lapLenRaw = baseEventsWithFinish.find(e => e.kind === 'finish').beat;
+    const base = scaleBeats(baseEventsWithFinish.filter(e => e.kind !== 'finish'), scale);
+    const lapLen = lapLenRaw * scale;
+    const events = [
+      ...base,
+      portal(lapLen + 1, 'cube'),
+      ...base.map(e => ({ ...e, beat: +(e.beat + lapLen + 1).toFixed(3) })),
+    ];
+    return { events, totalBeats: Math.ceil(lapLen * 2 + 3) };
+  }
+
+  // Places a small, self-contained "section" (authored with its own local beat numbers
+  // starting near 0) at an absolute position, optionally stretched by `scale` first — this
+  // keeps every section's internal spacing hand-verifiable in isolation while composition
+  // arithmetic (where it starts, how long it ran) is computed by the engine, not by hand.
+  function placeSection(localEvents, scale, startAt) {
+    const scaled = scaleBeats(localEvents, scale);
+    const shift = startAt - Math.min(...scaled.map(e => e.beat));
+    const events = scaled.map(e => ({ ...e, beat: +(e.beat + shift).toFixed(3) }));
+    const endBeat = Math.max(...events.map(e => e.beat));
+    return { events, endBeat };
+  }
+
+  // NIGHTMARE — 3 minutes = 540 beats @ 180 BPM
+  const nSecCube = [
+    spike(2, 'floor'), spike(5, 'floor'), spike(8, 'floor'), spike(11, 'floor'),
+    spike(14, 'floor'), spike(17, 'floor'), spike(20, 'floor'),
+    pad(23), portal(23.5, 'ship'),
+  ];
+  const nSecShip = [
+    block(0, 'floor', 100), block(3, 'ceil', 120),
+    block(6, 'floor', 110), block(9, 'ceil', 100),
+    block(12, 'floor', 105), block(15, 'ceil', 115),
+    block(18, 'floor', 95), block(21, 'ceil', 110),
+    platform(23, 70),
+    portal(26, 'dual'),
+  ];
+  const nSecDual1 = [
+    ...dspike(0, 'AB'), ...dspike(3, 'A'), ...dspike(6, 'B'), ...dspike(9, 'AB'),
+    ...dspike(12, 'A'), ...dspike(15, 'B'), ...dspike(18, 'AB'),
+    portal(22, 'ufo'),
+  ];
+  const nSecUfo = [
+    spike(0, 'floor'),
+    orb(1.5, 'yellow'),
+    spike(3, 'ceil'), spike(5, 'floor'), spike(7, 'ceil'),
+    spike(9, 'floor'), spike(11, 'ceil'), spike(13, 'floor'),
+    portal(16, 'wave'),
+  ];
+  const nSecWave = [
+    block(0, 'floor', 90), block(3, 'ceil', 100),
+    block(6, 'floor', 95), block(9, 'ceil', 110),
+    block(12, 'floor', 100), block(15, 'ceil', 95),
+    block(18, 'floor', 105),
+    portal(21, 'robot'),
+  ];
+  const nSecRobot = [
+    spike(0, 'floor'), spike(3, 'floor'), spike(6, 'floor'), spike(9, 'floor'),
+    spike(12, 'floor'), spike(15, 'floor'),
+    portal(18, 'dual'),
+  ];
+  const nSecDual2 = [
+    ...dspike(0, 'AB'), ...dspike(3, 'A'), ...dspike(6, 'B'), ...dspike(9, 'AB'),
+    ...dspike(12, 'A'), ...dspike(15, 'B'),
+  ];
+  const nSecMonster = [
+    platform(0, 95), platform(1, 95),
+    saw(3, 'floor'), saw(5, 'ceil'), saw(7, 'floor'), saw(9, 'ceil'), saw(11, 'floor'),
+  ];
+
+  const n1 = placeSection(nSecCube, 1.2, 9);
+  const n2 = placeSection(nSecShip, 1.2, n1.endBeat + 2);
+  const n3 = placeSection(nSecDual1, 1, n2.endBeat + 2);
+  const n4 = placeSection(nSecUfo, 1.2, n3.endBeat + 2);
+  const n5 = placeSection(nSecWave, 1.2, n4.endBeat + 2);
+  const n6 = placeSection(nSecRobot, 1.2, n5.endBeat + 2);
+  const n7 = placeSection(nSecDual2, 1, n6.endBeat + 2);
+  const n8 = placeSection(nSecMonster, 1, n7.endBeat + 3);
+  const nightmareFinishBeat = Math.ceil(n8.endBeat + 3);
+  const NIGHTMARE_EVENTS = [
+    ...n1.events, ...n2.events, ...n3.events, ...n4.events, ...n5.events, ...n6.events, ...n7.events, ...n8.events,
+    finish(nightmareFinishBeat),
+  ];
+
+  // APOCALYPSE — 3 minutes = 615 beats @ 205 BPM
+  const aSecCube = [
+    spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
+    spike(18, 'floor'), spike(20, 'floor'), spike(22, 'floor'),
+    pad(24), portal(24.5, 'ship'),
+  ];
+  const aSecShip = [
+    block(0, 'floor', 95), block(2, 'ceil', 110), block(4, 'floor', 100), block(6, 'ceil', 105),
+    block(8, 'floor', 95), block(10, 'ceil', 100), block(12, 'floor', 105), block(14, 'ceil', 95),
+    block(16, 'floor', 100), block(18, 'ceil', 110), block(20, 'floor', 90),
+    portal(24, 'ufo'),
+  ];
+  const aSecUfo = [
+    spike(0, 'floor'), orb(2, 'yellow'), spike(4, 'ceil'), spike(6, 'floor'),
+    spike(8, 'ceil'), spike(10, 'floor'), spike(12, 'ceil'), spike(14, 'floor'),
+    spike(16, 'ceil'), spike(18, 'floor'), spike(20, 'ceil'), spike(22, 'floor'),
+    portal(25, 'wave'),
+  ];
+  const aSecWave = [
+    block(0, 'floor', 90), block(2, 'ceil', 105), block(4, 'floor', 95), block(6, 'ceil', 100),
+    block(8, 'floor', 90), block(10, 'ceil', 95), block(12, 'floor', 100), block(14, 'ceil', 105),
+    block(16, 'floor', 90), block(18, 'ceil', 100), block(20, 'floor', 95),
+    portal(24, 'robot'),
+  ];
+  const aSecRobot = [
+    spike(0, 'floor'), orb(2, 'red'), spike(4, 'floor'), spike(6, 'floor'),
+    spike(8, 'floor'), spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'),
+    spike(16, 'floor'), spike(18, 'floor'), spike(20, 'floor'),
+    portal(24, 'dual'),
+  ];
+  const aSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'), ...dspike(20, 'A'), ...dspike(22, 'B'),
+  ];
+  const aSecMonster = [
+    platform(0, 100), platform(2, 100),
+    saw(4, 'floor'), saw(6, 'ceil'), saw(8, 'floor'), saw(10, 'ceil'), saw(12, 'floor'),
+  ];
+  const a1 = placeSection(aSecCube, 1, 9);
+  const a2 = placeSection(aSecShip, 1, a1.endBeat + 2);
+  const a3 = placeSection(aSecUfo, 1, a2.endBeat + 2);
+  const a4 = placeSection(aSecWave, 1, a3.endBeat + 2);
+  const a5 = placeSection(aSecRobot, 1, a4.endBeat + 2);
+  const a6 = placeSection(aSecDual, 1, a5.endBeat + 2);
+  const a7 = placeSection(aSecMonster, 1, a6.endBeat + 3);
+  const apocalypseFinishBeat = Math.ceil(a7.endBeat + 1);
+  const APOCALYPSE_EVENTS = [...a1.events, ...a2.events, ...a3.events, ...a4.events, ...a5.events, ...a6.events, ...a7.events, finish(apocalypseFinishBeat)];
+
+  // EXTREME DEMON — 3 minutes = 675 beats @ 225 BPM
+  const eSecCube = [
+    spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
+    spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
+    spike(18, 'floor'), spike(20, 'floor'), spike(22, 'floor'), spike(24, 'floor'),
+    pad(26), portal(26.5, 'ship'),
+  ];
+  const eSecShip = [
+    block(0, 'floor', 100), block(1.5, 'ceil', 115), block(3, 'floor', 105), block(4.5, 'ceil', 100),
+    block(6, 'floor', 95), block(7.5, 'ceil', 110), block(9, 'floor', 100), block(10.5, 'ceil', 105),
+    block(12, 'floor', 95), block(13.5, 'ceil', 110), block(15, 'floor', 100),
+    block(16.5, 'ceil', 105), block(18, 'floor', 95),
+    portal(20.5, 'ufo'),
+  ];
+  const eSecUfo = [
+    spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'ceil'), spike(5, 'floor'),
+    spike(7, 'ceil'), spike(9, 'floor'), spike(11, 'ceil'), spike(13, 'floor'),
+    spike(15, 'ceil'), spike(17, 'floor'), spike(19, 'ceil'), spike(21, 'floor'),
+    portal(24, 'wave'),
+  ];
+  const eSecWave = [
+    block(0, 'floor', 95), block(1.5, 'ceil', 110), block(3, 'floor', 100), block(4.5, 'ceil', 105),
+    block(6, 'floor', 95), block(7.5, 'ceil', 100), block(9, 'floor', 105), block(10.5, 'ceil', 95),
+    block(12, 'floor', 100), block(13.5, 'ceil', 105), block(15, 'floor', 95),
+    block(16.5, 'ceil', 100), block(18, 'floor', 105),
+    portal(20.5, 'robot'),
+  ];
+  const eSecRobot = [
+    spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'floor'), spike(5, 'floor'),
+    spike(7, 'floor'), spike(9, 'floor'), spike(11, 'floor'), spike(13, 'floor'),
+    spike(15, 'floor'), spike(17, 'floor'), spike(19, 'floor'),
+    portal(22, 'dual'),
+  ];
+  const eSecDual = [
+    ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
+    ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'), ...dspike(20, 'A'),
+    platform(22, 100), platform(23, 100),
+  ];
+  const eSecMonster = [
+    platform(0, 110), platform(2, 110),
+    saw(4, 'floor'), saw(6, 'ceil'), saw(8, 'floor'), saw(10, 'ceil'), saw(12, 'floor'),
+  ];
+  const e1 = placeSection(eSecCube, 1.05, 9);
+  const e2 = placeSection(eSecShip, 1.05, e1.endBeat + 2);
+  const e3 = placeSection(eSecUfo, 1.05, e2.endBeat + 2);
+  const e4 = placeSection(eSecWave, 1.05, e3.endBeat + 2);
+  const e5 = placeSection(eSecRobot, 1.05, e4.endBeat + 2);
+  const e6 = placeSection(eSecDual, 1, e5.endBeat + 2);
+  const e7 = placeSection(eSecMonster, 1, e6.endBeat + 3);
+  const extremeFinishBeat = Math.ceil(e7.endBeat + 1);
+  const EXTREME_EVENTS = [...e1.events, ...e2.events, ...e3.events, ...e4.events, ...e5.events, ...e6.events, ...e7.events, finish(extremeFinishBeat)];
+
+  const LEVEL_DEFS = [
+    { id: 'easy', name: 'WARM UP', difficulty: 'EASY', color: '#4dff8a', bpm: 120, totalBeats: 180, events: EASY_EVENTS },
+    { id: 'medium', name: 'PULSE DASH', difficulty: 'MEDIUM', color: '#35f0ff', bpm: 150, totalBeats: 225, events: MEDIUM_EVENTS },
+    { id: 'hard', name: 'OVERDRIVE', difficulty: 'HARD', color: '#ff9f35', bpm: 170, totalBeats: 255, events: HARD_EVENTS },
+    { id: 'insane', name: 'REDLINE', difficulty: 'INSANE', color: '#ff2d6a', bpm: 190, totalBeats: 285, events: INSANE_EVENTS },
+    { id: 'nightmare', name: 'NIGHTMARE', difficulty: 'NIGHTMARE', color: '#ff6b35', bpm: 180, totalBeats: nightmareFinishBeat, events: NIGHTMARE_EVENTS },
+    { id: 'apocalypse', name: 'APOCALYPSE', difficulty: 'APOCALYPSE', color: '#b026ff', bpm: 205, totalBeats: apocalypseFinishBeat, events: APOCALYPSE_EVENTS },
+    { id: 'extreme', name: 'EXTREME DEMON', difficulty: 'EXTREME', color: '#ffd700', bpm: 225, totalBeats: extremeFinishBeat, events: EXTREME_EVENTS },
+  ];
+
+  // Precompute each level's own grid/obstacle geometry once (independent of whichever level is "current")
+  const LEVELS = LEVEL_DEFS.map(def => {
+    const beat = 60 / def.bpm;
+    const grid = SCROLL_SPEED * beat;
+    const worldLen = def.totalBeats * grid;
+    const obstacles = def.events.map(o => ({ ...o, worldX: o.beat * grid, done: false }));
+    return { ...def, beat, grid, worldLen, obstacles };
+  });
+
+  let currentLevel = null;
+  let level = [];
+  let best = 0;
+
+  function loadLevel(lv) {
+    currentLevel = lv;
+    BPM = lv.bpm;
+    BEAT = lv.beat;
+    GRID = lv.grid;
+    LEVEL_BEATS = lv.totalBeats;
+    LEVEL_WORLD_LEN = lv.worldLen;
+    SIXTEENTH = BEAT / 4;
+    level = lv.obstacles.map(o => ({ ...o, done: false }));
+    best = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
+    bestEl.textContent = Math.floor(best) + '%';
+    levelLabelEl.textContent = lv.name;
+    hudDotEl.style.color = lv.color;
+  }
+
+  // ---------- Audio (procedural, beat-locked scheduler) ----------
+  let audioCtx = null, master = null, noiseBuffer = null;
+  let schedulerTimer = null, next16th = 0, nextNoteTime = 0, levelStartTime = 0;
+
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    master = audioCtx.createGain();
+    master.gain.value = 0.22;
+    master.connect(audioCtx.destination);
+
+    const len = audioCtx.sampleRate * 0.2;
+    noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  }
+
+  function playTone(freq, time, dur, type, gainVal) {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(gainVal, time + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(time);
+    osc.stop(time + dur + 0.02);
+  }
+
+  function playHat(time) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer;
+    const g = audioCtx.createGain();
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 6000;
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(0.12, time + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(master);
+    src.start(time);
+    src.stop(time + 0.06);
+  }
+
+  function playCrash(time) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.3, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
+    src.connect(g);
+    g.connect(master);
+    src.playbackRate.value = 0.5;
+    src.start(time);
+  }
+
+  const BASS_PATTERN = [55, 55, 82.4, 55, 55, 55, 61.7, 55]; // per beat, cycles every 8 beats
+  const LEAD_PATTERN = [0, 0, 1, 0, 0, 1, 0, 1]; // 16th-note pulses that get an extra blip
+
+  function scheduleNote(sixteenth, time) {
+    const beatIndex = Math.floor(sixteenth / 4);
+    if (sixteenth % 4 === 0) {
+      playTone(BASS_PATTERN[beatIndex % 8], time, BEAT * 0.9, 'triangle', 0.5);
+    }
+    if (sixteenth % 2 === 0) playHat(time);
+    if (LEAD_PATTERN[sixteenth % 8] && sixteenth % 4 !== 0) {
+      playTone(BASS_PATTERN[beatIndex % 8] * 4, time, 0.12, 'square', 0.06);
+    }
+  }
+
+  function schedulerTick() {
+    while (nextNoteTime < audioCtx.currentTime + 0.12) {
+      scheduleNote(next16th, nextNoteTime);
+      next16th++;
+      nextNoteTime += SIXTEENTH;
+    }
+  }
+
+  function startMusic() {
+    initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    levelStartTime = audioCtx.currentTime + 0.05;
+    nextNoteTime = levelStartTime;
+    next16th = 0;
+    if (schedulerTimer) clearInterval(schedulerTimer);
+    schedulerTimer = setInterval(schedulerTick, 25);
+  }
+
+  function stopMusic() {
+    if (schedulerTimer) { clearInterval(schedulerTimer); schedulerTimer = null; }
+  }
+
+  // ---------- Input ----------
+  let isDown = false, justPressed = false;
+  function pressStart(e) {
+    if (e) e.preventDefault();
+    if (!isDown) justPressed = true;
+    isDown = true;
+  }
+  function pressEnd(e) { if (e) e.preventDefault(); isDown = false; }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { pressStart(e); }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') { pressEnd(e); }
+  });
+  canvas.addEventListener('pointerdown', pressStart);
+  window.addEventListener('pointerup', pressEnd);
+  document.getElementById('tapBtn').addEventListener('pointerdown', pressStart);
+  document.getElementById('tapBtn').addEventListener('pointerup', pressEnd);
+  document.getElementById('againBtn').addEventListener('click', () => startGame());
+  document.getElementById('menuBtn').addEventListener('click', goToMenu);
+  document.getElementById('crashResumeBtn').addEventListener('click', () => {
+    overOverlay.classList.add('hidden');
+    practiceMode = false;
+    resetPlayer();
+    particles = [];
+    currentOff = checkpointBeat * GRID;
+    currentSpeedMult = 1;
+    state = 'playing';
+    level.forEach(o => { o.done = false; });
+    startMusic();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  });
+  document.getElementById('crashPracticeBtn').addEventListener('click', () => {
+    attempts++;
+    attemptsEl.textContent = attempts;
+    practiceRetry();
+  });
+  document.getElementById('crashMenuBtn').addEventListener('click', () => {
+    attempts++;
+    attemptsEl.textContent = attempts;
+    goToMenu();
+  });
+  document.getElementById('winMenuBtn').addEventListener('click', goToMenu);
+
+  // ---------- Physics constants ----------
+  const P = {
+    cubeGravity: 2600, cubeJump: -760,
+    // a quick tap barely holds long enough for robotHoldAccel to matter, giving a short hop;
+    // holding through robotMaxHold keeps piling on upward accel (net robotHoldAccel+robotGravity
+    // is still negative — it doesn't just cancel gravity, it actively climbs) for a much taller,
+    // longer jump — "jump higher when you hold, lower when you tap fast"
+    robotGravity: 2600, robotJump: -500, robotHoldAccel: -3200, robotMaxHold: 0.2,
+    shipGravity: 1500, shipThrust: -1900, shipMaxV: 420,
+    ballGravity: 1600, ballKick: 550,
+    ufoGravity: 2200, ufoHop: -560,
+    waveSpeed: 380,
+    spiderFlipDur: 0.14,
+    dualGravity: 3400, dualJump: -620,
+  };
+  const ORB_STRENGTH = { pink: -700, yellow: -950, red: -1250 };
+  const ORB_COLORS = { pink: '#ff6fd8', yellow: '#ffe14d', red: '#ff2d4d' };
+
+  // ---------- Player ----------
+  let player, player2, mode, state, attempts;
+  let particles = [], screenShake = 0, flashAlpha = 0, hitStopTimer = 0;
+
+  // ---------- Practice Mode & Checkpoints ----------
+  let practiceMode = false;
+  let checkpointBeat = 0;
+  const CHECKPOINT_INTERVAL = 15; // checkpoint every 15 beats
+  function getCheckpointBeat(currentBeat) {
+    return Math.floor(currentBeat / CHECKPOINT_INTERVAL) * CHECKPOINT_INTERVAL;
+  }
+
+  function resetPlayer() {
+    player = {
+      x: PLAYER_X, y: GROUND_Y - 15, vy: 0, size: 30,
+      angle: 0, onSurface: true, surface: 1,
+      flipping: false, flipT: 0, flipFrom: 0, flipTo: 0,
+      holdTime: 0, jumping: false,
+      trail: [],
+    };
+    player2 = null;
+    mode = 'cube';
+    modeLabelEl.textContent = 'CUBE';
+  }
+
+  function setMode(newMode) {
+    mode = newMode;
+    modeLabelEl.textContent = newMode.toUpperCase();
+    player.vy = 0;
+    player.angle = 0;
+    player.jumping = false;
+    player.flipping = false;
+    if (newMode === 'dual') {
+      player.y = DUAL_GROUND_A - player.size / 2;
+      player.onSurface = true;
+      player2 = { x: PLAYER_X, y: DUAL_GROUND_B - player.size / 2, vy: 0, angle: 0, onSurface: true, size: player.size };
+    } else if (newMode === 'cube' || newMode === 'robot') {
+      player.y = GROUND_Y - player.size / 2;
+      player.onSurface = true;
+      player.surface = 1;
+    } else if (newMode === 'ball' || newMode === 'spider') {
+      player.y = GROUND_Y - player.size / 2;
+      player.surface = 1;
+    } else {
+      player.y = MID_Y;
+    }
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function easeOutQuad(t) { return 1 - (1 - t) * (1 - t); }
+
+  function recordBest(pct) {
+    if (pct > best) {
+      best = pct;
+      localStorage.setItem(bestKeyFor(currentLevel.id), String(best));
+    }
+    bestEl.textContent = Math.floor(best) + '%';
+  }
+
+  let pendingRestart = null, pendingOverlay = null;
+
+  function die() {
+    if (state !== 'playing') return;
+    state = 'crashed';
+    stopMusic();
+    if (audioCtx) playCrash(audioCtx.currentTime);
+    screenShake = 1;
+    flashAlpha = 1;
+    hitStopTimer = 0.05;
+    const deathColor = iconColor(mode);
+    spawnDeathBurst(PLAYER_X, player.y, deathColor);
+    if (mode === 'dual') spawnDeathBurst(PLAYER_X, player2.y, deathColor);
+    const pct = Math.min(100, (worldOffset() / LEVEL_WORLD_LEN) * 100);
+    if (!practiceMode) recordBest(pct);
+    const currentBeat = worldOffset() / GRID;
+    checkpointBeat = getCheckpointBeat(currentBeat);
+    attempts++;
+    attemptsEl.textContent = attempts;
+    // show crash overlay after explosion animation
+    pendingOverlay = setTimeout(() => {
+      if (state === 'crashed') {
+        screenShake = 0;
+        flashAlpha = 0;
+        hitStopTimer = 0;
+        crashInfo.textContent = Math.floor(pct) + '%';
+        overOverlay.classList.remove('hidden');
+      }
+    }, 380);
+  }
+
+  function win() {
+    state = 'won';
+    stopMusic();
+    if (!practiceMode) {
+      recordBest(100);
+    }
+    winInfo.textContent = practiceMode
+      ? `PRACTICE: CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}`
+      : `CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}  ·  BEST ${Math.floor(best)}%`;
+    winOverlay.classList.remove('hidden');
+  }
+
+  function spawnDeathBurst(x, y, tintColor) {
+    // chunky shattered debris (the player breaking apart)
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 140 + Math.random() * 260;
+      particles.push({
+        x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - 120,
+        life: 1, color: tintColor, size: 4 + Math.random() * 7,
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 16, shape: 'square',
+      });
+    }
+    // fine red sparks
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 260 + Math.random() * 260;
+      particles.push({
+        x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed,
+        life: 0.65, color: '#ff2d6a', size: 2 + Math.random() * 1.5, shape: 'dot',
+      });
+    }
+  }
+
+  // returns the Y a ground-based mode should land on: the normal floor line, UNLESS a platform
+  // is under the player's fixed screen X *and* its surface is at-or-below the player's current
+  // position (i.e. they jumped high enough to be above it already) — a platform never yanks a
+  // still-grounded player upward, it only catches a fall from above, exactly like landing a jump
+  function groundYAt(off, footY) {
+    let best = GROUND_Y;
+    for (const o of level) {
+      if (o.kind !== 'platform') continue;
+      const sx = PLAYER_X + o.worldX - off;
+      const r = obstacleRect(o, sx);
+      if (!r || PLAYER_X < r.x || PLAYER_X > r.x + r.w) continue;
+      if (r.y >= footY - 0.5 && r.y < best) best = r.y;
+    }
+    return best;
+  }
+
+  // ---------- Per-mode physics ----------
+  function updateCube(dt) {
+    const restY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
+    if (justPressed && player.onSurface) { player.vy = P.cubeJump; player.onSurface = false; }
+    player.vy += P.cubeGravity * dt;
+    player.y += player.vy * dt;
+    if (player.y >= restY) { player.y = restY; player.vy = 0; player.onSurface = true; }
+    // roll continuously (grounded or airborne) so forward motion is always visible, not just mid-jump
+    player.angle += dt * (SCROLL_SPEED / player.size) * (player.onSurface ? 1 : 1.6);
+  }
+
+  function updateRobot(dt) {
+    const restY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
+    if (justPressed && player.onSurface) {
+      player.vy = P.robotJump; player.onSurface = false; player.holdTime = 0;
+    }
+    if (isDown && !player.onSurface && player.holdTime < P.robotMaxHold) {
+      player.vy += P.robotHoldAccel * dt;
+      player.holdTime += dt;
+    }
+    player.vy += P.robotGravity * dt;
+    player.y += player.vy * dt;
+    if (player.y >= restY) { player.y = restY; player.vy = 0; player.onSurface = true; }
+  }
+
+  function updateShip(dt) {
+    const topY = CEIL_Y + player.size / 2, botY = GROUND_Y - player.size / 2;
+    player.vy += (isDown ? P.shipThrust : P.shipGravity) * dt;
+    player.vy = clamp(player.vy, -P.shipMaxV, P.shipMaxV);
+    player.y = clamp(player.y + player.vy * dt, topY, botY);
+    if (player.y === topY || player.y === botY) player.vy = 0;
+  }
+
+  function updateBall(dt) {
+    const topY = CEIL_Y + player.size / 2, botY = groundYAt(currentOff, player.y + player.size / 2) - player.size / 2;
+    if (justPressed) { player.surface *= -1; player.vy = P.ballKick * player.surface; }
+    player.vy += P.ballGravity * player.surface * dt;
+    player.y = clamp(player.y + player.vy * dt, topY, botY);
+    player.angle += dt * 10;
+  }
+
+  function updateUfo(dt) {
+    const topY = CEIL_Y + player.size / 2, botY = GROUND_Y - player.size / 2;
+    if (justPressed) player.vy = P.ufoHop;
+    player.vy += P.ufoGravity * dt;
+    player.y += player.vy * dt;
+    if (player.y > botY) { player.y = botY; player.vy = 0; }
+    if (player.y < topY) { player.y = topY; player.vy = Math.max(player.vy, 0); }
+  }
+
+  function updateWave(dt) {
+    const topY = CEIL_Y + player.size / 2, botY = GROUND_Y - player.size / 2;
+    player.vy = isDown ? -P.waveSpeed : P.waveSpeed;
+    player.y = clamp(player.y + player.vy * dt, topY, botY);
+    player.trail.push({ x: player.x, y: player.y });
+    if (player.trail.length > 16) player.trail.shift();
+  }
+
+  function updateSpider(dt) {
+    if (player.flipping) {
+      player.flipT += dt / P.spiderFlipDur;
+      if (player.flipT >= 1) {
+        player.flipT = 1; player.flipping = false; player.surface *= -1;
+      }
+      player.y = player.flipFrom + (player.flipTo - player.flipFrom) * easeOutQuad(player.flipT);
+    } else if (justPressed) {
+      player.flipping = true; player.flipT = 0;
+      player.flipFrom = player.y;
+      player.flipTo = player.surface === 1 ? (CEIL_Y + player.size / 2) : (groundYAt(currentOff, player.y + player.size / 2) - player.size / 2);
+    }
+  }
+
+  function updateCubeLane(p, groundY, ceilY, dt) {
+    const restY = groundY - p.size / 2;
+    const topY = ceilY + p.size / 2;
+    if (justPressed && p.onSurface) { p.vy = P.dualJump; p.onSurface = false; }
+    p.vy += P.dualGravity * dt;
+    p.y += p.vy * dt;
+    if (p.y >= restY) { p.y = restY; p.vy = 0; p.onSurface = true; }
+    if (p.y <= topY) { p.y = topY; p.vy = Math.max(p.vy, 0); }
+    p.angle += dt * (SCROLL_SPEED / p.size) * (p.onSurface ? 1 : 1.6);
+  }
+
+  function updateDual(dt) {
+    updateCubeLane(player, DUAL_GROUND_A, DUAL_CEIL_A, dt);
+    updateCubeLane(player2, DUAL_GROUND_B, DUAL_CEIL_B, dt);
+  }
+
+  const MODE_UPDATE = {
+    cube: updateCube, robot: updateRobot, ship: updateShip,
+    ball: updateBall, ufo: updateUfo, wave: updateWave, spider: updateSpider,
+    dual: updateDual,
+  };
+
+  // ---------- Obstacle geometry / collision ----------
+  function obstacleRect(o, sx) {
+    if (o.kind === 'spike') {
+      if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        const y = o.side === 'floor' ? ground - 20 : ceil;
+        return { x: sx - 11, y, w: 22, h: 20 };
+      }
+      const y = o.side === 'floor' ? GROUND_Y - 32 : CEIL_Y;
+      return { x: sx - 15, y, w: 30, h: 32 };
+    }
+    if (o.kind === 'block') {
+      if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        const y = o.side === 'floor' ? ground - o.depth : ceil;
+        return { x: sx - 14, y, w: 28, h: o.depth };
+      }
+      const y = o.side === 'floor' ? GROUND_Y - o.depth : CEIL_Y;
+      return { x: sx - 18, y, w: 36, h: o.depth };
+    }
+    if (o.kind === 'platform') return { x: sx - 18, y: GROUND_Y - o.depth, w: 36, h: o.depth };
+    if (o.kind === 'saw') {
+      const r = 16;
+      let cy;
+      if (o.side === 'float') cy = o.floatY;
+      else if (o.lane) {
+        const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+        const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+        cy = o.side === 'floor' ? ground - r : ceil + r;
+      } else {
+        cy = o.side === 'floor' ? GROUND_Y - r : CEIL_Y + r;
+      }
+      return { x: sx - r, y: cy - r, w: r * 2, h: r * 2 };
+    }
+    if (o.kind === 'orb') { const r = 13; return { x: sx - r, y: o.y - r, w: r * 2, h: r * 2 }; }
+    if (o.kind === 'pad') return { x: sx - 20, y: GROUND_Y - 12, w: 40, h: 12 };
+    return null;
+  }
+
+  function playerRect(p) {
+    p = p || player;
+    const s = p.size * 0.74; // forgiving hitbox, smaller than the visual sprite
+    return { x: p.x - s / 2, y: p.y - s / 2, w: s, h: s };
+  }
+
+  function inset(r, amt) {
+    return { x: r.x + amt, y: r.y + amt, w: r.w - amt * 2, h: r.h - amt * 2 };
+  }
+
+  function overlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // World position now accumulates frame-by-frame (rather than deriving purely from the audio
+  // clock) so that speed portals can genuinely speed up or slow down the scroll — the music
+  // keeps its own tempo via the independent audio scheduler; only the visual/gameplay pace
+  // changes, exactly like Geometry Dash's speed portals.
+  let currentOff = 0, currentSpeedMult = 1;
+
+  function getSpeedMultiplier(off) {
+    let mult = 1;
+    for (const o of level) {
+      if (o.kind !== 'speed') continue;
+      if (o.worldX <= off) mult = o.mult; else break;
+    }
+    return mult;
+  }
+
+  function worldOffset() {
+    return currentOff;
+  }
+
+  // ---------- Game flow ----------
+  function startGame(lv) {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    if (lv) {
+      loadLevel(lv);
+      attempts = 1;
+      attemptsEl.textContent = attempts;
+      practiceMode = false;
+      checkpointBeat = 0;
+    }
+    resetPlayer();
+    particles = [];
+    screenShake = 0;
+    flashAlpha = 0;
+    hitStopTimer = 0;
+    currentOff = 0;
+    currentSpeedMult = 1;
+    state = 'playing';
+    level.forEach(o => { o.done = false; });
+    homeOverlay.classList.add('hidden');
+    menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    winOverlay.classList.add('hidden');
+    startMusic();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function practiceRetry() {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    practiceMode = true;
+    resetPlayer();
+    particles = [];
+    screenShake = 0;
+    flashAlpha = 0;
+    hitStopTimer = 0;
+    currentOff = checkpointBeat * GRID;
+    currentSpeedMult = 1;
+    state = 'playing';
+    level.forEach(o => { o.done = false; });
+    overOverlay.classList.add('hidden');
+    startMusic();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  function goToMenu() {
+    if (pendingRestart) { clearTimeout(pendingRestart); pendingRestart = null; }
+    if (pendingOverlay) { clearTimeout(pendingOverlay); pendingOverlay = null; }
+    stopMusic();
+    isDown = false;
+    state = 'menu';
+    currentLevel = null;
+    levelLabelEl.textContent = '—';
+    hudDotEl.style.color = 'var(--neon-dim)';
+    modeLabelEl.textContent = '—';
+    attemptsEl.textContent = '—';
+    bestEl.textContent = '—';
+    progressBar.style.width = '0%';
+    overOverlay.classList.add('hidden');
+    winOverlay.classList.add('hidden');
+    homeOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+    refreshLevelList();
+    demoLastTime = performance.now();
+    requestAnimationFrame(attractLoop);
+  }
+
+  function goToHome() {
+    homeOverlay.classList.remove('hidden');
+    menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.add('hidden');
+    accountOverlay.classList.add('hidden');
+  }
+
+  function formatBest(b) { return b >= 100 ? '✓ CLEAR' : (b > 0 ? Math.floor(b) + '%' : '—'); }
+
+  function refreshLevelList() {
+    levelListEl.querySelectorAll('.level-card-best').forEach(el => {
+      const lv = LEVELS.find(l => l.id === el.dataset.levelId);
+      if (!lv) return;
+      const b = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
+      el.textContent = formatBest(b);
+      el.classList.toggle('cleared', b >= 100);
+    });
+  }
+
+  const BAR_HEIGHTS = [3, 5, 7, 9, 11, 13];
+
+  function buildLevelList() {
+    levelListEl.innerHTML = '';
+    LEVELS.forEach((lv, idx) => {
+      const b = parseFloat(localStorage.getItem(bestKeyFor(lv.id)) || '0');
+      // scale the lit-bar count to the tier's position among ALL levels, not a fixed index,
+      // so adding/removing tiers doesn't require resizing BAR_HEIGHTS itself
+      const litCount = Math.ceil((idx + 1) / LEVELS.length * BAR_HEIGHTS.length);
+      const bars = BAR_HEIGHTS.map((h, i) =>
+        `<i class="${i < litCount ? 'lit' : ''}" style="height:${h}px"></i>`
+      ).join('');
+      const btn = document.createElement('button');
+      btn.className = 'level-card';
+      btn.style.setProperty('--card-color', lv.color);
+      btn.innerHTML = `
+        <span>
+          <span class="level-card-name">${lv.name}</span>
+          <span class="level-card-diff-row">
+            <span class="level-card-bars">${bars}</span>
+            <span class="level-card-diff">${lv.difficulty}</span>
+          </span>
+        </span>
+        <span class="level-card-best${b >= 100 ? ' cleared' : ''}" data-level-id="${lv.id}">${formatBest(b)}</span>
+      `;
+      btn.addEventListener('click', () => startGame(lv));
+      levelListEl.appendChild(btn);
+    });
+  }
+
+  // ---------- Account UI ----------
+  const accountChipBtn = document.getElementById('accountChipBtn');
+  const accountChipLabel = document.getElementById('accountChipLabel');
+  const accountCurrentLabel = document.getElementById('accountCurrentLabel');
+  const accountListEl = document.getElementById('accountList');
+  const accountNameInput = document.getElementById('accountNameInput');
+
+  function refreshAccountUI() {
+    accountChipLabel.textContent = currentAccount || 'GUEST';
+    accountChipBtn.classList.toggle('logged-in', !!currentAccount);
+    accountCurrentLabel.textContent = currentAccount
+      ? `Playing as ${currentAccount} — ${completedCountFor(currentAccount)}/${LEVELS.length} levels cleared`
+      : "Playing as GUEST — progress isn't saved to a profile";
+    buildAccountList();
+  }
+
+  function buildAccountList() {
+    accountListEl.innerHTML = '';
+    accounts.forEach(name => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'account-row' + (name === currentAccount ? ' active' : '');
+      row.innerHTML = `
+        <span>${name}</span>
+        <span class="account-row-meta">${completedCountFor(name)}/${LEVELS.length} cleared${name === currentAccount ? ' · ACTIVE' : ''}</span>
+      `;
+      row.addEventListener('click', () => { switchAccount(name); goToHome(); });
+      accountListEl.appendChild(row);
+    });
+  }
+
+  accountChipBtn.addEventListener('click', () => {
+    homeOverlay.classList.add('hidden');
+    accountOverlay.classList.remove('hidden');
+    refreshAccountUI();
+    accountNameInput.value = '';
+  });
+  document.getElementById('accountBackBtn').addEventListener('click', goToHome);
+  document.getElementById('accountGuestBtn').addEventListener('click', () => {
+    switchAccount(null);
+    goToHome();
+  });
+  document.getElementById('accountCreateBtn').addEventListener('click', () => {
+    if (createAccount(accountNameInput.value)) {
+      accountNameInput.value = '';
+      goToHome();
+    }
+  });
+  accountNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('accountCreateBtn').click();
+  });
+
+  // ---------- Icons customization UI ----------
+  const ICON_SWATCHES = [
+    '#35f0ff', '#4dff8a', '#ffe14d', '#ff5fd1', '#5f9bff', '#c07bff',
+    '#ffffff', '#ff6b35', '#ff2d6a', '#b026ff', '#ff9f35', '#ff3b3b',
+  ];
+  const iconTabsEl = document.getElementById('iconTabs');
+  const iconSwatchesEl = document.getElementById('iconSwatches');
+  const iconColorInput = document.getElementById('iconColorInput');
+  const iconFinishRow = document.getElementById('iconFinishRow');
+  const iconPreviewCanvas = document.getElementById('iconPreview');
+  const iconPreviewCtx = iconPreviewCanvas.getContext('2d');
+  let selectedIconMode = 'cube';
+
+  function buildIconTabs() {
+    iconTabsEl.innerHTML = '';
+    MODES_LIST.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'icon-tab';
+      btn.type = 'button';
+      btn.textContent = m.toUpperCase();
+      btn.dataset.mode = m;
+      btn.addEventListener('click', () => { selectedIconMode = m; refreshIconsUI(); });
+      iconTabsEl.appendChild(btn);
+    });
+  }
+
+  function buildIconSwatches() {
+    iconSwatchesEl.innerHTML = '';
+    ICON_SWATCHES.forEach(c => {
+      const sw = document.createElement('button');
+      sw.className = 'icon-swatch';
+      sw.type = 'button';
+      sw.style.background = c;
+      sw.dataset.color = c;
+      sw.addEventListener('click', () => setIconColor(c));
+      iconSwatchesEl.appendChild(sw);
+    });
+  }
+
+  function setIconColor(c) {
+    iconPrefs[selectedIconMode] = iconPrefs[selectedIconMode] || {};
+    iconPrefs[selectedIconMode].color = c;
+    saveIconPrefs();
+    refreshIconsUI();
+  }
+
+  function setIconFinish(f) {
+    iconPrefs[selectedIconMode] = iconPrefs[selectedIconMode] || {};
+    iconPrefs[selectedIconMode].finish = f;
+    saveIconPrefs();
+    refreshIconsUI();
+  }
+
+  // simplified representative shapes for the preview swatch — deliberately not a reuse of
+  // the full drawPlayer() logic, since that's tied to the live game's ctx/player state
+  function drawIconPreview() {
+    const pctx = iconPreviewCtx;
+    const w = iconPreviewCanvas.width, h = iconPreviewCanvas.height;
+    pctx.clearRect(0, 0, w, h);
+    pctx.save();
+    pctx.translate(w / 2, h / 2);
+    const m = selectedIconMode;
+    const color = iconColor(m);
+    const s = 46;
+    pctx.shadowColor = color;
+    pctx.shadowBlur = iconFinish(m) === 'matte' ? 0 : 16;
+    pctx.fillStyle = color;
+    pctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    pctx.lineWidth = 1.5;
+
+    if (m === 'dual') {
+      [-16, 16].forEach(dy => {
+        pctx.save();
+        pctx.translate(0, dy);
+        pctx.fillRect(-s * 0.32, -s * 0.32, s * 0.64, s * 0.64);
+        pctx.strokeRect(-s * 0.32, -s * 0.32, s * 0.64, s * 0.64);
+        pctx.restore();
+      });
+    } else if (m === 'cube' || m === 'robot') {
+      pctx.fillRect(-s / 2, -s / 2, s, s);
+      pctx.strokeRect(-s / 2, -s / 2, s, s);
+    } else if (m === 'ball') {
+      pctx.beginPath(); pctx.arc(0, 0, s / 2, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+    } else if (m === 'ufo') {
+      pctx.beginPath(); pctx.ellipse(0, 6, s * 0.55, s * 0.26, 0, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+      pctx.beginPath(); pctx.arc(0, -2, s * 0.3, Math.PI, 0); pctx.fill(); pctx.stroke();
+    } else if (m === 'ship') {
+      pctx.beginPath();
+      pctx.moveTo(-s * 0.5, 0); pctx.lineTo(s * 0.4, -s * 0.3); pctx.lineTo(s * 0.5, 0); pctx.lineTo(s * 0.4, s * 0.3);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    } else if (m === 'wave') {
+      pctx.beginPath();
+      pctx.moveTo(s * 0.42, 0); pctx.lineTo(-s * 0.38, -s * 0.3); pctx.lineTo(-s * 0.12, 0); pctx.lineTo(-s * 0.38, s * 0.3);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    } else if (m === 'spider') {
+      pctx.beginPath();
+      pctx.moveTo(0, -s * 0.42); pctx.lineTo(s * 0.42, 0); pctx.lineTo(0, s * 0.42); pctx.lineTo(-s * 0.42, 0);
+      pctx.closePath(); pctx.fill(); pctx.stroke();
+    }
+    pctx.restore();
+  }
+
+  function refreshIconsUI() {
+    const activeColor = iconColor(selectedIconMode);
+    const activeFinish = iconFinish(selectedIconMode);
+    iconTabsEl.querySelectorAll('.icon-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === selectedIconMode);
+      btn.style.setProperty('--tab-color', iconColor(btn.dataset.mode));
+    });
+    iconSwatchesEl.querySelectorAll('.icon-swatch').forEach(sw => {
+      sw.classList.toggle('active', sw.dataset.color.toLowerCase() === activeColor.toLowerCase());
+    });
+    iconColorInput.value = /^#[0-9a-f]{6}$/i.test(activeColor) ? activeColor : '#35f0ff';
+    iconFinishRow.querySelectorAll('.finish-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.finish === activeFinish);
+    });
+    drawIconPreview();
+  }
+
+  iconColorInput.addEventListener('input', () => setIconColor(iconColorInput.value));
+  iconFinishRow.querySelectorAll('.finish-btn').forEach(btn => {
+    btn.addEventListener('click', () => setIconFinish(btn.dataset.finish));
+  });
+  let iconsReturnTo = 'home';
+  document.getElementById('iconsBtn').addEventListener('click', () => {
+    iconsReturnTo = 'menu';
+    menuOverlay.classList.add('hidden');
+    iconsOverlay.classList.remove('hidden');
+    refreshIconsUI();
+  });
+  document.getElementById('homeIconsBtn').addEventListener('click', () => {
+    iconsReturnTo = 'home';
+    homeOverlay.classList.add('hidden');
+    iconsOverlay.classList.remove('hidden');
+    refreshIconsUI();
+  });
+  document.getElementById('iconBackBtn').addEventListener('click', () => {
+    iconsOverlay.classList.add('hidden');
+    if (iconsReturnTo === 'menu') { menuOverlay.classList.remove('hidden'); refreshLevelList(); }
+    else { homeOverlay.classList.remove('hidden'); }
+  });
+  document.getElementById('iconResetBtn').addEventListener('click', () => {
+    iconPrefs = {};
+    saveIconPrefs();
+    refreshIconsUI();
+  });
+  document.getElementById('homePlayBtn').addEventListener('click', () => {
+    homeOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+    refreshLevelList();
+  });
+  document.getElementById('menuBackBtn').addEventListener('click', goToHome);
+
+  attempts = 1;
+  attemptsEl.textContent = attempts;
+
+  let lastTime = 0;
+  function loop(now) {
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+    dt = Math.min(dt, 1 / 30);
+
+    if (state === 'playing') update(dt);
+
+    if (hitStopTimer > 0) {
+      hitStopTimer -= dt;
+    } else {
+      updateEffects(dt);
+    }
+
+    draw();
+    justPressed = false;
+    if (state === 'playing' || particles.length > 0 || screenShake > 0 || flashAlpha > 0) {
+      requestAnimationFrame(loop);
+    }
+  }
+
+  function updateEffects(dt) {
+    particles.forEach(p => {
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 700 * dt;
+      p.vx *= Math.max(0, 1 - dt * 1.5);
+      if (p.rot !== undefined) p.rot += p.vr * dt;
+      p.life -= dt * (p.decay || 1.5);
+    });
+    particles = particles.filter(p => p.life > 0);
+    if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 2.6);
+    if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 2.8);
+  }
+
+  function update(dt) {
+    currentSpeedMult = getSpeedMultiplier(currentOff);
+    currentOff += SCROLL_SPEED * currentSpeedMult * dt;
+    const off = currentOff;
+    (MODE_UPDATE[mode] || updateCube)(dt);
+
+    const pRect = playerRect();
+    const pRect2 = mode === 'dual' ? playerRect(player2) : null;
+    for (const o of level) {
+      const sx = PLAYER_X + o.worldX - off;
+      if (sx < -60 || sx > W + 60) continue;
+
+      if (o.kind === 'speed') continue;
+      if (o.kind === 'portal') {
+        if (!o.done && sx <= PLAYER_X) { o.done = true; setMode(o.mode); }
+        continue;
+      }
+      if (o.kind === 'finish') {
+        if (!o.done && sx <= PLAYER_X) { o.done = true; win(); }
+        continue;
+      }
+      if (o.kind === 'pad') {
+        const r = obstacleRect(o, sx);
+        if (!o.done && overlap(pRect, r)) {
+          o.done = true;
+          if (mode === 'cube' || mode === 'robot') { player.vy = -1000; player.onSurface = false; }
+          else if (mode === 'ufo') { player.vy = -900; }
+          else if (mode === 'ball') { player.vy = -900 * player.surface; }
+        }
+        continue;
+      }
+      if (o.kind === 'orb') {
+        const r = obstacleRect(o, sx);
+        if (!o.done && justPressed && overlap(pRect, r)) {
+          o.done = true;
+          player.vy = ORB_STRENGTH[o.color] || ORB_STRENGTH.yellow;
+          if (mode === 'cube' || mode === 'robot') player.onSurface = false;
+        }
+        continue;
+      }
+      if (o.kind === 'platform') {
+        const r = obstacleRect(o, sx);
+        const landable = mode === 'cube' || mode === 'robot' || mode === 'ball' || mode === 'spider';
+        const footY = pRect.y + pRect.h;
+        // landable modes can pass through from above (they land via groundYAt); side/underside hits are fatal
+        if (landable && footY <= r.y + 4) continue;
+        const hit = inset(r, 3);
+        if (overlap(pRect, hit)) { die(); return; }
+        continue;
+      }
+      const r = obstacleRect(o, sx);
+      const hit = r && inset(r, 3);
+      if (!hit) continue;
+      const targetRect = o.lane === 'B' ? pRect2 : pRect;
+      if (targetRect && overlap(targetRect, hit)) { die(); return; }
+    }
+
+    progressBar.style.width = clamp((off / LEVEL_WORLD_LEN) * 100, 0, 100) + '%';
+  }
+
+  // ---------- Rendering ----------
+  function drawBackdrop(off) {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#0a0b18');
+    grad.addColorStop(1, '#131233');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = 'rgba(53,240,255,0.12)';
+    ctx.lineWidth = 1;
+    const gridOff = off % 40;
+    for (let x = -gridOff; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+  }
+
+  function drawGroundCeil(off, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, CEIL_Y); ctx.lineTo(W, CEIL_Y); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(10,11,24,0.9)';
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillRect(0, 0, W, CEIL_Y);
+
+    // scrolling tread marks: an unmistakable "this is moving" cue even with no obstacles in view
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([16, 20]);
+    ctx.lineDashOffset = -off;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y + 11); ctx.lineTo(W, GROUND_Y + 11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, CEIL_Y - 11); ctx.lineTo(W, CEIL_Y - 11); ctx.stroke();
+    ctx.restore();
+  }
+
+  // dual mode: two stacked mini-lanes (A on top, B on bottom) with a divider between them
+  function drawDualStage(off, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 10;
+    [[DUAL_CEIL_A, DUAL_GROUND_A], [DUAL_CEIL_B, DUAL_GROUND_B]].forEach(([ceil, ground]) => {
+      ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(W, ground); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, ceil); ctx.lineTo(W, ceil); ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(10,11,24,0.9)';
+    ctx.fillRect(0, 0, W, DUAL_CEIL_A);
+    ctx.fillRect(0, DUAL_GROUND_A, W, DUAL_CEIL_B - DUAL_GROUND_A);
+    ctx.fillRect(0, DUAL_GROUND_B, W, H - DUAL_GROUND_B);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2.5;
+    ctx.setLineDash([12, 16]); ctx.lineDashOffset = -off;
+    ctx.beginPath(); ctx.moveTo(0, DUAL_GROUND_A - 8); ctx.lineTo(W, DUAL_GROUND_A - 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, DUAL_GROUND_B - 8); ctx.lineTo(W, DUAL_GROUND_B - 8); ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    const dividerY = (DUAL_GROUND_A + DUAL_CEIL_B) / 2;
+    ctx.beginPath(); ctx.moveTo(0, dividerY); ctx.lineTo(W, dividerY); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawObstacles(obstacles, off, color) {
+    for (const o of obstacles) {
+      const sx = PLAYER_X + o.worldX - off;
+      if (sx < -60 || sx > W + 60) continue;
+      ctx.save();
+      if (o.kind === 'spike') {
+        const up = o.side === 'floor';
+        let baseY, tipY, halfW;
+        if (o.lane) {
+          const ground = o.lane === 'A' ? DUAL_GROUND_A : DUAL_GROUND_B;
+          const ceil = o.lane === 'A' ? DUAL_CEIL_A : DUAL_CEIL_B;
+          baseY = up ? ground : ceil;
+          tipY = up ? ground - 20 : ceil + 20;
+          halfW = 11;
+        } else {
+          baseY = up ? GROUND_Y : CEIL_Y;
+          tipY = up ? GROUND_Y - 32 : CEIL_Y + 32;
+          halfW = 15;
+        }
+        ctx.fillStyle = '#ff2d6a'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(sx - halfW, baseY);
+        ctx.lineTo(sx + halfW, baseY);
+        ctx.lineTo(sx, tipY);
+        ctx.closePath(); ctx.fill();
+      } else if (o.kind === 'block') {
+        const r = obstacleRect(o, sx);
+        ctx.fillStyle = '#ff2d6a'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 10;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+      } else if (o.kind === 'pad') {
+        ctx.fillStyle = '#ffe14d'; ctx.shadowColor = '#ffe14d'; ctx.shadowBlur = 14;
+        ctx.fillRect(sx - 20, GROUND_Y - 8, 40, 8);
+      } else if (o.kind === 'portal') {
+        const c = MODE_COLORS[o.mode] || '#fff';
+        ctx.strokeStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 18; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(sx, CEIL_Y); ctx.lineTo(sx, GROUND_Y); ctx.stroke();
+      } else if (o.kind === 'finish') {
+        ctx.strokeStyle = '#4dff8a'; ctx.shadowColor = '#4dff8a'; ctx.shadowBlur = 18; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(sx, CEIL_Y); ctx.lineTo(sx, GROUND_Y); ctx.stroke();
+      } else if (o.kind === 'speed') {
+        const fast = o.mult > 1;
+        const c = fast ? '#ffe14d' : '#5f9bff';
+        const dir = fast ? 1 : -1;
+        ctx.strokeStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 14; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(sx, CEIL_Y); ctx.lineTo(sx, GROUND_Y); ctx.stroke();
+        ctx.fillStyle = c;
+        for (let i = -1; i <= 1; i++) {
+          const cy = MID_Y + i * 65;
+          ctx.beginPath();
+          ctx.moveTo(sx - 9 * dir, cy - 11);
+          ctx.lineTo(sx + 9 * dir, cy);
+          ctx.lineTo(sx - 9 * dir, cy + 11);
+          ctx.lineTo(sx - 3 * dir, cy);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (o.kind === 'platform') {
+        const r = obstacleRect(o, sx);
+        ctx.fillStyle = '#35a7ff'; ctx.shadowColor = '#35a7ff'; ctx.shadowBlur = 10;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillRect(r.x, r.y, r.w, 3);
+      } else if (o.kind === 'saw') {
+        const r = obstacleRect(o, sx);
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2, rOuter = r.w / 2, rInner = rOuter * 0.62;
+        ctx.translate(cx, cy);
+        ctx.rotate((performance.now() / 260) % (Math.PI * 2));
+        ctx.fillStyle = '#c3cad6'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 12;
+        const teeth = 8;
+        ctx.beginPath();
+        for (let i = 0; i < teeth * 2; i++) {
+          const ang = (i / (teeth * 2)) * Math.PI * 2;
+          const rad = i % 2 === 0 ? rOuter : rInner;
+          const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#6b7280';
+        ctx.beginPath(); ctx.arc(0, 0, rOuter * 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ff2d6a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, rOuter * 0.4, 0, Math.PI * 2); ctx.stroke();
+      } else if (o.kind === 'orb') {
+        const oc = ORB_COLORS[o.color] || ORB_COLORS.yellow;
+        const pulse = 0.85 + 0.15 * Math.sin(performance.now() / 180);
+        const r = 13 * pulse;
+        ctx.fillStyle = oc; ctx.shadowColor = oc; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.arc(sx, o.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx, o.y, r * 0.5, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // shared helper: a beveled cube body with a visor "eye" and corner rivets
+  function drawCubeBody(s, color, withRivets) {
+    const grad = ctx.createLinearGradient(-s / 2, -s / 2, s / 2, s / 2);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.18, color);
+    grad.addColorStop(1, color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(-s / 2, -s / 2, s, s);
+    // visor
+    ctx.fillStyle = 'rgba(6,8,16,0.8)';
+    ctx.fillRect(-s * 0.32, -s * 0.12, s * 0.64, s * 0.24);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(-s * 0.24, -s * 0.06, s * 0.16, s * 0.12);
+    if (withRivets) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([dx, dy]) => {
+        ctx.beginPath(); ctx.arc(dx * s * 0.38, dy * s * 0.38, 1.6, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  }
+
+  function drawPlayer(color) {
+    const s = player.size;
+    const glow = iconFinish(mode) === 'matte' ? 0 : 16;
+
+    if (mode === 'dual') {
+      [player, player2].forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.shadowColor = color; ctx.shadowBlur = glow;
+        drawCubeBody(p.size, color, false);
+        ctx.restore();
+      });
+      return;
+    }
+
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.shadowColor = color; ctx.shadowBlur = glow;
+    ctx.fillStyle = color;
+
+    if (mode === 'cube') {
+      ctx.rotate(player.angle);
+      drawCubeBody(s, color, false);
+    } else if (mode === 'robot') {
+      // legs first (behind body), with a knee joint for an articulated look
+      ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      [-1, 1].forEach(side => {
+        const hipX = side * s * 0.32, hipY = s * 0.4;
+        const kneeX = side * s * 0.55, kneeY = s * 0.55;
+        const footX = side * s * 0.55, footY = s * 0.75;
+        ctx.beginPath(); ctx.moveTo(hipX, hipY); ctx.lineTo(kneeX, kneeY); ctx.lineTo(footX, footY); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(kneeX, kneeY, 2.2, 0, Math.PI * 2); ctx.fill();
+      });
+      drawCubeBody(s, color, true);
+      // antenna with a blinking tip
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(0, -s / 2); ctx.lineTo(0, -s * 0.78); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, -s * 0.78, 2.6, 0, Math.PI * 2); ctx.fill();
+    } else if (mode === 'ship') {
+      // layered thruster flame (flickers with a fast sine for energy)
+      const flick = 0.7 + 0.3 * Math.sin(performance.now() / 40);
+      ctx.fillStyle = 'rgba(255,200,80,0.85)';
+      ctx.beginPath(); ctx.moveTo(-s * 0.68, 0); ctx.lineTo(-s * (1.15 + flick * 0.35), -5); ctx.lineTo(-s * (1.15 + flick * 0.35), 5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,120,60,0.7)';
+      ctx.beginPath(); ctx.moveTo(-s * 0.68, 0); ctx.lineTo(-s * (0.95 + flick * 0.2), -3); ctx.lineTo(-s * (0.95 + flick * 0.2), 3); ctx.closePath(); ctx.fill();
+      // hull with gradient + canopy
+      const hullGrad = ctx.createLinearGradient(-s * 0.7, -s * 0.4, s * 0.5, s * 0.4);
+      hullGrad.addColorStop(0, color); hullGrad.addColorStop(1, '#ffffff');
+      ctx.fillStyle = hullGrad;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.7, 0); ctx.lineTo(s * 0.5, -s * 0.4); ctx.lineTo(s * 0.62, 0); ctx.lineTo(s * 0.5, s * 0.4);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.2; ctx.stroke();
+      // wing fins
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s * 0.1, -s * 0.15); ctx.lineTo(-s * 0.45, -s * 0.55); ctx.lineTo(-s * 0.05, -s * 0.2); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-s * 0.1, s * 0.15); ctx.lineTo(-s * 0.45, s * 0.55); ctx.lineTo(-s * 0.05, s * 0.2); ctx.closePath(); ctx.fill();
+      // cockpit
+      ctx.fillStyle = 'rgba(200,253,255,0.9)';
+      ctx.beginPath(); ctx.ellipse(s * 0.1, 0, s * 0.13, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (mode === 'ball') {
+      ctx.rotate(player.angle);
+      const sphereGrad = ctx.createRadialGradient(-s * 0.18, -s * 0.18, s * 0.05, 0, 0, s * 0.55);
+      sphereGrad.addColorStop(0, '#ffffff');
+      sphereGrad.addColorStop(0.35, color);
+      sphereGrad.addColorStop(1, color);
+      ctx.fillStyle = sphereGrad;
+      ctx.beginPath(); ctx.arc(0, 0, s / 2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.ellipse(0, 0, s * 0.5, s * 0.18, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 0, s * 0.18, s * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, s * 0.5, 0, Math.PI * 2); ctx.stroke();
+    } else if (mode === 'ufo') {
+      // energy ring underneath
+      ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, s * 0.24, s * 0.4, s * 0.1, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+      // saucer body
+      const saucerGrad = ctx.createLinearGradient(0, -s * 0.1, 0, s * 0.3);
+      saucerGrad.addColorStop(0, '#ffffff'); saucerGrad.addColorStop(1, color);
+      ctx.fillStyle = saucerGrad;
+      ctx.beginPath(); ctx.ellipse(0, 4, s * 0.55, s * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+      // rim lights
+      ctx.fillStyle = '#fff';
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.arc(i * s * 0.2, 4 + Math.abs(i) * 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+      // dome
+      const domeGrad = ctx.createRadialGradient(0, -s * 0.1, 1, 0, -s * 0.05, s * 0.34);
+      domeGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+      domeGrad.addColorStop(1, color);
+      ctx.fillStyle = domeGrad;
+      ctx.beginPath(); ctx.arc(0, -2, s * 0.32, Math.PI, 0); ctx.fill();
+    } else if (mode === 'wave') {
+      // tapered glowing trail: overlapping strokes, thinning and fading toward the tail
+      const n = player.trail.length;
+      for (let i = 1; i < n; i++) {
+        const p0 = player.trail[i - 1], p1 = player.trail[i];
+        const t = i / n;
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = t * 0.8;
+        ctx.lineWidth = 1 + t * 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(p0.x - player.x, p0.y - player.y);
+        ctx.lineTo(p1.x - player.x, p1.y - player.y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // paper-airplane dart silhouette (the classic GD wave-ship shape):
+      // a sharp nose, swept wings, and a notched inward back edge
+      const nose = s * 0.44, span = s * 0.34, notch = -s * 0.15, back = -s * 0.4;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(nose, 0);
+      ctx.lineTo(back, -span);
+      ctx.lineTo(notch, 0);
+      ctx.lineTo(back, span);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 1.3; ctx.lineJoin = 'round'; ctx.stroke();
+
+      // folded top-panel highlight, like light catching a paper airplane's crease
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(nose, 0);
+      ctx.lineTo(back, -span);
+      ctx.lineTo(notch, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // bright nose tip
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(nose - 3, 0, 1.6, 0, Math.PI * 2); ctx.fill();
+    } else if (mode === 'spider') {
+      // eight jointed legs, drawn behind the body
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (let i = 0; i < 8; i++) {
+        const side = i < 4 ? -1 : 1;
+        const row = i % 4;
+        const spread = (row - 1.5) * 0.32;
+        const hipX = side * s * 0.28, hipY = spread * s;
+        const kneeX = side * s * 0.62, kneeY = spread * s * 1.6;
+        const footX = side * s * 0.9, footY = spread * s * 1.9;
+        ctx.beginPath(); ctx.moveTo(hipX, hipY); ctx.lineTo(kneeX, kneeY); ctx.lineTo(footX, footY); ctx.stroke();
+      }
+      // angular body
+      const bodyGrad = ctx.createLinearGradient(-s / 3, -s / 3, s / 3, s / 3);
+      bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.3, color); bodyGrad.addColorStop(1, color);
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.36); ctx.lineTo(s * 0.36, 0); ctx.lineTo(0, s * 0.36); ctx.lineTo(-s * 0.36, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1; ctx.stroke();
+      // glowing eyes
+      ctx.fillStyle = '#ff2d6a'; ctx.shadowColor = '#ff2d6a'; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(-3.5, -3, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3.5, -3, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.translate(p.x, p.y);
+      if (p.rot) ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color; ctx.shadowBlur = 6;
+      if (p.shape === 'square') {
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      } else {
+        ctx.beginPath(); ctx.arc(0, 0, p.size || 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    ctx.save();
+    if (screenShake > 0) {
+      ctx.translate((Math.random() - 0.5) * 14 * screenShake, (Math.random() - 0.5) * 14 * screenShake);
+    }
+    const off = worldOffset();
+    // beat-synced camera punch: a quick forward zoom on every beat, so the whole
+    // scene visibly lurches forward in time with the music, not just the obstacles
+    if (state === 'playing') {
+      const beatFrac = (off / GRID) % 1;
+      const punch = beatFrac < 0.14 ? (1 - beatFrac / 0.14) * 0.028 : 0;
+      if (punch > 0) {
+        ctx.translate(W / 2, H / 2);
+        ctx.scale(1 + punch, 1 + punch);
+        ctx.translate(-W / 2, -H / 2);
+      }
+    }
+    const color = iconColor(mode);
+    drawBackdrop(off);
+    if (mode === 'dual') drawDualStage(off, color); else drawGroundCeil(off, color);
+    drawObstacles(level, off, color);
+    if (state === 'playing') drawPlayer(color);
+    drawParticles();
+    ctx.restore();
+    if (flashAlpha > 0) {
+      ctx.fillStyle = `rgba(255,45,106,${(flashAlpha * 0.45).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ---------- Attract mode: cycles through all four levels behind the menu ----------
+  let demoOffset = 0, demoT = 0, demoLastTime = 0, demoLevelIdx = 0, demoSwitchAt = 7;
+  function drawAttractPlayer(color) {
+    const hopPeriod = 0.55;
+    const t = (demoT % hopPeriod) / hopPeriod;
+    const hop = Math.sin(t * Math.PI);
+    const y = (GROUND_Y - 15) - hop * 90;
+    ctx.save();
+    ctx.translate(PLAYER_X, y);
+    ctx.rotate(demoT * 3.2);
+    ctx.shadowColor = color; ctx.shadowBlur = 16;
+    drawCubeBody(30, color, false);
+    ctx.restore();
+  }
+
+  function attractLoop(now) {
+    if (state !== 'menu') return;
+    let dt = (now - demoLastTime) / 1000;
+    demoLastTime = now;
+    dt = Math.min(dt, 1 / 30);
+    demoT += dt;
+
+    if (demoT > demoSwitchAt) {
+      demoLevelIdx = (demoLevelIdx + 1) % LEVELS.length;
+      demoOffset = 0;
+      demoSwitchAt = demoT + 7;
+    }
+    const demoLv = LEVELS[demoLevelIdx];
+    demoOffset = (demoOffset + SCROLL_SPEED * dt) % demoLv.worldLen;
+
+    drawBackdrop(demoOffset);
+    drawGroundCeil(demoOffset, demoLv.color);
+    drawObstacles(demoLv.obstacles, demoOffset, demoLv.color);
+    drawAttractPlayer(demoLv.color);
+
+    requestAnimationFrame(attractLoop);
+  }
+
+  resetPlayer();
+  buildLevelList();
+  buildIconTabs();
+  buildIconSwatches();
+  refreshIconsUI();
+  refreshAccountUI();
+  state = 'menu';
+  goToHome();
+  demoLastTime = performance.now();
+  requestAnimationFrame(attractLoop);
+})();
+</script>
+</body>
+</html>
