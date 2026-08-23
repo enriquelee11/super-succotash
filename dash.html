@@ -1326,8 +1326,12 @@
   function win() {
     state = 'won';
     stopMusic();
-    recordBest(100);
-    winInfo.textContent = `CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}  ·  BEST ${Math.floor(best)}%`;
+    if (!practiceMode) {
+      recordBest(100);
+    }
+    winInfo.textContent = practiceMode
+      ? `PRACTICE: CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}`
+      : `CLEARED IN ${attempts} ATTEMPT${attempts === 1 ? '' : 'S'}  ·  BEST ${Math.floor(best)}%`;
     winOverlay.classList.remove('hidden');
   }
 
@@ -1577,7 +1581,8 @@
     screenShake = 0;
     flashAlpha = 0;
     hitStopTimer = 0;
-    currentOff = checkpointBeat * GRID;
+    currentOff = 0;
+    checkpointBeat = 0;
     currentSpeedMult = 1;
     state = 'playing';
     level.forEach(o => { o.done = false; });
