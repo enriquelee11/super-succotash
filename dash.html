@@ -963,51 +963,55 @@
     return { events, endBeat };
   }
 
-  // NIGHTMARE — introduces dual mode: two synchronized cubes in stacked mini-lanes, one
-  // shared tap. Dual's jump cycle is short (~0.365s) so even tight cadences stay safely
-  // clearable; the reused cube/ship/ufo/wave/robot sections are scaled ×1.2 to preserve
-  // medium's proven absolute-time margins at the faster 180 BPM.
+  // NIGHTMARE — 3 minutes = 540 beats @ 180 BPM
   const nSecCube = [
-    spike(2, 'floor'), spike(5, 'floor'), spike(8, 'floor'),
-    pad(11), portal(11.5, 'ship'),
+    spike(2, 'floor'), spike(5, 'floor'), spike(8, 'floor'), spike(11, 'floor'),
+    spike(14, 'floor'), spike(17, 'floor'), spike(20, 'floor'),
+    pad(23), portal(23.5, 'ship'),
   ];
   const nSecShip = [
-    // ship: cleaner pattern with breathing room
     block(0, 'floor', 100), block(3, 'ceil', 120),
     block(6, 'floor', 110), block(9, 'ceil', 100),
-    platform(11, 70),
-    portal(13, 'dual'),
+    block(12, 'floor', 105), block(15, 'ceil', 115),
+    block(18, 'floor', 95), block(21, 'ceil', 110),
+    platform(23, 70),
+    portal(26, 'dual'),
   ];
   const nSecDual1 = [
     ...dspike(0, 'AB'), ...dspike(3, 'A'), ...dspike(6, 'B'), ...dspike(9, 'AB'),
-    portal(12, 'ufo'),
+    ...dspike(12, 'A'), ...dspike(15, 'B'), ...dspike(18, 'AB'),
+    portal(22, 'ufo'),
   ];
   const nSecUfo = [
     spike(0, 'floor'),
     orb(1.5, 'yellow'),
     spike(3, 'ceil'), spike(5, 'floor'), spike(7, 'ceil'),
-    portal(10, 'wave'),
+    spike(9, 'floor'), spike(11, 'ceil'), spike(13, 'floor'),
+    portal(16, 'wave'),
   ];
   const nSecWave = [
-    // wave: moderate alternation with spacing
     block(0, 'floor', 90), block(3, 'ceil', 100),
     block(6, 'floor', 95), block(9, 'ceil', 110),
-    portal(12, 'robot'),
+    block(12, 'floor', 100), block(15, 'ceil', 95),
+    block(18, 'floor', 105),
+    portal(21, 'robot'),
   ];
   const nSecRobot = [
     spike(0, 'floor'), spike(3, 'floor'), spike(6, 'floor'), spike(9, 'floor'),
-    portal(12, 'dual'),
+    spike(12, 'floor'), spike(15, 'floor'),
+    portal(18, 'dual'),
   ];
   const nSecDual2 = [
     ...dspike(0, 'AB'), ...dspike(3, 'A'), ...dspike(6, 'B'), ...dspike(9, 'AB'),
+    ...dspike(12, 'A'), ...dspike(15, 'B'),
   ];
-  // MONSTER BOSS ARENA: simplified finish
   const nSecMonster = [
     platform(0, 95), platform(1, 95),
-    spike(2, 'floor'), spike(3, 'floor'),
-    spike(4, 'ceil'), spike(5, 'ceil'),
-    spike(6, 'floor'), spike(7, 'floor'), spike(8, 'floor'),
-    spike(9, 'ceil'), spike(10, 'ceil'),
+    spike(2, 'floor'), spike(3, 'floor'), spike(4, 'floor'),
+    spike(5, 'ceil'), spike(6, 'ceil'),
+    spike(7, 'floor'), spike(8, 'floor'), spike(9, 'floor'),
+    spike(10, 'ceil'), spike(11, 'ceil'),
+    spike(12, 'floor'), spike(13, 'floor'), spike(14, 'floor'),
   ];
 
   const n1 = placeSection(nSecCube, 1.2, 9);
@@ -1024,40 +1028,41 @@
     finish(nightmareFinishBeat),
   ];
 
-  // APOCALYPSE — extended challenging tour through all modes (1.5 min = 307 beats @ 205 BPM)
+  // APOCALYPSE — 3 minutes = 615 beats @ 205 BPM
   const aSecCube = [
     spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
     spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
-    pad(18), portal(18.5, 'ship'),
+    spike(18, 'floor'), spike(20, 'floor'), spike(22, 'floor'),
+    pad(24), portal(24.5, 'ship'),
   ];
   const aSecShip = [
     block(0, 'floor', 95), block(2, 'ceil', 110), block(4, 'floor', 100), block(6, 'ceil', 105),
     block(8, 'floor', 95), block(10, 'ceil', 100), block(12, 'floor', 105), block(14, 'ceil', 95),
-    block(16, 'floor', 100), block(18, 'ceil', 110),
-    portal(21, 'ufo'),
+    block(16, 'floor', 100), block(18, 'ceil', 110), block(20, 'floor', 90),
+    portal(24, 'ufo'),
   ];
   const aSecUfo = [
     spike(0, 'floor'), orb(2, 'yellow'), spike(4, 'ceil'), spike(6, 'floor'),
     spike(8, 'ceil'), spike(10, 'floor'), spike(12, 'ceil'), spike(14, 'floor'),
-    spike(16, 'ceil'), spike(18, 'floor'),
-    portal(21, 'wave'),
+    spike(16, 'ceil'), spike(18, 'floor'), spike(20, 'ceil'), spike(22, 'floor'),
+    portal(25, 'wave'),
   ];
   const aSecWave = [
     block(0, 'floor', 90), block(2, 'ceil', 105), block(4, 'floor', 95), block(6, 'ceil', 100),
     block(8, 'floor', 90), block(10, 'ceil', 95), block(12, 'floor', 100), block(14, 'ceil', 105),
-    block(16, 'floor', 90), block(18, 'ceil', 100),
-    portal(21, 'robot'),
+    block(16, 'floor', 90), block(18, 'ceil', 100), block(20, 'floor', 95),
+    portal(24, 'robot'),
   ];
   const aSecRobot = [
     spike(0, 'floor'), orb(2, 'red'), spike(4, 'floor'), spike(6, 'floor'),
     spike(8, 'floor'), spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'),
-    spike(16, 'floor'), spike(18, 'floor'),
-    portal(21, 'dual'),
+    spike(16, 'floor'), spike(18, 'floor'), spike(20, 'floor'),
+    portal(24, 'dual'),
   ];
   const aSecDual = [
     ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
     ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
-    ...dspike(16, 'B'), ...dspike(18, 'AB'),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'), ...dspike(20, 'A'), ...dspike(22, 'B'),
   ];
   const aSecMonster = [
     platform(0, 100), platform(2, 100),
@@ -1065,6 +1070,8 @@
     spike(6, 'ceil'), spike(7, 'ceil'),
     spike(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
     spike(11, 'ceil'), spike(12, 'ceil'),
+    spike(13, 'floor'), spike(14, 'floor'), spike(15, 'floor'),
+    spike(16, 'ceil'), spike(17, 'ceil'),
   ];
   const a1 = placeSection(aSecCube, 1, 9);
   const a2 = placeSection(aSecShip, 1, a1.endBeat + 2);
@@ -1076,40 +1083,44 @@
   const apocalypseFinishBeat = Math.ceil(a7.endBeat + 1);
   const APOCALYPSE_EVENTS = [...a1.events, ...a2.events, ...a3.events, ...a4.events, ...a5.events, ...a6.events, ...a7.events, finish(apocalypseFinishBeat)];
 
-  // EXTREME DEMON — hardest challenge: demanding but fair (1.5 min = 337 beats @ 225 BPM)
+  // EXTREME DEMON — 3 minutes = 675 beats @ 225 BPM
   const eSecCube = [
     spike(2, 'floor'), spike(4, 'floor'), spike(6, 'floor'), spike(8, 'floor'),
     spike(10, 'floor'), spike(12, 'floor'), spike(14, 'floor'), spike(16, 'floor'),
-    spike(18, 'floor'), pad(20), portal(20.5, 'ship'),
+    spike(18, 'floor'), spike(20, 'floor'), spike(22, 'floor'), spike(24, 'floor'),
+    pad(26), portal(26.5, 'ship'),
   ];
   const eSecShip = [
     block(0, 'floor', 100), block(1.5, 'ceil', 115), block(3, 'floor', 105), block(4.5, 'ceil', 100),
     block(6, 'floor', 95), block(7.5, 'ceil', 110), block(9, 'floor', 100), block(10.5, 'ceil', 105),
     block(12, 'floor', 95), block(13.5, 'ceil', 110), block(15, 'floor', 100),
-    portal(17.5, 'ufo'),
+    block(16.5, 'ceil', 105), block(18, 'floor', 95),
+    portal(20.5, 'ufo'),
   ];
   const eSecUfo = [
     spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'ceil'), spike(5, 'floor'),
     spike(7, 'ceil'), spike(9, 'floor'), spike(11, 'ceil'), spike(13, 'floor'),
-    spike(15, 'ceil'), spike(17, 'floor'),
-    portal(20, 'wave'),
+    spike(15, 'ceil'), spike(17, 'floor'), spike(19, 'ceil'), spike(21, 'floor'),
+    portal(24, 'wave'),
   ];
   const eSecWave = [
     block(0, 'floor', 95), block(1.5, 'ceil', 110), block(3, 'floor', 100), block(4.5, 'ceil', 105),
     block(6, 'floor', 95), block(7.5, 'ceil', 100), block(9, 'floor', 105), block(10.5, 'ceil', 95),
     block(12, 'floor', 100), block(13.5, 'ceil', 105), block(15, 'floor', 95),
-    portal(17.5, 'robot'),
+    block(16.5, 'ceil', 100), block(18, 'floor', 105),
+    portal(20.5, 'robot'),
   ];
   const eSecRobot = [
     spike(0, 'floor'), orb(1.5, 'red'), spike(3, 'floor'), spike(5, 'floor'),
     spike(7, 'floor'), spike(9, 'floor'), spike(11, 'floor'), spike(13, 'floor'),
-    spike(15, 'floor'), spike(17, 'floor'),
-    portal(20, 'dual'),
+    spike(15, 'floor'), spike(17, 'floor'), spike(19, 'floor'),
+    portal(22, 'dual'),
   ];
   const eSecDual = [
     ...dspike(0, 'AB'), ...dspike(2, 'A'), ...dspike(4, 'B'), ...dspike(6, 'AB'),
     ...dspike(8, 'A'), ...dspike(10, 'B'), ...dspike(12, 'AB'), ...dspike(14, 'A'),
-    ...dspike(16, 'B'), ...dspike(18, 'AB'), platform(20, 100), platform(21, 100),
+    ...dspike(16, 'B'), ...dspike(18, 'AB'), ...dspike(20, 'A'),
+    platform(22, 100), platform(23, 100),
   ];
   const eSecMonster = [
     platform(0, 110), platform(2, 110),
@@ -1117,6 +1128,8 @@
     spike(6, 'ceil'), spike(7, 'ceil'),
     spike(8, 'floor'), spike(9, 'floor'), spike(10, 'floor'),
     spike(11, 'ceil'), spike(12, 'ceil'),
+    spike(13, 'floor'), spike(14, 'floor'), spike(15, 'floor'),
+    spike(16, 'ceil'), spike(17, 'ceil'),
   ];
   const e1 = placeSection(eSecCube, 1.05, 9);
   const e2 = placeSection(eSecShip, 1.05, e1.endBeat + 2);
