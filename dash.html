@@ -719,7 +719,7 @@
     ...dspike(155, 'AB'), ...dspike(158, 'A'), ...dspike(161, 'B'), ...dspike(164, 'AB'),
     // monster: finale
     platform(166, 85), platform(167, 85),
-    saw(171, 'floor'),
+    saw(169, 'floor'), saw(171, 'ceil'), saw(173, 'floor'), saw(175, 'ceil'), saw(177, 'floor'),
     finish(180),
   ];
 
@@ -788,8 +788,7 @@
     ...dspike(145, 'A'), ...dspike(147, 'B'), ...dspike(149, 'AB'),
     // monster: extended boss arena
     platform(151, 90), platform(152.5, 90),
-    saw(157, 'floor'),
-    pad(163),
+    saw(155, 'floor'), saw(157, 'ceil'), saw(159, 'floor'), saw(161, 'ceil'), saw(163, 'floor'),
     finish(225),
   ];
 
@@ -849,8 +848,7 @@
     ...dspike(158, 'A'), ...dspike(161, 'B'), ...dspike(164, 'AB'),
     // monster: extended boss arena
     platform(167, 95), platform(168.5, 95),
-    saw(173, 'floor'),
-    pad(179),
+    saw(171, 'floor'), saw(173, 'ceil'), saw(175, 'floor'), saw(177, 'ceil'), saw(179, 'floor'),
     finish(255),
   ];
 
@@ -905,8 +903,7 @@
     ...dspike(148, 'A'), ...dspike(150, 'B'), ...dspike(152, 'AB'),
     // monster: extended boss arena
     platform(154, 100), platform(155.5, 100),
-    saw(160, 'floor'),
-    pad(166),
+    saw(158, 'floor'), saw(160, 'ceil'), saw(162, 'floor'), saw(164, 'ceil'), saw(166, 'floor'),
     finish(285),
   ];
 
@@ -979,8 +976,7 @@
   ];
   const nSecMonster = [
     platform(0, 95), platform(1, 95),
-    saw(5, 'floor'),
-    pad(10),
+    saw(3, 'floor'), saw(5, 'ceil'), saw(7, 'floor'), saw(9, 'ceil'), saw(11, 'floor'),
   ];
 
   const n1 = placeSection(nSecCube, 1.2, 9);
@@ -1035,8 +1031,7 @@
   ];
   const aSecMonster = [
     platform(0, 100), platform(2, 100),
-    saw(6, 'floor'),
-    pad(12),
+    saw(4, 'floor'), saw(6, 'ceil'), saw(8, 'floor'), saw(10, 'ceil'), saw(12, 'floor'),
   ];
   const a1 = placeSection(aSecCube, 1, 9);
   const a2 = placeSection(aSecShip, 1, a1.endBeat + 2);
@@ -1089,8 +1084,7 @@
   ];
   const eSecMonster = [
     platform(0, 110), platform(2, 110),
-    saw(6, 'floor'),
-    pad(12),
+    saw(4, 'floor'), saw(6, 'ceil'), saw(8, 'floor'), saw(10, 'ceil'), saw(12, 'floor'),
   ];
   const e1 = placeSection(eSecCube, 1.05, 9);
   const e2 = placeSection(eSecShip, 1.05, e1.endBeat + 2);
