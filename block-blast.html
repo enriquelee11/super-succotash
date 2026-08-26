@@ -149,6 +149,33 @@
     opacity: 0;
   }
 
+  @keyframes dieShake {
+    0% { transform: translate(0,0); }
+    20% { transform: translate(-6px, 2px); }
+    40% { transform: translate(6px, -3px); }
+    60% { transform: translate(-5px, 3px); }
+    80% { transform: translate(4px, -2px); }
+    100% { transform: translate(0,0); }
+  }
+  @keyframes dieFlash {
+    0% { opacity: 0; }
+    35% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .board-wrap.shake-die {
+    animation: dieShake 0.4s ease;
+  }
+  .board-wrap.shake-die::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,90,117,0.4);
+    z-index: 30;
+    animation: dieFlash 0.4s ease;
+    pointer-events: none;
+    border-radius: 6px;
+  }
+
   .tray {
     display: flex;
     justify-content: space-between;
@@ -293,6 +320,37 @@
   .leaderboard li .pts { color: var(--accent); font-weight: 700; }
   .leaderboard-empty { color: var(--text-hint); font-size: 12px; }
 
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .swatch {
+    position: relative;
+    width: 48px;
+    height: 48px;
+  }
+  .swatch input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3), 0 0 10px rgba(0,0,0,0.4);
+  }
+  .swatch input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 10px; }
+  .swatch input[type="color"]::-webkit-color-swatch { border: none; border-radius: 10px; }
+  .swatch input[type="color"]::-moz-color-swatch { border: none; border-radius: 10px; }
+
+  .colors-actions {
+    display: flex;
+    gap: 10px;
+  }
+
   .hint {
     color: var(--neon-dim);
     font-size: 10.5px;
@@ -318,17 +376,19 @@
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
       <span class="combo-tag" id="comboWrap" style="opacity:0">COMBO<b id="combo">x1</b></span>
+      <button class="hud-btn" id="colorsBtn" title="Customize Colors">🎨</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
     </div>
     <div class="screen-frame">
-      <div class="board-wrap">
+      <div class="board-wrap" id="boardWrap">
         <div id="board"></div>
 
         <div id="startOverlay" class="overlay">
           <h2 class="display-font">BLOCK<br/>BLAST!</h2>
-          <p>DRAG PIECES ONTO THE GRID.<br/>FILL A FULL ROW OR COLUMN TO BLAST IT AWAY.<br/>GAME ENDS WHEN NOTHING FITS.</p>
+          <p>DRAG PIECES ONTO THE GRID.<br/>FILL A FULL ROW OR COLUMN TO BLAST IT AWAY.<br/>WHEN NO PIECE FITS ANYWHERE, IT'S GAME OVER.</p>
           <button class="action" id="startBtn">START GAME</button>
           <button class="action secondary" id="startScoresBtn">HIGH SCORES</button>
+          <button class="action secondary" id="startColorsBtn">CUSTOMIZE COLORS</button>
         </div>
 
         <div id="overOverlay" class="overlay hidden">
@@ -347,6 +407,15 @@
           <p id="leaderboardEmpty" class="leaderboard-empty hidden">NO SCORES YET — BE THE FIRST!</p>
           <button class="action" id="closeScoresBtn">CLOSE</button>
         </div>
+
+        <div id="colorsOverlay" class="overlay hidden">
+          <h2 class="display-font">CUSTOMIZE<br/>COLORS</h2>
+          <div class="swatch-grid" id="swatchGrid"></div>
+          <div class="colors-actions">
+            <button class="action secondary" id="resetColorsBtn">RESET</button>
+            <button class="action" id="closeColorsBtn">DONE</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="tray" id="tray">
@@ -354,7 +423,7 @@
       <div class="tray-slot" data-slot="1"></div>
       <div class="tray-slot" data-slot="2"></div>
     </div>
-    <div class="hint">DRAG A PIECE FROM THE TRAY ONTO THE GRID &nbsp;·&nbsp; CLEAR ROWS/COLUMNS FOR COMBOS</div>
+    <div class="hint">DRAG A PIECE FROM THE TRAY ONTO THE GRID &nbsp;·&nbsp; CLEAR ROWS/COLUMNS FOR COMBOS &nbsp;·&nbsp; 🎨 TO CUSTOMIZE COLORS</div>
     <a class="home-link" href="index.html">← BACK TO AMBER SNAKE</a>
   </div>
 
@@ -381,16 +450,32 @@
     ['100','100','111'], ['111','100','100'], ['001','001','111'], ['111','001','001'],
     ['111','111','111'],
   ];
-  const PALETTE = [
-    { fill: '#7dd3fc', glow: 'rgba(125,211,252,0.55)' },
-    { fill: '#f472b6', glow: 'rgba(244,114,182,0.55)' },
-    { fill: '#fbbf24', glow: 'rgba(251,191,36,0.55)' },
-    { fill: '#a3e635', glow: 'rgba(163,230,53,0.55)' },
-    { fill: '#a78bfa', glow: 'rgba(167,139,250,0.55)' },
-    { fill: '#fb923c', glow: 'rgba(251,146,60,0.55)' },
-    { fill: '#f87171', glow: 'rgba(248,113,113,0.55)' },
-    { fill: '#60a5fa', glow: 'rgba(96,165,250,0.55)' },
-  ];
+  const DEFAULT_HEXES = ['#7dd3fc', '#f472b6', '#fbbf24', '#a3e635', '#a78bfa', '#fb923c', '#f87171', '#60a5fa'];
+
+  function hexToRgba(hex, alpha) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  function buildPalette(hexes) {
+    return hexes.map(hex => ({ fill: hex, glow: hexToRgba(hex, 0.55) }));
+  }
+
+  const PALETTE_KEY = 'blockBlastPalette';
+  function loadHexes() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PALETTE_KEY) || 'null');
+      if (Array.isArray(raw) && raw.length === DEFAULT_HEXES.length && raw.every(h => /^#[0-9a-fA-F]{6}$/.test(h))) return raw;
+    } catch (e) {}
+    return DEFAULT_HEXES.slice();
+  }
+  let currentHexes = loadHexes();
+  let PALETTE = buildPalette(currentHexes);
+
+  function applyPalette() {
+    localStorage.setItem(PALETTE_KEY, JSON.stringify(currentHexes));
+    PALETTE = buildPalette(currentHexes);
+  }
 
   const HS_KEY = 'blockBlastHighScores';
   const MAX_SCORES = 10;
@@ -434,6 +519,9 @@
   const playAgainBtn = document.getElementById('playAgainBtn');
   const leaderboardEl = document.getElementById('leaderboard');
   const leaderboardEmptyEl = document.getElementById('leaderboardEmpty');
+  const colorsOverlay = document.getElementById('colorsOverlay');
+  const swatchGrid = document.getElementById('swatchGrid');
+  const boardWrap = document.getElementById('boardWrap');
 
   let board, cells, tray, score, combo, running, gameOver;
 
@@ -600,18 +688,22 @@
   function endGame() {
     running = false;
     gameOver = true;
-    finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${bestScore()})`;
-    overOverlay.classList.remove('hidden');
-    const qualifies = highScores.length < MAX_SCORES || score > highScores[highScores.length - 1].score;
-    if (qualifies && score > 0) {
-      nameEntry.classList.remove('hidden');
-      playAgainBtn.classList.add('hidden');
-      nameInput.value = '';
-      setTimeout(() => nameInput.focus(), 50);
-    } else {
-      nameEntry.classList.add('hidden');
-      playAgainBtn.classList.remove('hidden');
-    }
+    boardWrap.classList.add('shake-die');
+    setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
+    setTimeout(() => {
+      finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${bestScore()})`;
+      overOverlay.classList.remove('hidden');
+      const qualifies = highScores.length < MAX_SCORES || score > highScores[highScores.length - 1].score;
+      if (qualifies && score > 0) {
+        nameEntry.classList.remove('hidden');
+        playAgainBtn.classList.add('hidden');
+        nameInput.value = '';
+        setTimeout(() => nameInput.focus(), 50);
+      } else {
+        nameEntry.classList.add('hidden');
+        playAgainBtn.classList.remove('hidden');
+      }
+    }, 320);
   }
 
   function submitScore() {
@@ -648,6 +740,23 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function renderSwatches() {
+    swatchGrid.innerHTML = '';
+    currentHexes.forEach((hex, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'swatch';
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = hex;
+      input.addEventListener('input', () => {
+        currentHexes[i] = input.value;
+        applyPalette();
+      });
+      wrap.appendChild(input);
+      swatchGrid.appendChild(wrap);
+    });
   }
 
   // --- Drag and drop ---
@@ -767,15 +876,36 @@
   nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitScore(); });
 
   document.getElementById('scoresBtn').addEventListener('click', () => {
+    colorsOverlay.classList.add('hidden');
     renderLeaderboard();
     scoresOverlay.classList.remove('hidden');
   });
   document.getElementById('startScoresBtn').addEventListener('click', () => {
+    colorsOverlay.classList.add('hidden');
     renderLeaderboard();
     scoresOverlay.classList.remove('hidden');
   });
   document.getElementById('closeScoresBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
+  });
+
+  document.getElementById('colorsBtn').addEventListener('click', () => {
+    scoresOverlay.classList.add('hidden');
+    renderSwatches();
+    colorsOverlay.classList.remove('hidden');
+  });
+  document.getElementById('startColorsBtn').addEventListener('click', () => {
+    scoresOverlay.classList.add('hidden');
+    renderSwatches();
+    colorsOverlay.classList.remove('hidden');
+  });
+  document.getElementById('closeColorsBtn').addEventListener('click', () => {
+    colorsOverlay.classList.add('hidden');
+  });
+  document.getElementById('resetColorsBtn').addEventListener('click', () => {
+    currentHexes = DEFAULT_HEXES.slice();
+    applyPalette();
+    renderSwatches();
   });
 
   buildBoardDom();
