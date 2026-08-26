@@ -404,6 +404,7 @@
             <button class="action" id="saveScoreBtn">SAVE</button>
           </div>
           <button class="action secondary hidden" id="playAgainBtn">PLAY AGAIN</button>
+          <button class="action secondary" id="homeBtn">HOME</button>
         </div>
 
         <div id="scoresOverlay" class="overlay hidden">
@@ -894,6 +895,12 @@
   playAgainBtn.addEventListener('click', () => {
     overOverlay.classList.add('hidden');
     reset();
+  });
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    overOverlay.classList.add('hidden');
+    nameEntry.classList.add('hidden');
+    playAgainBtn.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
   });
   document.getElementById('saveScoreBtn').addEventListener('click', submitScore);
   nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitScore(); });

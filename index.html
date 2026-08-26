@@ -151,6 +151,16 @@
   button:hover { filter: brightness(1.05); }
   button:active { transform: translateY(4px); box-shadow: 0 0 0 var(--accent-deep), 0 2px 6px rgba(232,99,124,0.3); }
   button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
+  button.secondary {
+    background: linear-gradient(180deg, var(--mint), var(--mint-deep));
+    box-shadow: 0 4px 0 var(--mint-deep), 0 6px 14px rgba(79,185,140,0.3);
+  }
+  button.secondary:active { box-shadow: 0 0 0 var(--mint-deep), 0 2px 6px rgba(79,185,140,0.3); }
+
+  .overlay-buttons {
+    display: flex;
+    gap: 10px;
+  }
 
   .hint {
     color: var(--ink-dim);
@@ -200,7 +210,10 @@
         <div id="overOverlay" class="overlay hidden">
           <h2 class="display-font danger">GAME<br/>OVER</h2>
           <p id="finalScore">SCORE: 0</p>
-          <button id="restartBtn">CONTINUE</button>
+          <div class="overlay-buttons">
+            <button id="restartBtn">CONTINUE</button>
+            <button id="homeBtn" class="secondary">HOME</button>
+          </div>
         </div>
       </div>
     </div>
@@ -320,6 +333,11 @@
   document.getElementById('startBtn').addEventListener('click', startGame);
   document.getElementById('restartBtn').addEventListener('click', startGame);
   document.getElementById('resumeBtn').addEventListener('click', togglePause);
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    reset();
+    overOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
 
   function togglePause() {
     if (!running || gameOver) return;
