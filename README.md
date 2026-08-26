@@ -21,7 +21,7 @@ A neon arcade Snake game.
 - Touch users get on-screen directional buttons
 - High score saved locally (`localStorage`)
 
-### Block Blast! (`block-blast.html`)
+### Jumble (`jumble.html`)
 
 A drag-and-drop block puzzle in the style of *Block Blast* / *1010!*. Drag pieces from the tray onto the 8×8 grid — fill a full row or column to blast it away and score points. Chain clears back-to-back for a combo multiplier. The game ends when none of your three pieces fit anywhere on the board.
 
