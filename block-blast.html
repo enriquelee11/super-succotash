@@ -760,7 +760,12 @@
   }
 
   // --- Drag and drop ---
+  // Pointer input is throttled to one update per animation frame, and only the
+  // handful of cells under the piece are touched (never all 64), so dragging
+  // stays smooth even under a fast stream of pointermove events.
   let dragState = null;
+  let rafId = null;
+  let pendingPointer = null;
 
   function attachDrag(pieceEl, slotEl, slotIndex, piece, cellPx) {
     pieceEl.addEventListener('pointerdown', (e) => {
@@ -789,8 +794,9 @@
       pieceEl.classList.add('dragging-source');
 
       const lift = e.pointerType === 'touch' ? 78 : 22;
-      dragState = { piece, slotIndex, ghost, boardCell, lift, pieceEl };
-      updateGhostPosition(e.clientX, e.clientY);
+      dragState = { piece, slotIndex, ghost, boardRect, boardCell, lift, pieceEl, target: null, previewCells: [] };
+      pendingPointer = { x: e.clientX, y: e.clientY };
+      updateGhostPosition(pendingPointer.x, pendingPointer.y);
 
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
@@ -798,9 +804,25 @@
     });
   }
 
+  function scheduleGhostUpdate() {
+    if (rafId != null) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      if (dragState && pendingPointer) updateGhostPosition(pendingPointer.x, pendingPointer.y);
+    });
+  }
+
+  function setPreviewCells(newCells, valid) {
+    const prevCells = dragState.previewCells;
+    prevCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-ok', 'preview-bad'));
+    const cls = valid ? 'preview-ok' : 'preview-bad';
+    newCells.forEach(([r, c]) => cells[r][c].classList.add(cls));
+    dragState.previewCells = newCells;
+  }
+
   function updateGhostPosition(clientX, clientY) {
     if (!dragState) return;
-    const { ghost, boardCell, lift, piece } = dragState;
+    const { ghost, boardRect, boardCell, lift, piece } = dragState;
     const w = boardCell * piece.cols;
     const h = boardCell * piece.rows;
     const left = clientX - w / 2;
@@ -808,13 +830,12 @@
     ghost.style.left = left + 'px';
     ghost.style.top = top + 'px';
 
-    const boardRect = boardEl.getBoundingClientRect();
     const overBoard = clientX >= boardRect.left - boardCell && clientX <= boardRect.right + boardCell &&
                        (clientY - lift) >= boardRect.top - boardCell && (clientY - lift) <= boardRect.bottom + boardCell;
 
-    clearPreview();
     if (!overBoard) {
       dragState.target = null;
+      if (dragState.previewCells.length) setPreviewCells([], true);
       return;
     }
     let colStart = Math.round((left - boardRect.left) / boardCell);
@@ -823,34 +844,31 @@
     rowStart = Math.max(0, Math.min(SIZE - piece.rows, rowStart));
     const valid = canPlace(rowStart, colStart, piece);
     dragState.target = { rowStart, colStart, valid };
+    const newCells = [];
     for (let r = 0; r < piece.rows; r++) {
       for (let c = 0; c < piece.cols; c++) {
         if (!piece.matrix[r][c]) continue;
         const br = rowStart + r, bc = colStart + c;
         if (br < 0 || br >= SIZE || bc < 0 || bc >= SIZE) continue;
-        cells[br][bc].classList.add(valid ? 'preview-ok' : 'preview-bad');
+        newCells.push([br, bc]);
       }
     }
-  }
-
-  function clearPreview() {
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        cells[r][c].classList.remove('preview-ok', 'preview-bad');
-      }
-    }
+    setPreviewCells(newCells, valid);
   }
 
   function onPointerMove(e) {
     if (!dragState) return;
     e.preventDefault();
-    updateGhostPosition(e.clientX, e.clientY);
+    pendingPointer = { x: e.clientX, y: e.clientY };
+    scheduleGhostUpdate();
   }
 
   function onPointerUp(e) {
     if (!dragState) return;
-    const { piece, slotIndex, ghost, pieceEl, target } = dragState;
-    clearPreview();
+    const { piece, slotIndex, ghost, pieceEl, target, previewCells } = dragState;
+    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+    pendingPointer = null;
+    previewCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-ok', 'preview-bad'));
     ghost.remove();
     pieceEl.classList.remove('dragging-source');
     window.removeEventListener('pointermove', onPointerMove);
