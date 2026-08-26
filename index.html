@@ -118,12 +118,15 @@
     text-align: center;
     padding: 20px;
     z-index: 4;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .overlay h2 {
     margin: 0;
     font-size: 22px;
     line-height: 1.5;
     color: var(--ink-bright);
+    flex-shrink: 0;
   }
   .overlay p {
     margin: 0;
