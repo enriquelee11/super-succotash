@@ -6,29 +6,33 @@
 <title>Amber Snake</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --cabinet: #1b140c;
-    --cabinet-hi: #33260f;
-    --cabinet-lo: #0e0a05;
-    --screen: #150f07;
-    --screen-edge: #0a0703;
-    --phosphor: #ffb000;
-    --phosphor-bright: #ffd88a;
-    --phosphor-dim: #7a5420;
-    --phosphor-faint: #4a3618;
-    --danger: #ff5a36;
-    --danger-dim: #8f3521;
-    --text-hint: #c99a4e;
+    --bg: #fff3e4;
+    --card-top: #ffe8cf;
+    --card-mid: #ffd9c2;
+    --card-bottom: #fbc9b9;
+    --screen: #fffbf5;
+    --screen-edge: #f6e4d3;
+    --ink: #5b4b5a;
+    --ink-bright: #3e2f3d;
+    --ink-dim: #a5919f;
+    --accent: #ff8fa3;
+    --accent-deep: #e8637c;
+    --mint: #7fdcb0;
+    --mint-deep: #4fb98c;
+    --danger: #ff6f79;
+    --danger-deep: #e3505a;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     height: 100%;
-    background: var(--cabinet-lo);
-    color: var(--phosphor);
-    font-family: 'Space Mono', 'Courier New', monospace;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Quicksand', 'Trebuchet MS', sans-serif;
+    font-weight: 600;
     display: flex;
     align-items: safe center;
     justify-content: center;
@@ -36,43 +40,31 @@
     overflow-x: hidden;
   }
   body { padding: 20px 0; }
-  .display-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .flicker { animation: flicker 6s infinite; }
-  }
-  @keyframes flicker {
-    0%, 93%, 100% { opacity: 1; }
-    94% { opacity: 0.94; }
-    95% { opacity: 1; }
-    96% { opacity: 0.9; }
-    97% { opacity: 1; }
-  }
+  .display-font { font-family: 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 700; }
 
   .cabinet {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    padding: 18px 22px 22px;
-    background:
-      linear-gradient(155deg, var(--cabinet-hi) 0%, var(--cabinet) 40%, var(--cabinet-lo) 100%);
-    border-radius: 18px;
+    padding: 20px 22px 24px;
+    background: linear-gradient(165deg, var(--card-top) 0%, var(--card-mid) 55%, var(--card-bottom) 100%);
+    border-radius: 28px;
     box-shadow:
-      0 0 0 2px var(--cabinet-lo),
-      0 18px 50px rgba(0,0,0,0.65),
-      inset 0 2px 0 rgba(255,255,255,0.04);
+      0 18px 40px rgba(200, 120, 90, 0.25),
+      inset 0 2px 0 rgba(255,255,255,0.6);
   }
 
   .marquee {
     text-align: center;
-    font-size: 15px;
-    letter-spacing: 3px;
-    color: var(--cabinet-lo);
-    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 70%);
-    padding: 10px 22px;
-    border-radius: 6px;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 22px rgba(255,176,0,0.35);
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    padding: 10px 28px;
+    border-radius: 999px;
+    box-shadow: 0 4px 0 var(--accent-deep), 0 8px 16px rgba(232,99,124,0.35);
   }
 
   .hud {
@@ -80,57 +72,34 @@
     justify-content: space-between;
     width: 100%;
     max-width: 480px;
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: var(--phosphor-dim);
-    padding: 0 2px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: var(--ink-dim);
+    padding: 0 4px;
   }
   .hud b {
-    color: var(--phosphor-bright);
-    font-weight: 700;
-    text-shadow: 0 0 6px rgba(255,216,138,0.6);
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--ink-bright);
+    font-size: 16px;
   }
 
   .screen-frame {
     position: relative;
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: 20px;
+    padding: 12px;
     background: var(--screen-edge);
-    box-shadow: inset 0 0 0 1px rgba(255,176,0,0.08);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5), 0 2px 6px rgba(190,140,110,0.15);
   }
   .board-wrap {
     position: relative;
-    border-radius: 4px;
+    border-radius: 14px;
     overflow: hidden;
     background: var(--screen);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px rgba(255,176,0,0.4);
-  }
-  .board-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-      to bottom,
-      rgba(0,0,0,0.22) 0px,
-      rgba(0,0,0,0.22) 1px,
-      transparent 2px,
-      transparent 3px
-    );
-    mix-blend-mode: multiply;
-  }
-  .board-wrap::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
-    z-index: 3;
+    box-shadow: inset 0 2px 10px rgba(190,140,110,0.18);
   }
   canvas {
     display: block;
     background: var(--screen);
-    image-rendering: pixelated;
     position: relative;
     z-index: 1;
   }
@@ -143,49 +112,50 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    background: rgba(10, 7, 3, 0.9);
+    background: rgba(255, 251, 245, 0.94);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     text-align: center;
     padding: 20px;
     z-index: 4;
   }
   .overlay h2 {
     margin: 0;
-    font-size: 18px;
-    line-height: 1.6;
-    color: var(--phosphor-bright);
-    text-shadow: 0 0 14px rgba(255,216,138,0.7);
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--ink-bright);
   }
   .overlay p {
     margin: 0;
-    color: var(--text-hint);
-    font-size: 12px;
+    color: var(--ink-dim);
+    font-size: 12.5px;
     line-height: 1.9;
     max-width: 320px;
   }
-  .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,90,54,0.7); }
+  .overlay .danger { color: var(--danger-deep); }
 
   button {
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 2px;
-    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 75%);
-    color: #2a1a02;
+    letter-spacing: 0.5px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+    color: #fff;
     border: none;
-    padding: 12px 26px;
-    border-radius: 5px;
+    padding: 12px 28px;
+    border-radius: 999px;
     cursor: pointer;
-    box-shadow: 0 3px 0 #8f5c00, 0 0 18px rgba(255,176,0,0.3);
+    box-shadow: 0 4px 0 var(--accent-deep), 0 6px 14px rgba(232,99,124,0.35);
     transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
-  button:hover { filter: brightness(1.08); }
-  button:active { transform: translateY(3px); box-shadow: 0 0 0 #8f5c00, 0 0 10px rgba(255,176,0,0.3); }
-  button:focus-visible { outline: 2px solid var(--phosphor-bright); outline-offset: 3px; }
+  button:hover { filter: brightness(1.05); }
+  button:active { transform: translateY(4px); box-shadow: 0 0 0 var(--accent-deep), 0 2px 6px rgba(232,99,124,0.3); }
+  button:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 3px; }
 
   .hint {
-    color: var(--phosphor-faint);
-    font-size: 10.5px;
-    letter-spacing: 0.5px;
+    color: var(--ink-dim);
+    font-size: 11px;
+    letter-spacing: 0.3px;
     text-align: center;
     max-width: 480px;
     line-height: 1.7;
@@ -194,21 +164,21 @@
 
   .touch-controls {
     display: grid;
-    grid-template-columns: repeat(3, 44px);
-    grid-template-rows: repeat(3, 44px);
-    gap: 6px;
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(3, 46px);
+    gap: 8px;
   }
   .touch-controls button {
-    width: 44px; height: 44px; padding: 0; font-size: 15px;
+    width: 46px; height: 46px; padding: 0; font-size: 16px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, var(--phosphor-bright), var(--phosphor) 70%);
-    box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
+    background: linear-gradient(180deg, var(--mint), var(--mint-deep));
+    box-shadow: 0 3px 0 var(--mint-deep), 0 4px 10px rgba(79,185,140,0.3);
   }
-  .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f5c00; }
+  .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--mint-deep); }
 </style>
 </head>
 <body>
-  <div class="cabinet flicker">
+  <div class="cabinet">
     <div class="marquee display-font">AMBER SNAKE</div>
     <div class="hud">
       <span>SCORE <b id="score">0</b></span>
@@ -235,7 +205,7 @@
       </div>
     </div>
     <div class="hint">ARROWS / WASD MOVE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; ENTER START</div>
-    <a href="jumble.html" style="color: var(--phosphor-dim); font-size: 10.5px; letter-spacing: 1px; text-decoration: none;">PLAY JUMBLE →</a>
+    <a href="jumble.html" style="color: var(--ink-dim); font-size: 11px; letter-spacing: 1px; text-decoration: none;">PLAY JUMBLE →</a>
     <div class="touch-controls">
       <span></span><button data-dir="up">▲</button><span></span>
       <button data-dir="left">◀</button><span></span><button data-dir="right">▶</button>
@@ -250,11 +220,14 @@
   const GRID = 24;
   const CELL = canvas.width / GRID;
 
-  const COLOR_PHOSPHOR_BRIGHT = '#ffd88a';
-  const COLOR_PHOSPHOR = '#ffb000';
-  const COLOR_GRID = 'rgba(122, 84, 32, 0.28)';
-  const COLOR_DANGER = '#ff5a36';
-  const COLOR_SCREEN = '#150f07';
+  const COLOR_HEAD_BRIGHT = '#b7f0d6';
+  const COLOR_BODY = '#7fdcb0';
+  const COLOR_OUTLINE = 'rgba(62, 47, 61, 0.35)';
+  const COLOR_GRID = 'rgba(165, 145, 160, 0.18)';
+  const COLOR_FOOD = '#ff8fa3';
+  const COLOR_FOOD_BRIGHT = '#ffc2ce';
+  const COLOR_DANGER = '#ff6f79';
+  const COLOR_INK = '#3e2f3d';
   const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const scoreEl = document.getElementById('score');
@@ -396,7 +369,7 @@
 
     if (head.x === food.x && head.y === food.y) {
       score += 10;
-      spawnParticles(food.x, food.y, COLOR_PHOSPHOR_BRIGHT);
+      spawnParticles(food.x, food.y, COLOR_FOOD_BRIGHT);
       if (score % 50 === 0) {
         level++;
         interval = Math.max(MIN_INTERVAL, BASE_INTERVAL - (level - 1) * 10);
@@ -447,12 +420,12 @@
 
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.shadowColor = COLOR_PHOSPHOR;
+    ctx.shadowColor = COLOR_BODY;
     for (let i = n - 1; i > 0; i--) {
       const t = i / (n - 1);
       ctx.lineWidth = CELL * (0.92 - t * 0.42);
       ctx.shadowBlur = 6;
-      ctx.strokeStyle = `rgba(255, 176, 0, ${0.55 + (1 - t) * 0.45})`;
+      ctx.strokeStyle = `rgba(127, 220, 176, ${0.65 + (1 - t) * 0.35})`;
       ctx.beginPath();
       ctx.moveTo(pts[i].x, pts[i].y);
       ctx.lineTo(pts[i - 1].x, pts[i - 1].y);
@@ -460,8 +433,8 @@
     }
 
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(74, 54, 24, 0.55)';
-    ctx.lineWidth = Math.max(2, CELL * 0.14);
+    ctx.strokeStyle = COLOR_OUTLINE;
+    ctx.lineWidth = Math.max(2, CELL * 0.1);
     ctx.beginPath();
     ctx.moveTo(pts[n - 1].x, pts[n - 1].y);
     for (let i = n - 2; i >= 0; i--) ctx.lineTo(pts[i].x, pts[i].y);
@@ -476,9 +449,9 @@
     const r = CELL * 0.5;
 
     ctx.save();
-    ctx.shadowColor = COLOR_PHOSPHOR;
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = COLOR_PHOSPHOR_BRIGHT;
+    ctx.shadowColor = COLOR_BODY;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = COLOR_HEAD_BRIGHT;
     ctx.beginPath();
     ctx.ellipse(center.x, center.y, r * 0.62, r * 0.62, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -489,11 +462,11 @@
     [-1, 1].forEach(side => {
       const ex = center.x + fx * eyeForward + px * eyeSide * side;
       const ey = center.y + fy * eyeForward + py * eyeSide * side;
-      ctx.fillStyle = COLOR_SCREEN;
+      ctx.fillStyle = COLOR_INK;
       ctx.beginPath();
       ctx.arc(ex, ey, CELL * 0.1, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = COLOR_PHOSPHOR_BRIGHT;
+      ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(ex + fx * CELL * 0.03, ey + fy * CELL * 0.03, CELL * 0.03, 0, Math.PI * 2);
       ctx.fill();
@@ -501,7 +474,7 @@
 
     const mouthTip = { x: center.x + fx * r * 0.85, y: center.y + fy * r * 0.85 };
     const mouthBack = { x: center.x + fx * r * 0.35, y: center.y + fy * r * 0.35 };
-    ctx.strokeStyle = COLOR_SCREEN;
+    ctx.strokeStyle = COLOR_INK;
     ctx.lineWidth = Math.max(1.5, CELL * 0.05);
     ctx.beginPath();
     ctx.moveTo(mouthBack.x - px * r * 0.18, mouthBack.y - py * r * 0.18);
@@ -546,9 +519,9 @@
 
     const foodPulse = 0.5 + 0.5 * Math.sin(performance.now() / 150);
     ctx.save();
-    ctx.shadowColor = COLOR_DANGER;
+    ctx.shadowColor = COLOR_FOOD;
     ctx.shadowBlur = 10 + foodPulse * 8;
-    ctx.fillStyle = COLOR_DANGER;
+    ctx.fillStyle = COLOR_FOOD;
     ctx.beginPath();
     ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
     ctx.fill();
