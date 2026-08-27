@@ -19,10 +19,13 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 
 - Drag pieces with mouse, touch, or pen (pointer events)
 - Row/column clears, combo multiplier, and score popups
+- While dragging, cells that would complete a line light up so you can plan ahead
+- Clearing the entire board earns a Perfect Clear bonus
 - Undo (↩️) reverts your last placement, as long as it didn't clear a line
+- Reroll (🔀) swaps your current three pieces for new ones — one free use per game
 - Customizable block colors (🎨), with a reset-to-defaults option
-- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo)
-- Sound effects with a mute toggle (🔊/🔇)
+- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak)
+- Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score
 - Home button on the game-over screen to return to the title without restarting
 - Warm pastel visual theme with chunky, blocky display type

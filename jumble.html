@@ -161,6 +161,9 @@
     box-shadow: inset 0 0 0 2px rgba(227,80,90,0.85);
     background: rgba(255,111,121,0.2);
   }
+  .cell.preview-line {
+    background: rgba(255,214,107,0.4);
+  }
   .cell.clearing {
     transform: scale(0.35);
     opacity: 0;
@@ -432,6 +435,31 @@
   @media (prefers-reduced-motion: reduce) {
     .confetti-piece { animation: none; display: none; }
   }
+
+  .toast {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--accent2), var(--accent2-deep));
+    color: #fff;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    box-shadow: 0 4px 0 var(--accent2-deep), 0 8px 16px rgba(156,127,224,0.35);
+    z-index: 45;
+    pointer-events: none;
+    animation: toastPop 1.6s ease forwards;
+  }
+  @keyframes toastPop {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(-8px); }
+    15% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.95) translateY(-4px); }
+  }
 </style>
 </head>
 <body>
@@ -444,6 +472,7 @@
     </div>
     <div class="icon-toolbar">
       <button class="hud-btn" id="undoBtn" title="Undo Last Move" disabled>↩️</button>
+      <button class="hud-btn" id="rerollBtn" title="Reroll Pieces (1 per game)">🔀</button>
       <button class="hud-btn" id="colorsBtn" title="Customize Colors">🎨</button>
       <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
@@ -451,6 +480,7 @@
     <div class="screen-frame">
       <div class="board-wrap" id="boardWrap">
         <div id="board"></div>
+        <div id="toast" class="toast hidden"></div>
 
         <div id="startOverlay" class="overlay">
           <h2 class="display-font">JUMBLE</h2>
@@ -479,6 +509,7 @@
             <div><b id="statGames">0</b><span>GAMES</span></div>
             <div><b id="statLines">0</b><span>LINES CLEARED</span></div>
             <div><b id="statCombo">x0</b><span>BEST COMBO</span></div>
+            <div><b id="statStreak">0</b><span>🔥 DAY STREAK</span></div>
           </div>
           <button class="action" id="closeScoresBtn">CLOSE</button>
         </div>
@@ -553,6 +584,7 @@
 
   const HS_KEY = 'blockBlastHighScores';
   const MAX_SCORES = 10;
+  const PERFECT_CLEAR_BONUS = 150;
 
   function loadScores() {
     try {
@@ -597,13 +629,17 @@
   const swatchGrid = document.getElementById('swatchGrid');
   const boardWrap = document.getElementById('boardWrap');
   const undoBtn = document.getElementById('undoBtn');
+  const rerollBtn = document.getElementById('rerollBtn');
   const muteBtn = document.getElementById('muteBtn');
   const statGamesEl = document.getElementById('statGames');
   const statLinesEl = document.getElementById('statLines');
   const statComboEl = document.getElementById('statCombo');
+  const statStreakEl = document.getElementById('statStreak');
+  const toastEl = document.getElementById('toast');
 
   let board, cells, tray, score, combo, running, gameOver;
   let undoSnapshot = null;
+  let rerollsLeft = 1;
 
   function bestScore() {
     return highScores.length ? highScores[0].score : 0;
@@ -616,7 +652,7 @@
       const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
       if (raw && typeof raw === 'object') return raw;
     } catch (e) {}
-    return { gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0 };
+    return { gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0, streak: 0, lastPlayedDate: null };
   }
   function saveStats() {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
@@ -626,6 +662,33 @@
     statGamesEl.textContent = stats.gamesPlayed;
     statLinesEl.textContent = stats.totalLinesCleared;
     statComboEl.textContent = 'x' + stats.bestCombo;
+    statStreakEl.textContent = stats.streak || 0;
+  }
+
+  // A "day" is counted once per calendar date (UTC), the first time a game
+  // starts that date; missing a day resets the streak back to 1.
+  function updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (stats.lastPlayedDate === today) return;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    stats.streak = stats.lastPlayedDate === yesterday ? (stats.streak || 0) + 1 : 1;
+    stats.lastPlayedDate = today;
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(pattern); } catch (e) {}
+    }
+  }
+
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.remove('hidden');
+    void toastEl.offsetWidth; // restart the animation if a toast is already mid-flight
+    toastEl.style.animation = 'none';
+    void toastEl.offsetWidth;
+    toastEl.style.animation = '';
+    setTimeout(() => toastEl.classList.add('hidden'), 1600);
   }
 
   // --- Sound (Web Audio, no assets) ---
@@ -699,6 +762,23 @@
     updateUndoButton();
   }
 
+  function updateRerollButton() {
+    rerollBtn.disabled = rerollsLeft <= 0 || !running;
+  }
+
+  function performReroll() {
+    if (rerollsLeft <= 0 || !running) return;
+    rerollsLeft--;
+    tray = [randomPiece(), randomPiece(), randomPiece()];
+    // A fresh tray invalidates any pending undo (its snapshot references the old pieces).
+    undoSnapshot = null;
+    updateUndoButton();
+    updateRerollButton();
+    renderTray();
+    const anyFits = tray.some(p => canPlaceAnywhere(p));
+    if (!anyFits) endGame();
+  }
+
   function buildBoardDom() {
     boardEl.innerHTML = '';
     cells = [];
@@ -724,11 +804,14 @@
     running = true;
     gameOver = false;
     undoSnapshot = null;
+    rerollsLeft = 1;
     updateHud();
     updateUndoButton();
+    updateRerollButton();
     renderBoard();
     renderTray();
     stats.gamesPlayed++;
+    updateStreak();
     saveStats();
     renderStats();
   }
@@ -823,6 +906,7 @@
     tray[slotIndex] = null;
     renderBoard();
     beep(300, 260, 0.04, 'square', 0.05);
+    vibrate(10);
 
     const fullRows = [];
     const fullCols = [];
@@ -838,6 +922,7 @@
       if (combo > stats.bestCombo) stats.bestCombo = combo;
       saveStats();
       beep(600 + combo * 30, 950 + combo * 30, 0.15, 'triangle', 0.12);
+      vibrate([15, 30, 15]);
       const toClear = new Set();
       fullRows.forEach(r => { for (let c = 0; c < SIZE; c++) toClear.add(r + ',' + c); });
       fullCols.forEach(c => { for (let r = 0; r < SIZE; r++) toClear.add(r + ',' + c); });
@@ -854,6 +939,13 @@
           cells[r][c].classList.remove('clearing');
         });
         renderBoard();
+        if (board.every(row => row.every(v => !v))) {
+          score += PERFECT_CLEAR_BONUS;
+          showToast(`PERFECT CLEAR! +${PERFECT_CLEAR_BONUS}`);
+          beep(500, 1400, 0.35, 'sine', 0.14);
+          vibrate([20, 40, 20, 40, 20]);
+          celebrate(boardWrap);
+        }
         updateHud();
         afterMove();
       }, 220);
@@ -881,7 +973,9 @@
     gameOver = true;
     undoSnapshot = null;
     updateUndoButton();
+    updateRerollButton();
     beep(400, 80, 0.5, 'sawtooth', 0.15);
+    vibrate(200);
     boardWrap.classList.add('shake-die');
     setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
     setTimeout(() => {
@@ -991,7 +1085,7 @@
       pieceEl.classList.add('dragging-source');
 
       const lift = e.pointerType === 'touch' ? 78 : 22;
-      dragState = { piece, slotIndex, ghost, boardRect, boardCell, lift, pieceEl, target: null, previewCells: [] };
+      dragState = { piece, slotIndex, ghost, boardRect, boardCell, lift, pieceEl, target: null, previewCells: [], lineCells: [] };
       pendingPointer = { x: e.clientX, y: e.clientY };
       updateGhostPosition(pendingPointer.x, pendingPointer.y);
 
@@ -1017,6 +1111,34 @@
     dragState.previewCells = newCells;
   }
 
+  function setLineCells(newCells) {
+    dragState.lineCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-line'));
+    newCells.forEach(([r, c]) => cells[r][c].classList.add('preview-line'));
+    dragState.lineCells = newCells;
+  }
+
+  // Cells that would join an already-complete line if this piece landed here,
+  // excluding the piece's own cells (those already get their own ring via setPreviewCells).
+  function findProspectiveLineCells(rowStart, colStart, piece) {
+    const wouldFill = (r, c) => {
+      if (board[r][c]) return true;
+      const pr = r - rowStart, pc = c - colStart;
+      return pr >= 0 && pr < piece.rows && pc >= 0 && pc < piece.cols && piece.matrix[pr][pc];
+    };
+    const cellsToHighlight = [];
+    for (let r = 0; r < SIZE; r++) {
+      let full = true;
+      for (let c = 0; c < SIZE; c++) if (!wouldFill(r, c)) { full = false; break; }
+      if (full) for (let c = 0; c < SIZE; c++) if (board[r][c]) cellsToHighlight.push([r, c]);
+    }
+    for (let c = 0; c < SIZE; c++) {
+      let full = true;
+      for (let r = 0; r < SIZE; r++) if (!wouldFill(r, c)) { full = false; break; }
+      if (full) for (let r = 0; r < SIZE; r++) if (board[r][c]) cellsToHighlight.push([r, c]);
+    }
+    return cellsToHighlight;
+  }
+
   function updateGhostPosition(clientX, clientY) {
     if (!dragState) return;
     const { ghost, boardRect, boardCell, lift, piece } = dragState;
@@ -1033,6 +1155,7 @@
     if (!overBoard) {
       dragState.target = null;
       if (dragState.previewCells.length) setPreviewCells([], true);
+      if (dragState.lineCells.length) setLineCells([]);
       return;
     }
     let colStart = Math.round((left - boardRect.left) / boardCell);
@@ -1051,6 +1174,7 @@
       }
     }
     setPreviewCells(newCells, valid);
+    setLineCells(valid ? findProspectiveLineCells(rowStart, colStart, piece) : []);
   }
 
   function onPointerMove(e) {
@@ -1062,10 +1186,11 @@
 
   function onPointerUp(e) {
     if (!dragState) return;
-    const { piece, slotIndex, ghost, pieceEl, target, previewCells } = dragState;
+    const { piece, slotIndex, ghost, pieceEl, target, previewCells, lineCells } = dragState;
     if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
     pendingPointer = null;
     previewCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-ok', 'preview-bad'));
+    lineCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-line'));
     ghost.remove();
     pieceEl.classList.remove('dragging-source');
     window.removeEventListener('pointermove', onPointerMove);
@@ -1117,6 +1242,7 @@
     scoresOverlay.classList.add('hidden');
   });
   undoBtn.addEventListener('click', performUndo);
+  rerollBtn.addEventListener('click', performReroll);
 
   document.getElementById('colorsBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
