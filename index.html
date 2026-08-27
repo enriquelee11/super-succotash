@@ -6,7 +6,7 @@
 <title>Amber Snake</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #fff3e4;
@@ -31,7 +31,7 @@
     height: 100%;
     background: var(--bg);
     color: var(--ink);
-    font-family: 'Quicksand', 'Trebuchet MS', sans-serif;
+    font-family: 'Baloo 2', 'Trebuchet MS', sans-serif;
     font-weight: 600;
     display: flex;
     align-items: safe center;
@@ -40,7 +40,14 @@
     overflow-x: hidden;
   }
   body { padding: 20px 0; }
-  .display-font { font-family: 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 700; }
+  .display-font {
+    font-family: 'Baloo 2', 'Trebuchet MS', sans-serif;
+    font-weight: 800;
+    text-shadow:
+      1px 1px 0 var(--block-shadow, rgba(0,0,0,0.18)),
+      2px 2px 0 var(--block-shadow, rgba(0,0,0,0.18)),
+      3px 3px 0 var(--block-shadow, rgba(0,0,0,0.18));
+  }
 
   .cabinet {
     display: flex;
@@ -56,11 +63,11 @@
   }
 
   .marquee {
+    --block-shadow: rgba(0,0,0,0.2);
     text-align: center;
     font-size: 16px;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     color: #fff;
-    text-shadow: 0 1px 0 rgba(0,0,0,0.15);
     background: linear-gradient(135deg, var(--accent), var(--accent-deep));
     padding: 10px 28px;
     border-radius: 999px;
@@ -79,6 +86,7 @@
   }
   .hud b {
     font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
     color: var(--ink-bright);
     font-size: 16px;
   }
@@ -122,9 +130,11 @@
     -webkit-overflow-scrolling: touch;
   }
   .overlay h2 {
+    --block-shadow: rgba(139,111,130,0.25);
     margin: 0;
     font-size: 22px;
     line-height: 1.5;
+    letter-spacing: 0.5px;
     color: var(--ink-bright);
     flex-shrink: 0;
   }
@@ -140,7 +150,7 @@
   button {
     font-family: 'Baloo 2', sans-serif;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.5px;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
     color: #fff;
