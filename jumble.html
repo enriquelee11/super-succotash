@@ -98,18 +98,24 @@
   .hud .combo-tag {
     color: var(--accent2-deep);
   }
+  .icon-toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
   .hud-btn {
     background: rgba(255,255,255,0.6);
     border: 1.5px solid rgba(165, 145, 160, 0.35);
     color: var(--ink);
     border-radius: 12px;
-    padding: 6px 9px;
+    padding: 6px 10px;
     font-size: 15px;
     cursor: pointer;
     line-height: 1;
     box-shadow: 0 2px 4px rgba(190,140,110,0.15);
   }
   .hud-btn:active { transform: translateY(1px); }
+  .hud-btn[disabled] { opacity: 0.4; cursor: default; }
 
   .screen-frame {
     position: relative;
@@ -340,6 +346,31 @@
   .leaderboard li .pts { color: var(--accent-deep); font-weight: 700; }
   .leaderboard-empty { color: var(--ink-dim); font-size: 12px; }
 
+  .stats-row {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stats-row div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stats-row b {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--ink-bright);
+  }
+  .stats-row span {
+    font-size: 9px;
+    letter-spacing: 0.3px;
+    color: var(--ink-dim);
+    text-align: center;
+  }
+
   .swatch-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -387,6 +418,27 @@
     text-decoration: none;
   }
   .home-link:hover { color: var(--accent-deep); }
+
+  .confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 8px;
+    left: var(--x, 50%);
+    background: var(--c, var(--accent));
+    border-radius: 2px;
+    opacity: 0.95;
+    animation: confettiFall 1.3s ease-in forwards;
+    animation-delay: var(--delay, 0s);
+    z-index: 60;
+  }
+  @keyframes confettiFall {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--dx, 0px), 220px) rotate(var(--rot, 360deg)); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-piece { animation: none; display: none; }
+  }
 </style>
 </head>
 <body>
@@ -396,7 +448,11 @@
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
       <span class="combo-tag" id="comboWrap" style="opacity:0">COMBO<b id="combo">x1</b></span>
+    </div>
+    <div class="icon-toolbar">
+      <button class="hud-btn" id="undoBtn" title="Undo Last Move" disabled>↩️</button>
       <button class="hud-btn" id="colorsBtn" title="Customize Colors">🎨</button>
+      <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
     </div>
     <div class="screen-frame">
@@ -426,6 +482,11 @@
           <h2 class="display-font">HIGH<br/>SCORES</h2>
           <ol id="leaderboard" class="leaderboard"></ol>
           <p id="leaderboardEmpty" class="leaderboard-empty hidden">NO SCORES YET — BE THE FIRST!</p>
+          <div class="stats-row" id="statsRow">
+            <div><b id="statGames">0</b><span>GAMES</span></div>
+            <div><b id="statLines">0</b><span>LINES CLEARED</span></div>
+            <div><b id="statCombo">x0</b><span>BEST COMBO</span></div>
+          </div>
           <button class="action" id="closeScoresBtn">CLOSE</button>
         </div>
 
@@ -543,11 +604,107 @@
   const colorsOverlay = document.getElementById('colorsOverlay');
   const swatchGrid = document.getElementById('swatchGrid');
   const boardWrap = document.getElementById('boardWrap');
+  const undoBtn = document.getElementById('undoBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const statGamesEl = document.getElementById('statGames');
+  const statLinesEl = document.getElementById('statLines');
+  const statComboEl = document.getElementById('statCombo');
 
   let board, cells, tray, score, combo, running, gameOver;
+  let undoSnapshot = null;
 
   function bestScore() {
     return highScores.length ? highScores[0].score : 0;
+  }
+
+  // --- Session stats ---
+  const STATS_KEY = 'blockBlastStats';
+  function loadStats() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
+      if (raw && typeof raw === 'object') return raw;
+    } catch (e) {}
+    return { gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0 };
+  }
+  function saveStats() {
+    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  }
+  let stats = loadStats();
+  function renderStats() {
+    statGamesEl.textContent = stats.gamesPlayed;
+    statLinesEl.textContent = stats.totalLinesCleared;
+    statComboEl.textContent = 'x' + stats.bestCombo;
+  }
+
+  // --- Sound (Web Audio, no assets) ---
+  const MUTE_KEY = 'blockBlastMuted';
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  let audioCtx = null;
+  function updateMuteBtn() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  updateMuteBtn();
+  function ensureAudio() {
+    if (muted) return;
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    } else if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+  function beep(freqStart, freqEnd, duration, type, gain) {
+    if (muted || !audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), audioCtx.currentTime + duration);
+      g.gain.setValueAtTime(gain, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(g).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    updateMuteBtn();
+    if (!muted) ensureAudio();
+  });
+
+  // --- Confetti (new #1 high score celebration) ---
+  const CONFETTI_COLORS = ['#ff8fa3', '#7fdcb0', '#8fcbef', '#ffd66b', '#c9b6f2'];
+  const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function celebrate(container) {
+    if (REDUCE_MOTION) return;
+    for (let i = 0; i < 22; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.setProperty('--x', Math.random() * 100 + '%');
+      piece.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
+      piece.style.setProperty('--rot', (Math.random() * 480 - 240) + 'deg');
+      piece.style.setProperty('--delay', (Math.random() * 0.3) + 's');
+      piece.style.setProperty('--c', CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+      container.appendChild(piece);
+      setTimeout(() => piece.remove(), 1700);
+    }
+  }
+
+  function updateUndoButton() {
+    undoBtn.disabled = !undoSnapshot;
+  }
+
+  function performUndo() {
+    if (!undoSnapshot || !running) return;
+    board = undoSnapshot.board.map(r => r.slice());
+    tray = undoSnapshot.tray.slice();
+    score = undoSnapshot.score;
+    combo = undoSnapshot.combo;
+    undoSnapshot = null;
+    renderBoard();
+    renderTray();
+    updateHud();
+    updateUndoButton();
   }
 
   function buildBoardDom() {
@@ -574,9 +731,14 @@
     combo = 0;
     running = true;
     gameOver = false;
+    undoSnapshot = null;
     updateHud();
+    updateUndoButton();
     renderBoard();
     renderTray();
+    stats.gamesPlayed++;
+    saveStats();
+    renderStats();
   }
 
   function updateHud() {
@@ -650,6 +812,13 @@
   }
 
   function commitPlacement(rowStart, colStart, piece, slotIndex) {
+    const snapshotBefore = {
+      board: board.map(row => row.slice()),
+      tray: tray.slice(),
+      score,
+      combo,
+    };
+
     let cellsPlaced = 0;
     for (let r = 0; r < piece.rows; r++) {
       for (let c = 0; c < piece.cols; c++) {
@@ -661,6 +830,7 @@
     score += cellsPlaced;
     tray[slotIndex] = null;
     renderBoard();
+    beep(300, 260, 0.04, 'square', 0.05);
 
     const fullRows = [];
     const fullCols = [];
@@ -669,7 +839,13 @@
     const lineCount = fullRows.length + fullCols.length;
 
     if (lineCount > 0) {
+      // A clear can't be undone (keeps the animation timing unambiguous).
+      undoSnapshot = null;
       combo++;
+      stats.totalLinesCleared += lineCount;
+      if (combo > stats.bestCombo) stats.bestCombo = combo;
+      saveStats();
+      beep(600 + combo * 30, 950 + combo * 30, 0.15, 'triangle', 0.12);
       const toClear = new Set();
       fullRows.forEach(r => { for (let c = 0; c < SIZE; c++) toClear.add(r + ',' + c); });
       fullCols.forEach(c => { for (let r = 0; r < SIZE; r++) toClear.add(r + ',' + c); });
@@ -690,9 +866,11 @@
         afterMove();
       }, 220);
     } else {
+      undoSnapshot = snapshotBefore;
       combo = 0;
       afterMove();
     }
+    updateUndoButton();
     updateHud();
     renderTray();
   }
@@ -709,6 +887,9 @@
   function endGame() {
     running = false;
     gameOver = true;
+    undoSnapshot = null;
+    updateUndoButton();
+    beep(400, 80, 0.5, 'sawtooth', 0.15);
     boardWrap.classList.add('shake-die');
     setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
     setTimeout(() => {
@@ -729,6 +910,7 @@
 
   function submitScore() {
     const name = (nameInput.value || 'PLAYER').trim().slice(0, 12).toUpperCase() || 'PLAYER';
+    const wasNewBest = score > bestScore();
     highScores.push({ name, score });
     highScores.sort((a, b) => b.score - a.score);
     highScores = highScores.slice(0, MAX_SCORES);
@@ -737,6 +919,7 @@
     playAgainBtn.classList.remove('hidden');
     updateHud();
     renderLeaderboard(score);
+    if (wasNewBest) celebrate(overOverlay);
   }
 
   function renderLeaderboard(highlightScore) {
@@ -792,6 +975,7 @@
     pieceEl.addEventListener('pointerdown', (e) => {
       if (!running || tray[slotIndex] !== piece) return;
       e.preventDefault();
+      ensureAudio();
       const boardRect = boardEl.getBoundingClientRect();
       const boardCell = boardRect.width / SIZE;
       const ghost = document.createElement('div');
@@ -903,12 +1087,14 @@
 
   // --- UI wiring ---
   document.getElementById('startBtn').addEventListener('click', () => {
+    ensureAudio();
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
     reset();
   });
   playAgainBtn.addEventListener('click', () => {
+    ensureAudio();
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
     reset();
@@ -926,16 +1112,19 @@
   document.getElementById('scoresBtn').addEventListener('click', () => {
     colorsOverlay.classList.add('hidden');
     renderLeaderboard();
+    renderStats();
     scoresOverlay.classList.remove('hidden');
   });
   document.getElementById('startScoresBtn').addEventListener('click', () => {
     colorsOverlay.classList.add('hidden');
     renderLeaderboard();
+    renderStats();
     scoresOverlay.classList.remove('hidden');
   });
   document.getElementById('closeScoresBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
   });
+  undoBtn.addEventListener('click', performUndo);
 
   document.getElementById('colorsBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
@@ -960,6 +1149,7 @@
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
   renderBoard();
   bestEl.textContent = bestScore();
+  renderStats();
 })();
 </script>
 </body>

@@ -1,6 +1,6 @@
 # Arcade
 
-Two browser-based arcade games, built with plain HTML5/CSS/JS — no build step, no dependencies.
+Two browser-based arcade games sharing one warm pastel theme, built with plain HTML5/CSS/JS — no build step, no dependencies.
 
 ## Play
 
@@ -11,15 +11,18 @@ python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
-### Neon Snake (`index.html`)
+### Amber Snake (`index.html`)
 
-A neon arcade Snake game.
+A classic Snake game.
 
 - **Arrow keys / WASD** — move
-- **Space** — pause / resume
+- **Space** or the on-screen ⏸ button — pause / resume
 - **Enter** — start / restart
 - Touch users get on-screen directional buttons
-- High score saved locally (`localStorage`)
+- Top-10 named high score leaderboard (🏆), plus session stats (games played, food eaten, best length)
+- Sound effects with a mute toggle (🔊/🔇)
+- A little confetti celebration when you set a new #1 high score
+- Home button on the game-over screen to return to the title without restarting
 
 ### Jumble (`jumble.html`)
 
@@ -27,10 +30,15 @@ A drag-and-drop block puzzle in the style of *Block Blast* / *1010!*. Drag piece
 
 - Drag pieces with mouse, touch, or pen (pointer events)
 - Row/column clears, combo multiplier, and score popups
-- Top-10 high score leaderboard saved locally (`localStorage`), with name entry when you set a new record
-- Fully responsive, single-file, no external dependencies
+- Undo (↩️) reverts your last placement, as long as it didn't clear a line
+- Customizable block colors (🎨), with a reset-to-defaults option
+- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo)
+- Sound effects with a mute toggle (🔊/🔇)
+- A little confetti celebration when you set a new #1 high score
+- Home button on the game-over screen to return to the title without restarting
 
 ## Features
 
-- Smooth rendering with glow effects
-- Fully responsive, single-file games, no external dependencies
+- Shared warm pastel visual theme with chunky, blocky display type
+- All game data (high scores, stats, preferences) saved locally per-browser (`localStorage`) — nothing leaves your device
+- Fully responsive, single-file games, no external dependencies beyond Google Fonts

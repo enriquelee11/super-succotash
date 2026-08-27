@@ -25,7 +25,7 @@
     --danger: #ff6f79;
     --danger-deep: #e3505a;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0;
     height: 100%;
@@ -91,6 +91,25 @@
     font-size: 16px;
   }
 
+  .icon-toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .hud-btn {
+    background: rgba(255,255,255,0.6);
+    border: 1.5px solid rgba(165, 145, 160, 0.35);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 15px;
+    cursor: pointer;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(190,140,110,0.15);
+  }
+  .hud-btn:active { transform: translateY(1px); }
+  .hud-btn[disabled] { opacity: 0.4; cursor: default; }
+
   .screen-frame {
     position: relative;
     border-radius: 20px;
@@ -104,6 +123,32 @@
     overflow: hidden;
     background: var(--screen);
     box-shadow: inset 0 2px 10px rgba(190,140,110,0.18);
+  }
+  @keyframes dieShake {
+    0% { transform: translate(0,0); }
+    20% { transform: translate(-6px, 2px); }
+    40% { transform: translate(6px, -3px); }
+    60% { transform: translate(-5px, 3px); }
+    80% { transform: translate(4px, -2px); }
+    100% { transform: translate(0,0); }
+  }
+  @keyframes dieFlash {
+    0% { opacity: 0; }
+    35% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .board-wrap.shake-die {
+    animation: dieShake 0.4s ease;
+  }
+  .board-wrap.shake-die::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,111,121,0.4);
+    z-index: 30;
+    animation: dieFlash 0.4s ease;
+    pointer-events: none;
+    border-radius: 14px;
   }
   canvas {
     display: block;
@@ -119,7 +164,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 14px;
     background: rgba(255, 251, 245, 0.94);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
@@ -146,6 +191,7 @@
     max-width: 320px;
   }
   .overlay .danger { color: var(--danger-deep); }
+  .overlay .score-line { color: var(--ink-bright); font-size: 14px; }
 
   button {
     font-family: 'Baloo 2', sans-serif;
@@ -173,6 +219,79 @@
   .overlay-buttons {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .name-entry {
+    display: flex;
+    gap: 8px;
+  }
+  .name-entry input {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 130px;
+    text-align: center;
+    background: #fff;
+    border: 2px solid rgba(165,145,160,0.35);
+    color: var(--ink-bright);
+    border-radius: 10px;
+    padding: 10px 8px;
+  }
+  .name-entry input:focus { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
+
+  .leaderboard {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 260px;
+    max-height: 170px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 12px;
+  }
+  .leaderboard li {
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    color: var(--ink-dim);
+  }
+  .leaderboard li.new-entry {
+    background: rgba(127,220,176,0.25);
+    color: var(--ink-bright);
+  }
+  .leaderboard li .rank { width: 20px; color: var(--ink-dim); }
+  .leaderboard li .name { flex: 1; color: var(--ink-bright); }
+  .leaderboard li .pts { color: var(--accent-deep); font-weight: 700; }
+  .leaderboard-empty { color: var(--ink-dim); font-size: 12px; }
+
+  .stats-row {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stats-row div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stats-row b {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--ink-bright);
+  }
+  .stats-row span {
+    font-size: 9px;
+    letter-spacing: 0.3px;
+    color: var(--ink-dim);
   }
 
   .hint {
@@ -198,6 +317,27 @@
     box-shadow: 0 3px 0 var(--mint-deep), 0 4px 10px rgba(79,185,140,0.3);
   }
   .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--mint-deep); }
+
+  .confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 8px;
+    left: var(--x, 50%);
+    background: var(--c, var(--accent));
+    border-radius: 2px;
+    opacity: 0.95;
+    animation: confettiFall 1.3s ease-in forwards;
+    animation-delay: var(--delay, 0s);
+    z-index: 60;
+  }
+  @keyframes confettiFall {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate(var(--dx, 0px), 220px) rotate(var(--rot, 360deg)); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-piece { animation: none; display: none; }
+  }
 </style>
 </head>
 <body>
@@ -208,13 +348,21 @@
       <span>BEST <b id="best">0</b></span>
       <span>LEVEL <b id="speed">1</b></span>
     </div>
+    <div class="icon-toolbar">
+      <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
+      <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
+      <button class="hud-btn" id="pauseBtn" title="Pause">⏸</button>
+    </div>
     <div class="screen-frame">
-      <div class="board-wrap">
+      <div class="board-wrap" id="boardWrap">
         <canvas id="board" width="432" height="432"></canvas>
         <div id="startOverlay" class="overlay">
           <h2 class="display-font">AMBER<br/>SNAKE</h2>
           <p>ARROWS OR WASD TO MOVE.<br/>EAT THE PELLETS.<br/>DON'T HIT THE WALLS OR YOURSELF.</p>
-          <button id="startBtn">INSERT COIN</button>
+          <div class="overlay-buttons">
+            <button id="startBtn">INSERT COIN</button>
+            <button id="startScoresBtn" class="secondary">HIGH SCORES</button>
+          </div>
         </div>
         <div id="pauseOverlay" class="overlay hidden">
           <h2 class="display-font">PAUSED</h2>
@@ -222,11 +370,26 @@
         </div>
         <div id="overOverlay" class="overlay hidden">
           <h2 class="display-font danger">GAME<br/>OVER</h2>
-          <p id="finalScore">SCORE: 0</p>
+          <p class="score-line" id="finalScore">SCORE: 0</p>
+          <div id="nameEntry" class="name-entry hidden">
+            <input id="nameInput" maxlength="12" placeholder="YOUR NAME" autocomplete="off" />
+            <button id="saveScoreBtn">SAVE</button>
+          </div>
           <div class="overlay-buttons">
-            <button id="restartBtn">CONTINUE</button>
+            <button id="restartBtn" class="hidden">CONTINUE</button>
             <button id="homeBtn" class="secondary">HOME</button>
           </div>
+        </div>
+        <div id="scoresOverlay" class="overlay hidden">
+          <h2 class="display-font">HIGH<br/>SCORES</h2>
+          <ol id="leaderboard" class="leaderboard"></ol>
+          <p id="leaderboardEmpty" class="leaderboard-empty hidden">NO SCORES YET — BE THE FIRST!</p>
+          <div class="stats-row" id="statsRow">
+            <div><b id="statGames">0</b><span>GAMES</span></div>
+            <div><b id="statFood">0</b><span>FOOD EATEN</span></div>
+            <div><b id="statLength">0</b><span>BEST LENGTH</span></div>
+          </div>
+          <button id="closeScoresBtn">CLOSE</button>
         </div>
       </div>
     </div>
@@ -255,6 +418,7 @@
   const COLOR_DANGER = '#ff6f79';
   const COLOR_INK = '#3e2f3d';
   const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CONFETTI_COLORS = ['#ff8fa3', '#7fdcb0', '#8fcbef', '#ffd66b', '#c9b6f2'];
 
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
@@ -262,11 +426,119 @@
   const startOverlay = document.getElementById('startOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const overOverlay = document.getElementById('overOverlay');
+  const scoresOverlay = document.getElementById('scoresOverlay');
+  const boardWrap = document.getElementById('boardWrap');
   const finalScoreEl = document.getElementById('finalScore');
+  const nameEntry = document.getElementById('nameEntry');
+  const nameInput = document.getElementById('nameInput');
+  const restartBtn = document.getElementById('restartBtn');
+  const leaderboardEl = document.getElementById('leaderboard');
+  const leaderboardEmptyEl = document.getElementById('leaderboardEmpty');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const statGamesEl = document.getElementById('statGames');
+  const statFoodEl = document.getElementById('statFood');
+  const statLengthEl = document.getElementById('statLength');
 
-  const BEST_KEY = 'amberSnakeBest';
-  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
-  bestEl.textContent = best;
+  // --- High scores (top 10, named) ---
+  const HS_KEY = 'amberSnakeHighScores';
+  const LEGACY_BEST_KEY = 'amberSnakeBest';
+  const MAX_SCORES = 10;
+
+  function loadScores() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(HS_KEY) || '[]');
+      if (Array.isArray(raw)) return raw;
+    } catch (e) {}
+    return [];
+  }
+  function saveScores(list) {
+    localStorage.setItem(HS_KEY, JSON.stringify(list));
+  }
+  let highScores = loadScores();
+  if (!highScores.length) {
+    const legacy = parseInt(localStorage.getItem(LEGACY_BEST_KEY) || '0', 10);
+    if (legacy > 0) {
+      highScores = [{ name: 'PLAYER', score: legacy }];
+      saveScores(highScores);
+    }
+  }
+  function bestScore() {
+    return highScores.length ? highScores[0].score : 0;
+  }
+
+  // --- Session stats ---
+  const STATS_KEY = 'amberSnakeStats';
+  function loadStats() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
+      if (raw && typeof raw === 'object') return raw;
+    } catch (e) {}
+    return { gamesPlayed: 0, totalFoodEaten: 0, bestLength: 0 };
+  }
+  function saveStats() {
+    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  }
+  let stats = loadStats();
+  function renderStats() {
+    statGamesEl.textContent = stats.gamesPlayed;
+    statFoodEl.textContent = stats.totalFoodEaten;
+    statLengthEl.textContent = stats.bestLength;
+  }
+
+  // --- Sound (Web Audio, no assets) ---
+  const MUTE_KEY = 'amberSnakeMuted';
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  let audioCtx = null;
+  function updateMuteBtn() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  updateMuteBtn();
+  function ensureAudio() {
+    if (muted) return;
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    } else if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+  function beep(freqStart, freqEnd, duration, type, gain) {
+    if (muted || !audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), audioCtx.currentTime + duration);
+      g.gain.setValueAtTime(gain, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(g).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    updateMuteBtn();
+    if (!muted) ensureAudio();
+  });
+
+  // --- Confetti (new #1 high score celebration) ---
+  function celebrate(container) {
+    if (REDUCE_MOTION) return;
+    for (let i = 0; i < 22; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.setProperty('--x', Math.random() * 100 + '%');
+      piece.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
+      piece.style.setProperty('--rot', (Math.random() * 480 - 240) + 'deg');
+      piece.style.setProperty('--delay', (Math.random() * 0.3) + 's');
+      piece.style.setProperty('--c', CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+      container.appendChild(piece);
+      setTimeout(() => piece.remove(), 1700);
+    }
+  }
+
+  bestEl.textContent = bestScore();
 
   const BASE_INTERVAL = 140;
   const MIN_INTERVAL = 60;
@@ -291,6 +563,7 @@
     particles = [];
     placeFood();
     updateHud();
+    pauseBtn.textContent = '⏸';
   }
 
   function placeFood() {
@@ -304,7 +577,7 @@
   function updateHud() {
     scoreEl.textContent = score;
     speedEl.textContent = level;
-    bestEl.textContent = best;
+    bestEl.textContent = bestScore();
   }
 
   function setDir(nx, ny) {
@@ -343,19 +616,81 @@
     });
   });
 
-  document.getElementById('startBtn').addEventListener('click', startGame);
-  document.getElementById('restartBtn').addEventListener('click', startGame);
+  document.getElementById('startBtn').addEventListener('click', () => {
+    ensureAudio();
+    startGame();
+  });
+  restartBtn.addEventListener('click', () => {
+    ensureAudio();
+    startGame();
+  });
   document.getElementById('resumeBtn').addEventListener('click', togglePause);
+  pauseBtn.addEventListener('click', togglePause);
   document.getElementById('homeBtn').addEventListener('click', () => {
     reset();
     overOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
 
+  document.getElementById('saveScoreBtn').addEventListener('click', submitScore);
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitScore(); });
+
+  document.getElementById('scoresBtn').addEventListener('click', () => {
+    renderLeaderboard();
+    renderStats();
+    scoresOverlay.classList.remove('hidden');
+  });
+  document.getElementById('startScoresBtn').addEventListener('click', () => {
+    renderLeaderboard();
+    renderStats();
+    scoresOverlay.classList.remove('hidden');
+  });
+  document.getElementById('closeScoresBtn').addEventListener('click', () => {
+    scoresOverlay.classList.add('hidden');
+  });
+
+  function submitScore() {
+    const name = (nameInput.value || 'PLAYER').trim().slice(0, 12).toUpperCase() || 'PLAYER';
+    const wasNewBest = score > bestScore();
+    highScores.push({ name, score });
+    highScores.sort((a, b) => b.score - a.score);
+    highScores = highScores.slice(0, MAX_SCORES);
+    saveScores(highScores);
+    nameEntry.classList.add('hidden');
+    restartBtn.classList.remove('hidden');
+    updateHud();
+    if (wasNewBest) celebrate(overOverlay);
+  }
+
+  function renderLeaderboard(highlightScore) {
+    leaderboardEl.innerHTML = '';
+    if (!highScores.length) {
+      leaderboardEmptyEl.classList.remove('hidden');
+      return;
+    }
+    leaderboardEmptyEl.classList.add('hidden');
+    let usedHighlight = false;
+    highScores.forEach((entry, i) => {
+      const li = document.createElement('li');
+      const isHighlight = !usedHighlight && highlightScore !== undefined && entry.score === highlightScore;
+      if (isHighlight) usedHighlight = true;
+      li.className = isHighlight ? 'new-entry' : '';
+      li.innerHTML = `<span class="rank">${i + 1}.</span><span class="name">${escapeHtml(entry.name)}</span><span class="pts">${entry.score}</span>`;
+      leaderboardEl.appendChild(li);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   function togglePause() {
     if (!running || gameOver) return;
     paused = !paused;
     pauseOverlay.classList.toggle('hidden', !paused);
+    pauseBtn.textContent = paused ? '▶' : '⏸';
     if (!paused) {
       lastTick = performance.now();
       requestAnimationFrame(loop);
@@ -368,6 +703,10 @@
     startOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
+    scoresOverlay.classList.add('hidden');
+    stats.gamesPlayed++;
+    saveStats();
+    renderStats();
     lastTick = performance.now();
     requestAnimationFrame(loop);
   }
@@ -401,15 +740,14 @@
     if (head.x === food.x && head.y === food.y) {
       score += 10;
       spawnParticles(food.x, food.y, COLOR_FOOD_BRIGHT);
+      beep(500, 900, 0.08, 'triangle', 0.12);
       if (score % 50 === 0) {
         level++;
         interval = Math.max(MIN_INTERVAL, BASE_INTERVAL - (level - 1) * 10);
       }
       placeFood();
-      if (score > best) {
-        best = score;
-        localStorage.setItem(BEST_KEY, String(best));
-      }
+      stats.totalFoodEaten++;
+      saveStats();
       updateHud();
     } else {
       snake.pop();
@@ -419,10 +757,27 @@
   function endGame() {
     running = false;
     gameOver = true;
+    if (snake.length > stats.bestLength) stats.bestLength = snake.length;
+    saveStats();
     spawnParticles(snake[0].x, snake[0].y, COLOR_DANGER);
-    finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${best})`;
-    overOverlay.classList.remove('hidden');
+    beep(400, 80, 0.4, 'sawtooth', 0.15);
+    boardWrap.classList.add('shake-die');
+    setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
     drawParticleBurst();
+    setTimeout(() => {
+      finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${bestScore()})`;
+      overOverlay.classList.remove('hidden');
+      const qualifies = highScores.length < MAX_SCORES || score > highScores[highScores.length - 1].score;
+      if (qualifies && score > 0) {
+        nameEntry.classList.remove('hidden');
+        restartBtn.classList.add('hidden');
+        nameInput.value = '';
+        setTimeout(() => nameInput.focus(), 50);
+      } else {
+        nameEntry.classList.add('hidden');
+        restartBtn.classList.remove('hidden');
+      }
+    }, 320);
   }
 
   function drawParticleBurst() {
@@ -583,6 +938,7 @@
   }
 
   reset();
+  renderStats();
   draw();
 })();
 </script>
