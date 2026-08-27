@@ -205,6 +205,15 @@
     box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
   }
   .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f5c00; }
+
+  .nav-link {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-hint);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--phosphor-dim);
+  }
+  .nav-link:hover { color: var(--phosphor-bright); }
 </style>
 </head>
 <body>
@@ -234,7 +243,9 @@
         </div>
       </div>
     </div>
-    <div class="hint">ARROWS / WASD MOVE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; ENTER START</div>
+    <div class="hint">ARROWS / WASD MOVE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; ENTER START<br/>
+      <a class="nav-link" href="tetris.html">PLAY AMBER TETRIS &rarr;</a>
+    </div>
     <div class="touch-controls">
       <span></span><button data-dir="up">▲</button><span></span>
       <button data-dir="left">◀</button><span></span><button data-dir="right">▶</button>
