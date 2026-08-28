@@ -226,8 +226,8 @@
     inset: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: safe center;
+    justify-content: safe center;
     gap: 14px;
     background: color-mix(in srgb, var(--screen-edge) 97%, transparent);
     text-align: center;
@@ -501,6 +501,10 @@
           <div id="startOverlay" class="overlay">
             <h2 class="display-font">TETRIS</h2>
             <p>ARROWS MOVE &amp; SOFT DROP.<br/>UP ROTATE &middot; SPACE HARD DROP.<br/>C OR SHIFT TO HOLD.<br/>CLEAR LINES TO SCORE.</p>
+            <button id="startBtn">PLAY</button>
+          </div>
+          <div id="modeSelectOverlay" class="overlay hidden">
+            <h2 class="display-font">CHOOSE MODE</h2>
             <div class="mode-row" id="modeRow">
               <button class="mode-btn" data-mode="marathon">MARATHON</button>
               <button class="mode-btn" data-mode="sprint">SPRINT 40</button>
@@ -515,8 +519,11 @@
                 <button class="step-btn" id="levelUp" aria-label="Raise start level">+</button>
               </div>
             </div>
-            <button id="startBtn">PLAY</button>
             <ol class="scores-list" id="startScores"></ol>
+            <div class="btn-row">
+              <button id="goBtn">GO</button>
+              <button id="backBtn" class="btn-ghost">BACK</button>
+            </div>
           </div>
           <div id="pauseOverlay" class="overlay hidden">
             <h2 class="display-font">PAUSED</h2>
@@ -783,6 +790,7 @@
   const comboEl = document.getElementById('combo');
   const b2bEl = document.getElementById('b2b');
   const startOverlay = document.getElementById('startOverlay');
+  const modeSelectOverlay = document.getElementById('modeSelectOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const overOverlay = document.getElementById('overOverlay');
   const settingsOverlay = document.getElementById('settingsOverlay');
@@ -1109,22 +1117,36 @@
       else togglePause();
       return;
     }
-    if (e.key === 'Enter') { if (!running || gameOver) startGame(); return; }
+    if (e.key === 'Enter') {
+      if (gameOver) { startGame(); return; }
+      if (!startOverlay.classList.contains('hidden')) { goToModeSelect(); return; }
+      if (!modeSelectOverlay.classList.contains('hidden')) { startGame(); return; }
+      return;
+    }
     if (KEY_MAP[e.key]) {
       e.preventDefault();
-      if (!running && !gameOver) startGame();
       setDir(KEY_MAP[e.key]);
     }
   });
 
   document.querySelectorAll('.touch-controls button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!running && !gameOver) startGame();
-      setDir(btn.dataset.act);
-    });
+    btn.addEventListener('click', () => setDir(btn.dataset.act));
   });
 
-  document.getElementById('startBtn').addEventListener('click', startGame);
+  function goToModeSelect() {
+    startOverlay.classList.add('hidden');
+    modeSelectOverlay.classList.remove('hidden');
+    updateModeButtons();
+    updateLevelDisplay();
+  }
+  function backToTitle() {
+    modeSelectOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  }
+
+  document.getElementById('startBtn').addEventListener('click', goToModeSelect);
+  document.getElementById('goBtn').addEventListener('click', startGame);
+  document.getElementById('backBtn').addEventListener('click', backToTitle);
   document.getElementById('restartBtn').addEventListener('click', startGame);
   document.getElementById('resumeBtn').addEventListener('click', togglePause);
   document.getElementById('homeBtn').addEventListener('click', goHome);
@@ -1132,6 +1154,7 @@
 
   function goHome() {
     reset();
+    modeSelectOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
@@ -1158,6 +1181,7 @@
     reset();
     running = true;
     startOverlay.classList.add('hidden');
+    modeSelectOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
