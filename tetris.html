@@ -296,11 +296,15 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 0;
+    display: none;
   }
+  .mascot-trail-canvas.active { display: block; }
   .mascot-walker {
     position: absolute;
     left: 0;
     bottom: 0;
+    z-index: 1;
     will-change: transform;
   }
   .mascot-flip {
@@ -1064,6 +1068,7 @@
       mascotTrailPoints = [];
       mascotSparkles = [];
       mascotTrailRafId = null;
+      mascotTrailCanvas.classList.remove('active');
       return;
     }
     const stageW = mascotStage.clientWidth;
@@ -1137,6 +1142,7 @@
     mascotTrailPoints = [];
     mascotSparkles = [];
     mascotLastSparkleTime = 0;
+    mascotTrailCanvas.classList.add('active');
     mascotTrailRafId = requestAnimationFrame(mascotTrailFrame);
   }
 
@@ -1153,6 +1159,8 @@
     mascotShadowEl.style.opacity = '';
     mascotFlying = false;
     mascotFlip.classList.remove('flying');
+    mascotTrailCanvas.classList.remove('active');
+    mascotTrailCtx.clearRect(0, 0, mascotTrailCanvas.width, mascotTrailCanvas.height);
   }
   function mascotWalkTo(x, liftPx) {
     const distance = Math.abs(x - mascotWalkX);
