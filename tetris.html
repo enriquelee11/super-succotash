@@ -409,12 +409,73 @@
     height: 1px;
     background: var(--accent-faint);
   }
+
+  .mode-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .mode-btn {
+    font-size: 9.5px;
+    padding: 8px 12px;
+    box-shadow: none;
+    background: transparent;
+    color: var(--text-hint);
+    border: 1.5px solid var(--accent-faint);
+    letter-spacing: 1px;
+  }
+  .mode-btn:active { transform: none; }
+  .mode-btn[data-active="true"] {
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent) 75%);
+    color: var(--button-ink);
+    border-color: transparent;
+  }
+  .mode-desc {
+    margin: 0;
+    color: var(--text-hint);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    max-width: 260px;
+  }
+
+  .level-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .stepper span {
+    min-width: 18px;
+    text-align: center;
+    color: var(--ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-btn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--ink);
+    border: 1px solid var(--accent-dim);
+    border-radius: 6px;
+  }
+  .step-btn:active { transform: none; }
 </style>
 </head>
 <body>
   <div class="cabinet flicker">
     <div class="header-row">
       <div class="marquee display-font" id="marqueeText">TETRIS</div>
+      <button id="fullscreenBtn" class="icon-btn" aria-label="Fullscreen" title="Fullscreen">⛶</button>
       <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
     </div>
     <div class="hud">
@@ -440,6 +501,20 @@
           <div id="startOverlay" class="overlay">
             <h2 class="display-font">TETRIS</h2>
             <p>ARROWS MOVE &amp; SOFT DROP.<br/>UP ROTATE &middot; SPACE HARD DROP.<br/>C OR SHIFT TO HOLD.<br/>CLEAR LINES TO SCORE.</p>
+            <div class="mode-row" id="modeRow">
+              <button class="mode-btn" data-mode="marathon">MARATHON</button>
+              <button class="mode-btn" data-mode="sprint">SPRINT 40</button>
+              <button class="mode-btn" data-mode="zen">ZEN</button>
+            </div>
+            <p class="mode-desc" id="modeDesc">ENDLESS PLAY. HOW FAR CAN YOU GO?</p>
+            <div class="level-row">
+              <span class="hue-label">START LEVEL</span>
+              <div class="stepper">
+                <button class="step-btn" id="levelDown" aria-label="Lower start level">&minus;</button>
+                <span id="startLevelDisplay">1</span>
+                <button class="step-btn" id="levelUp" aria-label="Raise start level">+</button>
+              </div>
+            </div>
             <button id="startBtn">PLAY</button>
             <ol class="scores-list" id="startScores"></ol>
           </div>
@@ -454,8 +529,9 @@
             </div>
           </div>
           <div id="overOverlay" class="overlay hidden">
-            <h2 class="display-font danger">GAME<br/>OVER</h2>
+            <h2 class="display-font danger" id="overTitle">GAME<br/>OVER</h2>
             <p id="finalScore">SCORE: 0</p>
+            <p id="finalBreakdown" class="mode-desc"></p>
             <ol class="scores-list" id="finalScores"></ol>
             <div class="btn-row">
               <button id="restartBtn">PLAY AGAIN</button>
@@ -481,6 +557,10 @@
             <div class="toggle-row">
               <span>GRID LINES</span>
               <button class="toggle-btn" id="gridToggle" data-on="true">ON</button>
+            </div>
+            <div class="toggle-row">
+              <span>HAPTICS</span>
+              <button class="toggle-btn" id="hapticsToggle" data-on="true">ON</button>
             </div>
             <button id="closeSettingsBtn">DONE</button>
           </div>
@@ -623,7 +703,7 @@
 
   const ROOT = document.documentElement;
   let activeTheme = THEMES.amber;
-  let settings = { theme: 'amber', hue: 30, sound: true, ghost: true, grid: true };
+  let settings = { theme: 'amber', hue: 30, sound: true, ghost: true, grid: true, haptics: true, mode: 'marathon', startLevel: 1 };
 
   function loadSettings() {
     try {
@@ -688,6 +768,12 @@
     gameover: () => { [330, 262, 220, 165].forEach((f, i) => beep(f, 0.22, 'sawtooth', 0.06, i * 0.16)); },
   };
 
+  // ---------- Haptics ----------
+  function vibrate(pattern) {
+    if (!settings.haptics) return;
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+  }
+
   // ---------- HUD elements ----------
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
@@ -715,26 +801,56 @@
     scores = scores.slice(0, 5);
     try { localStorage.setItem('amberTetrisScores', JSON.stringify(scores)); } catch (e) {}
   }
-  function renderScores(target) {
+
+  let sprintTimes = [];
+  try { sprintTimes = JSON.parse(localStorage.getItem('tetrisSprintTimes') || '[]'); } catch (e) { sprintTimes = []; }
+  function saveSprintTime(ms) {
+    sprintTimes.push({ time: ms, date: new Date().toISOString().slice(0, 10) });
+    sprintTimes.sort((a, b) => a.time - b.time);
+    sprintTimes = sprintTimes.slice(0, 5);
+    try { localStorage.setItem('tetrisSprintTimes', JSON.stringify(sprintTimes)); } catch (e) {}
+  }
+
+  function formatTimePrecise(ms) {
+    const totalSeconds = ms / 1000;
+    const m = Math.floor(totalSeconds / 60);
+    const rem = (totalSeconds % 60).toFixed(2).padStart(5, '0');
+    return `${m}:${rem}`;
+  }
+
+  function renderList(target, items, formatter) {
     target.innerHTML = '';
-    if (scores.length === 0) {
+    if (items.length === 0) {
       const li = document.createElement('li');
-      li.textContent = 'NO SCORES YET';
+      li.textContent = 'NO RECORDS YET';
       target.appendChild(li);
       return;
     }
-    scores.forEach((s, i) => {
+    items.forEach((it, i) => {
       const li = document.createElement('li');
-      li.innerHTML = `<span>${i + 1}. ${s.date}</span><b>${s.score}</b>`;
+      li.innerHTML = `<span>${i + 1}. ${it.date}</span><b>${formatter(it)}</b>`;
       target.appendChild(li);
     });
+  }
+  function renderScores(target) { renderList(target, scores, it => it.score); }
+  function renderSprintTimes(target) { renderList(target, sprintTimes, it => formatTimePrecise(it.time)); }
+  function refreshStartScores() {
+    const target = document.getElementById('startScores');
+    if (settings.mode === 'sprint') renderSprintTimes(target);
+    else renderScores(target);
   }
 
   const BASE_INTERVAL = 800;
   const MIN_INTERVAL = 100;
+  const SPRINT_GOAL = 40;
+
+  function intervalForLevel(lvl) {
+    return Math.max(MIN_INTERVAL, BASE_INTERVAL - (lvl - 1) * 60);
+  }
 
   let grid, current, holdKey, canHold, bag, nextQueue, score, level, lines, running, paused, gameOver;
   let lastTick, interval, particles, floatTexts, clearingRows, clearFlashTimer, comboCount, b2bActive, startTime, elapsedAtPause;
+  let mode, lineStats;
 
   function emptyGrid() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -766,9 +882,11 @@
   function reset() {
     grid = emptyGrid();
     score = 0;
-    level = 1;
+    mode = settings.mode || 'marathon';
+    level = settings.startLevel || 1;
     lines = 0;
-    interval = BASE_INTERVAL;
+    lineStats = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    interval = intervalForLevel(level);
     running = false;
     paused = false;
     gameOver = false;
@@ -799,7 +917,7 @@
   function updateHud() {
     scoreEl.textContent = score;
     levelEl.textContent = level;
-    linesEl.textContent = lines;
+    linesEl.textContent = mode === 'sprint' ? `${lines}/${SPRINT_GOAL}` : lines;
     bestEl.textContent = best;
     comboEl.textContent = comboCount > 0 ? `x${comboCount}` : '–';
     b2bEl.textContent = b2bActive ? 'ON' : '–';
@@ -850,6 +968,7 @@
     while (moveBy(0, 1)) dropped++;
     score += dropped * 2;
     sfx.lock();
+    vibrate(12);
     lockPiece();
   }
 
@@ -885,6 +1004,7 @@
     canHold = true;
 
     if (fullRows.length > 0) {
+      lineStats[fullRows.length] = (lineStats[fullRows.length] || 0) + 1;
       clearingRows = fullRows;
       clearFlashTimer = 10;
       comboCount++;
@@ -895,9 +1015,11 @@
         if (b2bActive) { gained = Math.floor(gained * 1.5); label = 'B2B TETRIS!'; }
         b2bActive = true;
         sfx.tetris();
+        vibrate([30, 30, 30]);
       } else {
         b2bActive = false;
         sfx.clear(fullRows.length);
+        vibrate(20);
       }
       if (comboCount > 0) {
         const comboBonus = 50 * comboCount * level;
@@ -907,10 +1029,10 @@
       score += gained;
       addFloatText(`+${gained} ${label}`, fullRows.length === 4 ? activeTheme.danger : activeTheme.ink);
       lines += fullRows.length;
-      const newLevel = Math.floor(lines / 10) + 1;
+      const newLevel = (settings.startLevel || 1) + Math.floor(lines / 10);
       if (newLevel !== level) {
         level = newLevel;
-        interval = Math.max(MIN_INTERVAL, BASE_INTERVAL - (level - 1) * 60);
+        interval = intervalForLevel(level);
         sfx.levelup();
       }
       updateHud();
@@ -924,16 +1046,28 @@
       comboCount = -1;
     }
 
-    if (score > best) {
+    if (mode === 'marathon' && score > best) {
       best = score;
       try { localStorage.setItem('amberTetrisBest', String(best)); } catch (e) {}
     }
     updateHud();
 
+    if (mode === 'sprint' && lines >= SPRINT_GOAL) {
+      finishSprint();
+      return;
+    }
+
     current = spawnPiece(nextQueue.shift());
     nextQueue.push(nextFromBag());
     drawNext();
-    if (collides(current.cells)) endGame();
+    if (collides(current.cells)) {
+      if (mode === 'zen') {
+        grid = emptyGrid();
+        addFloatText('CLEARED!', activeTheme.accent);
+      } else {
+        endGame();
+      }
+    }
   }
 
   function spawnParticlesForRows(rows) {
@@ -1002,7 +1136,7 @@
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
-    renderScores(document.getElementById('startScores'));
+    refreshStartScores();
     draw();
   }
 
@@ -1031,15 +1165,49 @@
     requestAnimationFrame(loop);
   }
 
+  function lineBreakdownText() {
+    return `1L ${lineStats[1]} · 2L ${lineStats[2]} · 3L ${lineStats[3]} · TETRIS ${lineStats[4]}`;
+  }
+
   function endGame() {
     running = false;
     gameOver = true;
     sfx.gameover();
-    saveScore(score);
-    finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${best})`;
-    renderScores(document.getElementById('finalScores'));
+    vibrate([40, 30, 40, 30, 80]);
+    const overTitle = document.getElementById('overTitle');
+    overTitle.innerHTML = 'GAME<br/>OVER';
+    overTitle.classList.add('danger');
+    if (mode === 'marathon') {
+      saveScore(score);
+      finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${best})`;
+      renderScores(document.getElementById('finalScores'));
+    } else if (mode === 'sprint') {
+      finalScoreEl.textContent = `TOPPED OUT AT ${lines}/${SPRINT_GOAL} LINES`;
+      renderSprintTimes(document.getElementById('finalScores'));
+    } else {
+      finalScoreEl.textContent = `SCORE: ${score}`;
+      renderScores(document.getElementById('finalScores'));
+    }
+    document.getElementById('finalBreakdown').textContent = lineBreakdownText();
     overOverlay.classList.remove('hidden');
     drawParticleBurst();
+  }
+
+  function finishSprint() {
+    running = false;
+    gameOver = true;
+    const finishTime = elapsedAtPause + (performance.now() - startTime);
+    saveSprintTime(finishTime);
+    sfx.levelup();
+    vibrate([20, 20, 20, 20, 60]);
+    const overTitle = document.getElementById('overTitle');
+    overTitle.innerHTML = 'SPRINT<br/>COMPLETE';
+    overTitle.classList.remove('danger');
+    finalScoreEl.textContent = `40 LINES IN ${formatTimePrecise(finishTime)}`;
+    document.getElementById('finalBreakdown').textContent = lineBreakdownText();
+    renderSprintTimes(document.getElementById('finalScores'));
+    overOverlay.classList.remove('hidden');
+    draw();
   }
 
   function drawParticleBurst() {
@@ -1227,6 +1395,9 @@
     ghostToggle.textContent = settings.ghost ? 'ON' : 'OFF';
     gridToggle.dataset.on = String(settings.grid);
     gridToggle.textContent = settings.grid ? 'ON' : 'OFF';
+    const hapticsToggle = document.getElementById('hapticsToggle');
+    hapticsToggle.dataset.on = String(settings.haptics);
+    hapticsToggle.textContent = settings.haptics ? 'ON' : 'OFF';
     settingsOverlay.classList.remove('hidden');
   }
   function closeSettings() {
@@ -1257,11 +1428,67 @@
   bindToggle(soundToggle, 'sound');
   bindToggle(ghostToggle, 'ghost');
   bindToggle(gridToggle, 'grid');
+  bindToggle(document.getElementById('hapticsToggle'), 'haptics');
+
+  // ---------- Mode & start-level picker ----------
+  const modeDescriptions = {
+    marathon: 'ENDLESS PLAY. HOW FAR CAN YOU GO?',
+    sprint: 'CLEAR 40 LINES AS FAST AS YOU CAN.',
+    zen: 'NO GAME OVER. THE STACK CLEARS ITSELF.',
+  };
+  const modeDesc = document.getElementById('modeDesc');
+  const startLevelDisplay = document.getElementById('startLevelDisplay');
+
+  function updateModeButtons() {
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.dataset.active = String(btn.dataset.mode === settings.mode);
+    });
+    modeDesc.textContent = modeDescriptions[settings.mode] || '';
+    refreshStartScores();
+  }
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      settings.mode = btn.dataset.mode;
+      saveSettings();
+      updateModeButtons();
+    });
+  });
+
+  function updateLevelDisplay() {
+    startLevelDisplay.textContent = settings.startLevel;
+  }
+  document.getElementById('levelDown').addEventListener('click', () => {
+    settings.startLevel = Math.max(1, (settings.startLevel || 1) - 1);
+    saveSettings();
+    updateLevelDisplay();
+  });
+  document.getElementById('levelUp').addEventListener('click', () => {
+    settings.startLevel = Math.min(15, (settings.startLevel || 1) + 1);
+    saveSettings();
+    updateLevelDisplay();
+  });
+
+  // ---------- Fullscreen ----------
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  if (!document.fullscreenEnabled && !document.documentElement.webkitRequestFullscreen) {
+    fullscreenBtn.style.display = 'none';
+  } else {
+    fullscreenBtn.addEventListener('click', () => {
+      try {
+        if (!document.fullscreenElement) {
+          (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      } catch (e) {}
+    });
+  }
 
   // ---------- Init ----------
   loadSettings();
   applyTheme();
-  renderScores(document.getElementById('startScores'));
+  updateModeButtons();
+  updateLevelDisplay();
   reset();
   draw();
 })();

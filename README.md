@@ -30,10 +30,13 @@ python3 -m http.server 8000
 - Touch users get on-screen move / rotate / drop / hold buttons
 
 Gameplay:
+- Three modes from the title screen: **Marathon** (endless), **Sprint 40** (race to clear 40 lines, fastest times saved locally), and **Zen** (the stack clears itself instead of ending the game)
+- Adjustable starting level (1–15)
 - 7-bag piece randomizer, hold with swap, ghost piece, and a 3-piece next queue
 - Combo scoring and back-to-back Tetris bonus, with score popups on the board
-- Sound effects (movement, rotation, line clears, level-ups, game over) — muteable
-- Level speed-up every 10 lines, elapsed-time display, and a local top-5 high-score list
+- Per-run line-clear breakdown (singles/doubles/triples/Tetrises) shown on game over
+- Sound effects (movement, rotation, line clears, level-ups, game over) — muteable, plus haptic vibration on supported devices
+- Level speed-up every 10 lines, elapsed-time display, fullscreen toggle, and local leaderboards (high scores for Marathon, best times for Sprint)
 
 Customizable theme (⚙ settings button, in-game or from the title screen):
 - Seven built-in skins — Amber Arcade, Daylight (light), Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
