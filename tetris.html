@@ -446,14 +446,20 @@
             <h2 class="display-font">PAUSED</h2>
             <div class="btn-row">
               <button id="resumeBtn">RESUME</button>
+            </div>
+            <div class="btn-row">
               <button id="pauseSettingsBtn" class="btn-ghost">SETTINGS</button>
+              <button id="pauseHomeBtn" class="btn-ghost">HOME</button>
             </div>
           </div>
           <div id="overOverlay" class="overlay hidden">
             <h2 class="display-font danger">GAME<br/>OVER</h2>
             <p id="finalScore">SCORE: 0</p>
             <ol class="scores-list" id="finalScores"></ol>
-            <button id="restartBtn">CONTINUE</button>
+            <div class="btn-row">
+              <button id="restartBtn">PLAY AGAIN</button>
+              <button id="homeBtn" class="btn-ghost">HOME</button>
+            </div>
           </div>
           <div id="settingsOverlay" class="overlay hidden">
             <h2 class="display-font">SETTINGS</h2>
@@ -977,6 +983,18 @@
   document.getElementById('startBtn').addEventListener('click', startGame);
   document.getElementById('restartBtn').addEventListener('click', startGame);
   document.getElementById('resumeBtn').addEventListener('click', togglePause);
+  document.getElementById('homeBtn').addEventListener('click', goHome);
+  document.getElementById('pauseHomeBtn').addEventListener('click', goHome);
+
+  function goHome() {
+    reset();
+    pauseOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    settingsOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+    renderScores(document.getElementById('startScores'));
+    draw();
+  }
 
   function togglePause() {
     if (!running || gameOver) return;
