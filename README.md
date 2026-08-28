@@ -18,7 +18,12 @@ python3 -m http.server 8000
 - **Enter** — start / restart
 - Touch users get on-screen directional buttons
 
-## Tetris (`tetris.html`)
+## Pigris (`tetris.html`)
+
+A Tetris variant with its own mascot: **Blox**, a pixel-art blue pig who
+greets new players on the title screen and cycles through short tips
+(movement, rotation, hold, hard drop, line clears) — tap the speech bubble
+to skip ahead.
 
 - **Arrow left / right** — move
 - **Arrow down** — soft drop
@@ -26,22 +31,31 @@ python3 -m http.server 8000
 - **Space** — hard drop
 - **C / Shift** — hold piece
 - **P / Esc** — pause / resume
-- **Enter** — start / restart
+- **Enter** — advance the title/mode screens, or start / restart
 - Touch users get on-screen move / rotate / drop / hold buttons
 
+Flow: title screen (PLAY) → choose Marathon / Sprint 40 / Zen and a
+starting level (GO) → play. Every overlay scrolls if its content doesn't
+fit the board.
+
 Gameplay:
-- Three modes from the title screen: **Marathon** (endless), **Sprint 40** (race to clear 40 lines, fastest times saved locally), and **Zen** (the stack clears itself instead of ending the game)
+- Three modes: **Marathon** (endless), **Sprint 40** (race to clear 40
+  lines, fastest times saved locally), and **Zen** (the stack clears
+  itself instead of ending the game)
 - Adjustable starting level (1–15)
 - 7-bag piece randomizer, hold with swap, ghost piece, and a 3-piece next queue
-- Combo scoring and back-to-back Tetris bonus, with score popups on the board
+- T-spin detection with its own bonus scoring (rotate a T-piece into a
+  3-corner-blocked slot without sliding it afterward)
+- Combo scoring and back-to-back bonus for Tetrises and T-spins, with score popups on the board
+- A pulsing red glow and heartbeat cue when the stack gets dangerously tall, and a screen shake on big clears
 - Per-run line-clear breakdown (singles/doubles/triples/Tetrises) shown on game over
-- Sound effects (movement, rotation, line clears, level-ups, game over) — muteable, plus haptic vibration on supported devices
+- Sound effects and a looping background chiptune (each independently muteable), plus haptic vibration on supported devices
 - Level speed-up every 10 lines, elapsed-time display, fullscreen toggle, and local leaderboards (high scores for Marathon, best times for Sprint)
 
 Customizable theme (⚙ settings button, in-game or from the title screen):
 - Seven built-in skins — Amber Arcade, Daylight (light), Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
 - A custom-hue slider that generates its own palette and piece colors on the fly
-- Toggles for sound, the ghost piece, and grid lines
+- Toggles for sound, music, the ghost piece, grid lines, and haptics
 - All choices are saved locally and persist between visits
 
 ## Features

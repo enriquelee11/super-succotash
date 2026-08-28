@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tetris</title>
+<title>Pigris</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -147,6 +147,32 @@
     box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
     transition: background 0.3s ease;
   }
+  .board-wrap.danger-zone {
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+      0 0 18px 2px color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .board-wrap.danger-zone {
+      animation: dangerPulse 0.9s ease-in-out infinite;
+    }
+  }
+  @keyframes dangerPulse {
+    0%, 100% {
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+        0 0 10px 0 color-mix(in srgb, var(--danger) 35%, transparent);
+    }
+    50% {
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+        0 0 26px 5px color-mix(in srgb, var(--danger) 75%, transparent);
+    }
+  }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+  }
+  .cabinet.shake { animation: shake 0.32s ease-in-out; }
   .board-wrap::after {
     content: '';
     position: absolute;
@@ -250,6 +276,64 @@
     max-width: 260px;
   }
   .overlay .danger { color: var(--danger); text-shadow: 0 0 14px color-mix(in srgb, var(--danger) 70%, transparent); }
+
+  .mascot-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  #mascotCanvas {
+    display: block;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.45));
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    #mascotCanvas { animation: mascotBob 2.4s ease-in-out infinite; }
+  }
+  @keyframes mascotBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .speech-bubble {
+    position: relative;
+    background: var(--screen-edge);
+    border: 1.5px solid var(--accent-faint);
+    border-radius: 10px;
+    padding: 10px 16px;
+    max-width: 250px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid var(--screen-edge);
+  }
+  .speech-bubble:hover { border-color: var(--accent-dim); }
+  .speech-bubble:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+  .speech-bubble p {
+    margin: 0;
+    font-size: 10.5px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .tip-dots { display: flex; gap: 4px; }
+  .tip-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-faint);
+  }
+  .tip-dots span.active { background: var(--accent); }
 
   .scores-list {
     list-style: none;
@@ -474,7 +558,7 @@
 <body>
   <div class="cabinet flicker">
     <div class="header-row">
-      <div class="marquee display-font" id="marqueeText">TETRIS</div>
+      <div class="marquee display-font" id="marqueeText">PIGRIS</div>
       <button id="fullscreenBtn" class="icon-btn" aria-label="Fullscreen" title="Fullscreen">⛶</button>
       <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
     </div>
@@ -496,11 +580,17 @@
         </div>
       </div>
       <div class="screen-frame">
-        <div class="board-wrap">
+        <div class="board-wrap" id="boardWrap">
           <canvas id="board" width="240" height="480"></canvas>
           <div id="startOverlay" class="overlay">
-            <h2 class="display-font">TETRIS</h2>
-            <p>ARROWS MOVE &amp; SOFT DROP.<br/>UP ROTATE &middot; SPACE HARD DROP.<br/>C OR SHIFT TO HOLD.<br/>CLEAR LINES TO SCORE.</p>
+            <h2 class="display-font">PIGRIS</h2>
+            <div class="mascot-wrap">
+              <canvas id="mascotCanvas" width="96" height="96" aria-hidden="true"></canvas>
+              <div class="speech-bubble" id="speechBubble" role="button" tabindex="0" aria-label="Next tip">
+                <p id="mascotTip">Hi, I'm Blox! Let me show you around.</p>
+              </div>
+              <div class="tip-dots" id="tipDots"></div>
+            </div>
             <button id="startBtn">PLAY</button>
           </div>
           <div id="modeSelectOverlay" class="overlay hidden">
@@ -556,6 +646,10 @@
             <div class="toggle-row">
               <span>SOUND</span>
               <button class="toggle-btn" id="soundToggle" data-on="true">ON</button>
+            </div>
+            <div class="toggle-row">
+              <span>MUSIC</span>
+              <button class="toggle-btn" id="musicToggle" data-on="true">ON</button>
             </div>
             <div class="toggle-row">
               <span>GHOST PIECE</span>
@@ -710,7 +804,7 @@
 
   const ROOT = document.documentElement;
   let activeTheme = THEMES.amber;
-  let settings = { theme: 'amber', hue: 30, sound: true, ghost: true, grid: true, haptics: true, mode: 'marathon', startLevel: 1 };
+  let settings = { theme: 'amber', hue: 30, sound: true, music: true, ghost: true, grid: true, haptics: true, mode: 'marathon', startLevel: 1 };
 
   function loadSettings() {
     try {
@@ -740,15 +834,13 @@
   // ---------- Sound ----------
   let audioCtx = null;
   function ensureAudio() {
-    if (!settings.sound) return null;
     if (!audioCtx) {
       try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
     }
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
-  function beep(freq, duration, type = 'square', gain = 0.06, delay = 0) {
-    if (!settings.sound) return;
+  function playTone(freq, duration, type = 'square', gain = 0.06, delay = 0) {
     const ac = ensureAudio();
     if (!ac) return;
     const osc = ac.createOscillator();
@@ -763,6 +855,10 @@
     osc.start(t0);
     osc.stop(t0 + duration + 0.02);
   }
+  function beep(freq, duration, type = 'square', gain = 0.06, delay = 0) {
+    if (!settings.sound) return;
+    playTone(freq, duration, type, gain, delay);
+  }
   const sfx = {
     move: () => beep(220, 0.04, 'square', 0.03),
     rotate: () => beep(330, 0.05, 'square', 0.04),
@@ -771,14 +867,104 @@
     softdrop: () => beep(180, 0.03, 'square', 0.02),
     clear: (n) => { for (let i = 0; i < n; i++) beep(440 + i * 110, 0.12, 'square', 0.06, i * 0.05); },
     tetris: () => { [440, 554, 659, 880].forEach((f, i) => beep(f, 0.14, 'sawtooth', 0.06, i * 0.06)); },
+    tspin: () => { [523, 659, 784].forEach((f, i) => beep(f, 0.13, 'sawtooth', 0.06, i * 0.07)); },
     levelup: () => { [330, 440, 554, 660].forEach((f, i) => beep(f, 0.1, 'triangle', 0.05, i * 0.05)); },
     gameover: () => { [330, 262, 220, 165].forEach((f, i) => beep(f, 0.22, 'sawtooth', 0.06, i * 0.16)); },
+    heartbeat: () => { beep(70, 0.09, 'sine', 0.08); beep(60, 0.09, 'sine', 0.07, 0.14); },
   };
+
+  // ---------- Music ----------
+  let musicTimer = null;
+  let musicStep = 0;
+  const MUSIC_PATTERN = [220.00, 0, 261.63, 0, 293.66, 261.63, 220.00, 196.00];
+  function scheduleMusicStep() {
+    if (!settings.music || !running || paused || gameOver) { musicTimer = null; return; }
+    const freq = MUSIC_PATTERN[musicStep % MUSIC_PATTERN.length];
+    if (freq) playTone(freq, 0.16, 'triangle', 0.028);
+    if (musicStep % 4 === 0) playTone(freq || 220, 0.05, 'square', 0.012);
+    musicStep++;
+    const bpm = Math.min(200, 120 + (level - 1) * 5);
+    musicTimer = setTimeout(scheduleMusicStep, (60000 / bpm) / 2);
+  }
+  function startMusic() {
+    if (musicTimer || !settings.music) return;
+    ensureAudio();
+    musicStep = 0;
+    scheduleMusicStep();
+  }
+  function stopMusic() {
+    if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
+  }
 
   // ---------- Haptics ----------
   function vibrate(pattern) {
     if (!settings.haptics) return;
     try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+  }
+
+  // ---------- Mascot: Blox the pig ----------
+  const MASCOT_COLORS = { B: '#4d8fe0', O: '#1f4c8f', S: '#ffb3c6', N: '#7a3350', W: '#ffffff', P: '#14141f' };
+  const MASCOT_SPRITE = [
+    '..OO....OO..',
+    '.OBO....OBO.',
+    'OBBBO..OBBBO',
+    'OBBBBOOBBBBO',
+    'OBWBBBBBBWBO',
+    'OBPBBBBBBPBO',
+    'OBBBBBBBBBBO',
+    'OBBSSSSSSBBO',
+    'OBBSNSSNSBBO',
+    'OBBSSSSSSBBO',
+    'OBBBBBBBBBBO',
+    '.OOOOOOOOOO.',
+  ];
+  const MASCOT_TIPS = [
+    "Hi, I'm Blox! Let me show you around.",
+    'Use ← and → to slide a piece sideways.',
+    'Press ↑ to rotate a piece.',
+    '↓ drops faster. SPACE slams it down instantly!',
+    'Press C to hold a piece and swap it in later.',
+    'Fill an entire row to clear it and score!',
+    'Clear 4 rows at once for a TETRIS — big points!',
+    'Ready? Tap PLAY, then pick how you want to play.',
+  ];
+  let mascotTipIndex = 0;
+  let mascotTimer = null;
+
+  function drawMascot() {
+    const mc = document.getElementById('mascotCanvas');
+    if (!mc) return;
+    const mctx = mc.getContext('2d');
+    const pix = mc.width / MASCOT_SPRITE[0].length;
+    mctx.clearRect(0, 0, mc.width, mc.height);
+    MASCOT_SPRITE.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.') continue;
+        mctx.fillStyle = MASCOT_COLORS[ch];
+        mctx.fillRect(x * pix, y * pix, pix, pix);
+      }
+    });
+  }
+
+  function showTip(i) {
+    mascotTipIndex = ((i % MASCOT_TIPS.length) + MASCOT_TIPS.length) % MASCOT_TIPS.length;
+    const tipEl = document.getElementById('mascotTip');
+    const dotsEl = document.getElementById('tipDots');
+    if (tipEl) tipEl.textContent = MASCOT_TIPS[mascotTipIndex];
+    if (dotsEl) {
+      dotsEl.innerHTML = MASCOT_TIPS.map((_, idx) =>
+        `<span class="${idx === mascotTipIndex ? 'active' : ''}"></span>`
+      ).join('');
+    }
+  }
+  function startMascotCycle() {
+    stopMascotCycle();
+    if (REDUCE_MOTION) return;
+    mascotTimer = setInterval(() => showTip(mascotTipIndex + 1), 3400);
+  }
+  function stopMascotCycle() {
+    if (mascotTimer) { clearInterval(mascotTimer); mascotTimer = null; }
   }
 
   // ---------- HUD elements ----------
@@ -796,6 +982,32 @@
   const settingsOverlay = document.getElementById('settingsOverlay');
   const finalScoreEl = document.getElementById('finalScore');
   const holdBox = document.getElementById('holdBox');
+  const boardWrapEl = document.getElementById('boardWrap');
+  const cabinetEl = document.querySelector('.cabinet');
+
+  function triggerShake() {
+    if (REDUCE_MOTION) return;
+    cabinetEl.classList.remove('shake');
+    void cabinetEl.offsetWidth;
+    cabinetEl.classList.add('shake');
+  }
+
+  function updateDangerZone() {
+    let danger = false;
+    for (let y = 0; y < DANGER_ROWS; y++) {
+      if (grid[y].some(cell => cell !== null)) { danger = true; break; }
+    }
+    dangerZone = danger;
+    boardWrapEl.classList.toggle('danger-zone', danger);
+    if (danger) {
+      const now = performance.now();
+      if (now - lastHeartbeat > 750) {
+        sfx.heartbeat();
+        vibrate(15);
+        lastHeartbeat = now;
+      }
+    }
+  }
 
   let best = 0;
   try { best = parseInt(localStorage.getItem('amberTetrisBest') || '0', 10); } catch (e) {}
@@ -858,7 +1070,8 @@
 
   let grid, current, holdKey, canHold, bag, nextQueue, score, level, lines, running, paused, gameOver;
   let lastTick, interval, particles, floatTexts, clearingRows, clearFlashTimer, comboCount, b2bActive, startTime, elapsedAtPause;
-  let mode, lineStats;
+  let mode, lineStats, lastMoveWasRotate, dangerZone, lastHeartbeat;
+  const DANGER_ROWS = 4;
 
   function emptyGrid() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -904,6 +1117,10 @@
     clearFlashTimer = 0;
     comboCount = -1;
     b2bActive = false;
+    lastMoveWasRotate = false;
+    dangerZone = false;
+    lastHeartbeat = 0;
+    boardWrapEl.classList.remove('danger-zone');
     holdKey = null;
     canHold = true;
     bag = shuffledBag();
@@ -954,11 +1171,24 @@
       const ry = pivot.y + (x - pivot.x);
       return { x: rx, y: ry };
     });
-    if (!collides(rotated)) { current.cells = rotated; sfx.rotate(); return; }
+    if (!collides(rotated)) { current.cells = rotated; lastMoveWasRotate = true; sfx.rotate(); return; }
     for (const kick of [-1, 1, -2, 2]) {
       const kicked = rotated.map(c => ({ x: c.x + kick, y: c.y }));
-      if (!collides(kicked)) { current.cells = kicked; sfx.rotate(); return; }
+      if (!collides(kicked)) { current.cells = kicked; lastMoveWasRotate = true; sfx.rotate(); return; }
     }
+  }
+
+  function checkTSpin() {
+    if (current.key !== 'T' || !lastMoveWasRotate) return false;
+    const center = current.cells[1];
+    const corners = [
+      { x: center.x - 1, y: center.y - 1 }, { x: center.x + 1, y: center.y - 1 },
+      { x: center.x - 1, y: center.y + 1 }, { x: center.x + 1, y: center.y + 1 },
+    ];
+    const filled = corners.filter(({ x, y }) =>
+      x < 0 || x >= COLS || y >= ROWS || y < 0 || grid[y][x] !== null
+    ).length;
+    return filled >= 3;
   }
 
   function ghostCells() {
@@ -993,6 +1223,7 @@
       current = spawnPiece(swap);
     }
     canHold = false;
+    lastMoveWasRotate = false;
     drawHold();
     drawNext();
   }
@@ -1005,6 +1236,7 @@
     current.cells.forEach(({ x, y }) => {
       if (y >= 0) grid[y][x] = current.key;
     });
+    const tspin = checkTSpin();
     const fullRows = [];
     for (let y = 0; y < ROWS; y++) {
       if (grid[y].every(cell => cell !== null)) fullRows.push(y);
@@ -1016,18 +1248,31 @@
       clearingRows = fullRows;
       clearFlashTimer = 10;
       comboCount++;
-      const table = { 1: 100, 2: 300, 3: 500, 4: 800 };
-      let gained = (table[fullRows.length] || 0) * level;
-      let label = { 1: 'SINGLE', 2: 'DOUBLE', 3: 'TRIPLE', 4: 'TETRIS' }[fullRows.length];
-      if (fullRows.length === 4) {
-        if (b2bActive) { gained = Math.floor(gained * 1.5); label = 'B2B TETRIS!'; }
+      let gained, label;
+      if (tspin && fullRows.length <= 3) {
+        const tspinTable = { 1: 800, 2: 1200, 3: 1600 };
+        gained = tspinTable[fullRows.length] * level;
+        label = `T-SPIN ${{ 1: 'SINGLE', 2: 'DOUBLE', 3: 'TRIPLE' }[fullRows.length]}`;
+        if (b2bActive) { gained = Math.floor(gained * 1.5); label = 'B2B ' + label; }
         b2bActive = true;
-        sfx.tetris();
-        vibrate([30, 30, 30]);
+        sfx.tspin();
+        vibrate([25, 25, 25]);
+        triggerShake();
       } else {
-        b2bActive = false;
-        sfx.clear(fullRows.length);
-        vibrate(20);
+        const table = { 1: 100, 2: 300, 3: 500, 4: 800 };
+        gained = table[fullRows.length] * level;
+        label = { 1: 'SINGLE', 2: 'DOUBLE', 3: 'TRIPLE', 4: 'TETRIS' }[fullRows.length];
+        if (fullRows.length === 4) {
+          if (b2bActive) { gained = Math.floor(gained * 1.5); label = 'B2B TETRIS!'; }
+          b2bActive = true;
+          sfx.tetris();
+          vibrate([30, 30, 30]);
+          triggerShake();
+        } else {
+          b2bActive = false;
+          sfx.clear(fullRows.length);
+          vibrate(20);
+        }
       }
       if (comboCount > 0) {
         const comboBonus = 50 * comboCount * level;
@@ -1035,7 +1280,7 @@
         label += ` COMBO x${comboCount}`;
       }
       score += gained;
-      addFloatText(`+${gained} ${label}`, fullRows.length === 4 ? activeTheme.danger : activeTheme.ink);
+      addFloatText(`+${gained} ${label}`, (fullRows.length === 4 || tspin) ? activeTheme.danger : activeTheme.ink);
       lines += fullRows.length;
       const newLevel = (settings.startLevel || 1) + Math.floor(lines / 10);
       if (newLevel !== level) {
@@ -1050,9 +1295,19 @@
         while (grid.length < ROWS) grid.unshift(Array(COLS).fill(null));
         clearingRows = [];
       }, REDUCE_MOTION ? 0 : 140);
+    } else if (tspin) {
+      comboCount = -1;
+      const gained = 400 * level;
+      score += gained;
+      addFloatText(`+${gained} T-SPIN`, activeTheme.danger);
+      sfx.tspin();
+      vibrate(20);
+      updateHud();
     } else {
       comboCount = -1;
     }
+
+    updateDangerZone();
 
     if (mode === 'marathon' && score > best) {
       best = score;
@@ -1067,10 +1322,13 @@
 
     current = spawnPiece(nextQueue.shift());
     nextQueue.push(nextFromBag());
+    lastMoveWasRotate = false;
     drawNext();
     if (collides(current.cells)) {
       if (mode === 'zen') {
         grid = emptyGrid();
+        dangerZone = false;
+        boardWrapEl.classList.remove('danger-zone');
         addFloatText('CLEARED!', activeTheme.accent);
       } else {
         endGame();
@@ -1095,8 +1353,8 @@
 
   function setDir(act) {
     if (!running || paused || gameOver) return;
-    if (act === 'left') { if (moveBy(-1, 0)) sfx.move(); }
-    if (act === 'right') { if (moveBy(1, 0)) sfx.move(); }
+    if (act === 'left') { if (moveBy(-1, 0)) { sfx.move(); lastMoveWasRotate = false; } }
+    if (act === 'right') { if (moveBy(1, 0)) { sfx.move(); lastMoveWasRotate = false; } }
     if (act === 'down') { if (!moveBy(0, 1)) lockPiece(); else { score += 1; sfx.softdrop(); } updateHud(); }
     if (act === 'rotate') rotate();
     if (act === 'drop') hardDrop();
@@ -1136,13 +1394,21 @@
   function goToModeSelect() {
     startOverlay.classList.add('hidden');
     modeSelectOverlay.classList.remove('hidden');
+    stopMascotCycle();
     updateModeButtons();
     updateLevelDisplay();
   }
   function backToTitle() {
     modeSelectOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
+    startMascotCycle();
   }
+
+  const speechBubble = document.getElementById('speechBubble');
+  speechBubble.addEventListener('click', () => { showTip(mascotTipIndex + 1); startMascotCycle(); });
+  speechBubble.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTip(mascotTipIndex + 1); startMascotCycle(); }
+  });
 
   document.getElementById('startBtn').addEventListener('click', goToModeSelect);
   document.getElementById('goBtn').addEventListener('click', startGame);
@@ -1154,12 +1420,14 @@
 
   function goHome() {
     reset();
+    stopMusic();
     modeSelectOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
     refreshStartScores();
+    startMascotCycle();
     draw();
   }
 
@@ -1169,9 +1437,11 @@
     pauseOverlay.classList.toggle('hidden', !paused);
     if (paused) {
       elapsedAtPause += performance.now() - startTime;
+      stopMusic();
     } else {
       startTime = performance.now();
       lastTick = performance.now();
+      startMusic();
       requestAnimationFrame(loop);
     }
   }
@@ -1185,6 +1455,8 @@
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
+    stopMascotCycle();
+    startMusic();
     lastTick = performance.now();
     requestAnimationFrame(loop);
   }
@@ -1196,6 +1468,7 @@
   function endGame() {
     running = false;
     gameOver = true;
+    stopMusic();
     sfx.gameover();
     vibrate([40, 30, 40, 30, 80]);
     const overTitle = document.getElementById('overTitle');
@@ -1220,6 +1493,7 @@
   function finishSprint() {
     running = false;
     gameOver = true;
+    stopMusic();
     const finishTime = elapsedAtPause + (performance.now() - startTime);
     saveSprintTime(finishTime);
     sfx.levelup();
@@ -1369,6 +1643,7 @@
       if (gameOver) return;
     }
     if (clearFlashTimer > 0) clearFlashTimer--;
+    if (dangerZone) updateDangerZone();
     timeEl.textContent = formatTime(elapsedAtPause + (performance.now() - startTime));
     draw();
     updateParticles();
@@ -1415,6 +1690,9 @@
     hueSlider.value = settings.hue;
     soundToggle.dataset.on = String(settings.sound);
     soundToggle.textContent = settings.sound ? 'ON' : 'OFF';
+    const musicToggle = document.getElementById('musicToggle');
+    musicToggle.dataset.on = String(settings.music);
+    musicToggle.textContent = settings.music ? 'ON' : 'OFF';
     ghostToggle.dataset.on = String(settings.ghost);
     ghostToggle.textContent = settings.ghost ? 'ON' : 'OFF';
     gridToggle.dataset.on = String(settings.grid);
@@ -1447,9 +1725,14 @@
       btn.textContent = settings[settingKey] ? 'ON' : 'OFF';
       saveSettings();
       if (settingKey === 'sound' && settings.sound) ensureAudio();
+      if (settingKey === 'music') {
+        if (settings.music && running && !paused && !gameOver) startMusic();
+        else stopMusic();
+      }
     });
   }
   bindToggle(soundToggle, 'sound');
+  bindToggle(document.getElementById('musicToggle'), 'music');
   bindToggle(ghostToggle, 'ghost');
   bindToggle(gridToggle, 'grid');
   bindToggle(document.getElementById('hapticsToggle'), 'haptics');
@@ -1513,6 +1796,9 @@
   applyTheme();
   updateModeButtons();
   updateLevelDisplay();
+  drawMascot();
+  showTip(0);
+  startMascotCycle();
   reset();
   draw();
 })();
