@@ -290,6 +290,13 @@
     width: 100%;
     height: 205px;
   }
+  .mascot-trail-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
   .mascot-walker {
     position: absolute;
     left: 0;
@@ -658,6 +665,7 @@
             <h2 class="display-font">PIGRIS</h2>
             <div class="mascot-wrap">
             <div class="mascot-stage" id="mascotStage">
+              <canvas class="mascot-trail-canvas" id="mascotTrailCanvas" aria-hidden="true"></canvas>
               <div class="mascot-walker" id="mascotWalker">
                 <div class="mascot-lift" id="mascotLift">
                   <div class="mascot-flip" id="mascotFlip">
@@ -1033,9 +1041,104 @@
   const mascotLift = document.getElementById('mascotLift');
   const mascotFlip = document.getElementById('mascotFlip');
   const mascotShadowEl = document.getElementById('mascotShadowEl');
+  const mascotTrailCanvas = document.getElementById('mascotTrailCanvas');
+  const mascotTrailCtx = mascotTrailCanvas.getContext('2d');
   let mascotWalkTimer = null;
   let mascotWalkX = 0;
   let mascotFlying = false;
+  let mascotTrailRafId = null;
+  let mascotTrailPoints = [];
+  let mascotSparkles = [];
+  let mascotLastSparkleTime = 0;
+
+  function mascotReadTranslate(el) {
+    const t = getComputedStyle(el).transform;
+    const m = t && t.match(/matrix\(([^)]+)\)/);
+    if (!m) return { tx: 0, ty: 0 };
+    const parts = m[1].split(',').map(Number);
+    return { tx: parts[4], ty: parts[5] };
+  }
+  function mascotTrailFrame(now) {
+    if (!mascotFlying) {
+      mascotTrailCtx.clearRect(0, 0, mascotTrailCanvas.width, mascotTrailCanvas.height);
+      mascotTrailPoints = [];
+      mascotSparkles = [];
+      mascotTrailRafId = null;
+      return;
+    }
+    const stageW = mascotStage.clientWidth;
+    const stageH = mascotStage.clientHeight;
+    if (mascotTrailCanvas.width !== stageW || mascotTrailCanvas.height !== stageH) {
+      mascotTrailCanvas.width = stageW;
+      mascotTrailCanvas.height = stageH;
+    }
+    const { tx } = mascotReadTranslate(mascotWalker);
+    const { ty } = mascotReadTranslate(mascotLift);
+    const px = tx + MASCOT_IMG_W / 2;
+    const py = stageH + ty - MASCOT_IMG_W / 2;
+
+    mascotTrailPoints.push({ x: px, y: py, hue: (now / 6) % 360 });
+    if (mascotTrailPoints.length > 55) mascotTrailPoints.shift();
+
+    if (now - mascotLastSparkleTime > 65) {
+      mascotLastSparkleTime = now;
+      mascotSparkles.push({
+        x: px + (Math.random() - 0.5) * 24,
+        y: py + (Math.random() - 0.5) * 24,
+        size: 2 + Math.random() * 2.5,
+        hue: Math.random() * 360,
+        life: 1,
+        rot: Math.random() * Math.PI,
+      });
+    }
+
+    mascotTrailCtx.clearRect(0, 0, stageW, stageH);
+
+    mascotTrailCtx.lineCap = 'round';
+    for (let i = 1; i < mascotTrailPoints.length; i++) {
+      const p0 = mascotTrailPoints[i - 1];
+      const p1 = mascotTrailPoints[i];
+      const t = i / mascotTrailPoints.length;
+      mascotTrailCtx.strokeStyle = `hsla(${p1.hue}, 90%, 65%, ${t * 0.65})`;
+      mascotTrailCtx.lineWidth = 2 + t * 6;
+      mascotTrailCtx.beginPath();
+      mascotTrailCtx.moveTo(p0.x, p0.y);
+      mascotTrailCtx.lineTo(p1.x, p1.y);
+      mascotTrailCtx.stroke();
+    }
+
+    mascotSparkles.forEach(s => { s.life -= 0.045; });
+    mascotSparkles = mascotSparkles.filter(s => s.life > 0);
+    mascotSparkles.forEach(s => {
+      const r = s.size * (0.5 + s.life * 0.5);
+      mascotTrailCtx.save();
+      mascotTrailCtx.translate(s.x, s.y);
+      mascotTrailCtx.rotate(s.rot);
+      mascotTrailCtx.globalAlpha = Math.max(0, s.life);
+      mascotTrailCtx.fillStyle = `hsl(${s.hue}, 95%, 78%)`;
+      mascotTrailCtx.beginPath();
+      mascotTrailCtx.moveTo(0, -r * 2);
+      mascotTrailCtx.lineTo(r * 0.5, -r * 0.5);
+      mascotTrailCtx.lineTo(r * 2, 0);
+      mascotTrailCtx.lineTo(r * 0.5, r * 0.5);
+      mascotTrailCtx.lineTo(0, r * 2);
+      mascotTrailCtx.lineTo(-r * 0.5, r * 0.5);
+      mascotTrailCtx.lineTo(-r * 2, 0);
+      mascotTrailCtx.lineTo(-r * 0.5, -r * 0.5);
+      mascotTrailCtx.closePath();
+      mascotTrailCtx.fill();
+      mascotTrailCtx.restore();
+    });
+
+    mascotTrailRafId = requestAnimationFrame(mascotTrailFrame);
+  }
+  function startMascotTrail() {
+    if (mascotTrailRafId || REDUCE_MOTION) return;
+    mascotTrailPoints = [];
+    mascotSparkles = [];
+    mascotLastSparkleTime = 0;
+    mascotTrailRafId = requestAnimationFrame(mascotTrailFrame);
+  }
 
   function mascotLaneWidth() {
     return Math.max(0, mascotStage.clientWidth - MASCOT_IMG_W);
@@ -1093,6 +1196,7 @@
   function startMascotFlight() {
     mascotFlying = true;
     mascotFlip.classList.add('flying');
+    startMascotTrail();
     const startedAt = performance.now();
     function nextLeg() {
       if (!mascotFlying) return; // interrupted (e.g. navigated away from the title screen)
