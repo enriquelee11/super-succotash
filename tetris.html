@@ -296,9 +296,6 @@
     bottom: 0;
     will-change: transform;
   }
-  .mascot-lift {
-    transition: transform 0.5s ease-out;
-  }
   .mascot-flip {
     transition: transform 0.25s ease;
   }
@@ -319,11 +316,11 @@
     height: 13px;
     margin-left: -31px;
     border-radius: 50%;
+    opacity: 0.5;
     background: radial-gradient(ellipse at center, rgba(0,0,0,0.4), transparent 72%);
   }
   @media (prefers-reduced-motion: no-preference) {
     #mascotImg { animation: mascotBob 2s ease-in-out infinite; }
-    .mascot-ground-shadow { animation: mascotShadow 2s ease-in-out infinite; }
   }
   @keyframes mascotBob {
     0%, 100% { transform: translateY(0) rotate(0deg) scale(1, 1); }
@@ -332,12 +329,16 @@
     60% { transform: translateY(-10px) rotate(4deg) scale(0.97, 1.05); }
     80% { transform: translateY(0) rotate(0deg) scale(1.05, 0.95); }
   }
-  @keyframes mascotShadow {
-    0%, 100% { transform: scale(calc(1 * var(--lift-shrink, 1))); opacity: calc(0.55 * var(--lift-shrink, 1)); }
-    20% { transform: scale(calc(0.65 * var(--lift-shrink, 1))); opacity: calc(0.3 * var(--lift-shrink, 1)); }
-    40% { transform: scale(calc(1.08 * var(--lift-shrink, 1))); opacity: calc(0.6 * var(--lift-shrink, 1)); }
-    60% { transform: scale(calc(0.65 * var(--lift-shrink, 1))); opacity: calc(0.3 * var(--lift-shrink, 1)); }
-    80% { transform: scale(calc(1.08 * var(--lift-shrink, 1))); opacity: calc(0.6 * var(--lift-shrink, 1)); }
+  /* One-shot jump arc: eases out going up, eases in coming back down to the
+     ground — played once per hop, never left holding a lifted position. */
+  @keyframes mascotHopArc {
+    0% { transform: translateY(0); animation-timing-function: ease-out; }
+    50% { transform: translateY(calc(-1 * var(--hop-height, 40px))); animation-timing-function: ease-in; }
+    100% { transform: translateY(0); }
+  }
+  @keyframes mascotHopShadow {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(0.4); opacity: 0.22; }
   }
   .speech-bubble {
     position: relative;
@@ -992,7 +993,7 @@
   // ---------- Mascot: walking (and hopping up) around the title card ----------
   const MASCOT_IMG_W = 112;
   const MASCOT_WALK_SPEED = 45; // px/sec, a casual stroll
-  const MASCOT_MAX_LIFT = 55; // how high a hop can go, in px — never negative (never below ground)
+  const MASCOT_MAX_LIFT = 55; // how high a hop can go, in px — a jump arc that always lands back at 0
   const MASCOT_HOP_CHANCE = 0.6;
   const mascotStage = document.getElementById('mascotStage');
   const mascotWalker = document.getElementById('mascotWalker');
@@ -1001,10 +1002,14 @@
   const mascotShadowEl = document.getElementById('mascotShadowEl');
   let mascotWalkTimer = null;
   let mascotWalkX = 0;
-  let mascotLiftY = 0;
 
   function mascotLaneWidth() {
     return Math.max(0, mascotStage.clientWidth - MASCOT_IMG_W);
+  }
+  function mascotClearHop() {
+    mascotLift.style.animation = 'none';
+    mascotLift.style.transform = 'translateY(0)';
+    mascotShadowEl.style.animation = 'none';
   }
   function mascotWalkTo(x, liftPx) {
     const distance = Math.abs(x - mascotWalkX);
@@ -1013,10 +1018,21 @@
     mascotWalker.style.transition = `transform ${duration}s linear`;
     mascotWalker.style.transform = `translateX(${x}px)`;
     mascotWalkX = x;
-    mascotLift.style.transition = `transform ${Math.max(duration, 0.5)}s ease-out`;
-    mascotLift.style.transform = `translateY(${-liftPx}px)`;
-    mascotLiftY = liftPx;
-    mascotShadowEl.style.setProperty('--lift-shrink', String(Math.max(0.25, 1 - (liftPx / MASCOT_MAX_LIFT) * 0.75)));
+
+    if (liftPx > 0) {
+      // A one-shot jump arc (ground -> peak -> ground) timed to land exactly
+      // when the walk finishes, rather than a transition that leaves Blox
+      // parked mid-air until the next move.
+      mascotLift.style.setProperty('--hop-height', `${liftPx}px`);
+      mascotLift.style.animation = 'none';
+      mascotShadowEl.style.animation = 'none';
+      void mascotLift.offsetWidth; // restart the animation from scratch
+      mascotLift.style.animation = `mascotHopArc ${duration}s 1`;
+      mascotShadowEl.style.animation = `mascotHopShadow ${duration}s 1`;
+      mascotLift.addEventListener('animationend', mascotClearHop, { once: true });
+    } else {
+      mascotClearHop();
+    }
     return duration;
   }
   function scheduleMascotWalk() {
@@ -1037,17 +1053,15 @@
     const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
     ready.then(() => requestAnimationFrame(() => {
       mascotWalkX = mascotLaneWidth() / 2;
-      mascotLiftY = 0;
       mascotWalker.style.transition = 'none';
       mascotWalker.style.transform = `translateX(${mascotWalkX}px)`;
-      mascotLift.style.transition = 'none';
-      mascotLift.style.transform = 'translateY(0)';
-      mascotShadowEl.style.setProperty('--lift-shrink', '1');
+      mascotClearHop();
       scheduleMascotWalk();
     }));
   }
   function stopMascotWalk() {
     if (mascotWalkTimer) { clearTimeout(mascotWalkTimer); mascotWalkTimer = null; }
+    mascotClearHop();
   }
 
   // ---------- HUD elements ----------
