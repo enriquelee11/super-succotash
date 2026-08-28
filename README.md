@@ -18,20 +18,32 @@ python3 -m http.server 8000
 - **Enter** — start / restart
 - Touch users get on-screen directional buttons
 
-## Amber Tetris (`tetris.html`)
+## Tetris (`tetris.html`)
 
 - **Arrow left / right** — move
 - **Arrow down** — soft drop
 - **Arrow up** — rotate
 - **Space** — hard drop
-- **P** — pause / resume
+- **C / Shift** — hold piece
+- **P / Esc** — pause / resume
 - **Enter** — start / restart
-- Touch users get on-screen move / rotate / drop buttons
-- Next-piece preview, level speed-up every 10 lines, and standard line-clear scoring
+- Touch users get on-screen move / rotate / drop / hold buttons
+
+Gameplay:
+- 7-bag piece randomizer, hold with swap, ghost piece, and a 3-piece next queue
+- Combo scoring and back-to-back Tetris bonus, with score popups on the board
+- Sound effects (movement, rotation, line clears, level-ups, game over) — muteable
+- Level speed-up every 10 lines, elapsed-time display, and a local top-5 high-score list
+
+Customizable theme (⚙ settings button, in-game or from the title screen):
+- Six built-in skins — Amber Arcade, Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
+- A custom-hue slider that generates its own palette and piece colors on the fly
+- Toggles for sound, the ghost piece, and grid lines
+- All choices are saved locally and persist between visits
 
 ## Features
 
-- Both games share the same amber-phosphor CRT cabinet look and color palette
+- Both games share a retro CRT-cabinet look
 - Smooth canvas rendering with glow effects and particle bursts
-- High score saved locally (`localStorage`)
+- High scores saved locally (`localStorage`)
 - Fully responsive, single-file, no external dependencies

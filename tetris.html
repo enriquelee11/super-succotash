@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Amber Tetris</title>
+<title>Tetris</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -14,26 +14,29 @@
     --cabinet-lo: #0e0a05;
     --screen: #150f07;
     --screen-edge: #0a0703;
-    --phosphor: #ffb000;
-    --phosphor-bright: #ffd88a;
-    --phosphor-dim: #7a5420;
-    --phosphor-faint: #4a3618;
+    --accent: #ffb000;
+    --accent-bright: #ffd88a;
+    --accent-dim: #7a5420;
+    --accent-faint: #4a3618;
     --danger: #ff5a36;
     --danger-dim: #8f3521;
     --text-hint: #c99a4e;
+    --button-ink: #2a1a02;
+    --button-shadow: #8f5c00;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     height: 100%;
     background: var(--cabinet-lo);
-    color: var(--phosphor);
+    color: var(--accent);
     font-family: 'Space Mono', 'Courier New', monospace;
     display: flex;
     align-items: safe center;
     justify-content: center;
     overflow-y: auto;
     overflow-x: hidden;
+    transition: background 0.3s ease;
   }
   body { padding: 20px 0; }
   .display-font { font-family: 'Press Start 2P', 'Courier New', monospace; }
@@ -53,7 +56,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     padding: 18px 22px 22px;
     background:
       linear-gradient(155deg, var(--cabinet-hi) 0%, var(--cabinet) 40%, var(--cabinet-lo) 100%);
@@ -62,6 +65,16 @@
       0 0 0 2px var(--cabinet-lo),
       0 18px 50px rgba(0,0,0,0.65),
       inset 0 2px 0 rgba(255,255,255,0.04);
+    transition: background 0.3s ease;
+    max-width: 94vw;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
   }
 
   .marquee {
@@ -69,32 +82,52 @@
     font-size: 15px;
     letter-spacing: 3px;
     color: var(--cabinet-lo);
-    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 70%);
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent) 70%);
     padding: 10px 22px;
     border-radius: 6px;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 22px rgba(255,176,0,0.35);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 22px color-mix(in srgb, var(--accent) 35%, transparent);
   }
+
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 16px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent) 75%);
+    color: var(--button-ink);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--button-shadow), 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+    flex-shrink: 0;
+  }
+  .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--button-shadow); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
 
   .hud {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     width: 100%;
-    max-width: 480px;
+    max-width: 520px;
     font-size: 11px;
     letter-spacing: 1px;
-    color: var(--phosphor-dim);
+    color: var(--accent-dim);
     padding: 0 2px;
+    row-gap: 4px;
   }
   .hud b {
-    color: var(--phosphor-bright);
+    color: var(--accent-bright);
     font-weight: 700;
-    text-shadow: 0 0 6px rgba(255,216,138,0.6);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--accent-bright) 60%, transparent);
   }
 
   .play-area {
     display: flex;
-    gap: 14px;
+    gap: 12px;
     align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .screen-frame {
@@ -102,14 +135,16 @@
     border-radius: 10px;
     padding: 14px;
     background: var(--screen-edge);
-    box-shadow: inset 0 0 0 1px rgba(255,176,0,0.08);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+    transition: background 0.3s ease;
   }
   .board-wrap {
     position: relative;
     border-radius: 4px;
     overflow: hidden;
     background: var(--screen);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px rgba(255,176,0,0.4);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+    transition: background 0.3s ease;
   }
   .board-wrap::after {
     content: '';
@@ -145,40 +180,43 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 108px;
+    width: 96px;
   }
   .side-box {
     border-radius: 8px;
     padding: 10px;
     background: var(--screen-edge);
-    box-shadow: inset 0 0 0 1px rgba(255,176,0,0.08);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+    transition: background 0.3s ease, opacity 0.2s ease;
   }
   .side-box .label {
     font-size: 9px;
     letter-spacing: 2px;
-    color: var(--phosphor-dim);
+    color: var(--accent-dim);
     text-align: center;
     margin-bottom: 6px;
   }
-  #nextCanvas {
+  #holdCanvas, #nextCanvas {
     display: block;
     margin: 0 auto;
     background: var(--screen);
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.85), inset 0 0 2px rgba(255,176,0,0.4);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.85), inset 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
     border-radius: 4px;
+    transition: background 0.3s ease;
   }
   .stat {
     text-align: center;
     font-size: 9px;
     letter-spacing: 1px;
-    color: var(--phosphor-dim);
+    color: var(--accent-dim);
     padding: 4px 0;
+    font-variant-numeric: tabular-nums;
   }
   .stat b {
     display: block;
     font-size: 15px;
-    color: var(--phosphor-bright);
-    text-shadow: 0 0 6px rgba(255,216,138,0.6);
+    color: var(--accent-bright);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--accent-bright) 60%, transparent);
     margin-top: 2px;
   }
 
@@ -189,18 +227,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    background: rgba(10, 7, 3, 0.9);
+    gap: 14px;
+    background: color-mix(in srgb, var(--screen-edge) 97%, transparent);
     text-align: center;
-    padding: 20px;
-    z-index: 4;
+    padding: 18px;
+    z-index: 5;
+    overflow-y: auto;
   }
   .overlay h2 {
     margin: 0;
     font-size: 16px;
     line-height: 1.6;
-    color: var(--phosphor-bright);
-    text-shadow: 0 0 14px rgba(255,216,138,0.7);
+    color: var(--accent-bright);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--accent-bright) 70%, transparent);
   }
   .overlay p {
     margin: 0;
@@ -209,28 +248,59 @@
     line-height: 1.9;
     max-width: 260px;
   }
-  .overlay .danger { color: var(--danger); text-shadow: 0 0 14px rgba(255,90,54,0.7); }
+  .overlay .danger { color: var(--danger); text-shadow: 0 0 14px color-mix(in srgb, var(--danger) 70%, transparent); }
+
+  .scores-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 10.5px;
+    color: var(--text-hint);
+    width: 100%;
+    max-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .scores-list li {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dotted var(--accent-faint);
+    padding: 2px 4px;
+  }
+  .scores-list b { color: var(--accent-bright); }
 
   button {
     font-family: 'Space Mono', monospace;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 2px;
-    background: linear-gradient(180deg, var(--phosphor-bright), var(--phosphor) 75%);
-    color: #2a1a02;
+    background: linear-gradient(180deg, var(--accent-bright), var(--accent) 75%);
+    color: var(--button-ink);
     border: none;
     padding: 12px 26px;
     border-radius: 5px;
     cursor: pointer;
-    box-shadow: 0 3px 0 #8f5c00, 0 0 18px rgba(255,176,0,0.3);
+    box-shadow: 0 3px 0 var(--button-shadow), 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
     transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
   button:hover { filter: brightness(1.08); }
-  button:active { transform: translateY(3px); box-shadow: 0 0 0 #8f5c00, 0 0 10px rgba(255,176,0,0.3); }
-  button:focus-visible { outline: 2px solid var(--phosphor-bright); outline-offset: 3px; }
+  button:active { transform: translateY(3px); box-shadow: 0 0 0 var(--button-shadow), 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent); }
+  button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent-bright);
+    border: 1px solid var(--accent-dim);
+    box-shadow: none;
+    padding: 10px 18px;
+    font-size: 11px;
+  }
+  .btn-ghost:active { transform: translateY(2px); box-shadow: none; }
 
   .hint {
-    color: var(--phosphor-faint);
+    color: var(--accent-faint);
     font-size: 10.5px;
     letter-spacing: 0.5px;
     text-align: center;
@@ -241,80 +311,195 @@
 
   .touch-controls {
     display: flex;
-    gap: 8px;
+    gap: 7px;
     justify-content: center;
     flex-wrap: wrap;
   }
   .touch-controls button {
-    width: 52px; height: 44px; padding: 0; font-size: 15px;
+    width: 48px; height: 42px; padding: 0; font-size: 14px;
     border-radius: 10px;
-    background: radial-gradient(circle at 35% 30%, var(--phosphor-bright), var(--phosphor) 70%);
-    box-shadow: 0 3px 0 #8f5c00, 0 0 12px rgba(255,176,0,0.25);
+    background: radial-gradient(circle at 35% 30%, var(--accent-bright), var(--accent) 70%);
+    color: var(--button-ink);
+    box-shadow: 0 3px 0 var(--button-shadow), 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
   }
-  .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f5c00; }
+  .touch-controls button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--button-shadow); }
 
   .nav-link {
     font-size: 10px;
     letter-spacing: 1px;
     color: var(--text-hint);
     text-decoration: none;
-    border-bottom: 1px dotted var(--phosphor-dim);
+    border-bottom: 1px dotted var(--accent-dim);
   }
-  .nav-link:hover { color: var(--phosphor-bright); }
+  .nav-link:hover { color: var(--accent-bright); }
+
+  /* Settings panel */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 300px;
+  }
+  .theme-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1.5px solid var(--accent-faint);
+    background: rgba(0,0,0,0.25);
+    cursor: pointer;
+    color: var(--text-hint);
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+  }
+  .theme-swatch.active {
+    border-color: var(--accent-bright);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-bright) 50%, transparent);
+    color: var(--accent-bright);
+  }
+  .theme-swatch .dots { display: flex; gap: 3px; }
+  .theme-swatch .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .hue-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 260px;
+    align-items: center;
+  }
+  .hue-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .hue-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-hint);
+  }
+
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 260px;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    color: var(--text-hint);
+  }
+  .toggle-btn {
+    font-size: 10px;
+    padding: 6px 14px;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent-bright);
+    border: 1px solid var(--accent-dim);
+  }
+  .toggle-btn:active { transform: none; }
+  .toggle-btn[data-on="true"] { background: linear-gradient(180deg, var(--accent-bright), var(--accent) 75%); color: var(--button-ink); }
+
+  .settings-divider {
+    width: 100%;
+    max-width: 260px;
+    height: 1px;
+    background: var(--accent-faint);
+  }
 </style>
 </head>
 <body>
   <div class="cabinet flicker">
-    <div class="marquee display-font">AMBER TETRIS</div>
+    <div class="header-row">
+      <div class="marquee display-font" id="marqueeText">TETRIS</div>
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
+    </div>
     <div class="hud">
       <span>SCORE <b id="score">0</b></span>
       <span>BEST <b id="best">0</b></span>
       <span>LEVEL <b id="level">1</b></span>
       <span>LINES <b id="lines">0</b></span>
+      <span>TIME <b id="time">0:00</b></span>
     </div>
     <div class="play-area">
+      <div class="side-panel">
+        <div class="side-box" id="holdBox">
+          <div class="label">HOLD</div>
+          <canvas id="holdCanvas" width="76" height="76"></canvas>
+        </div>
+        <div class="side-box">
+          <div class="stat">COMBO<b id="combo">–</b></div>
+        </div>
+      </div>
       <div class="screen-frame">
         <div class="board-wrap">
           <canvas id="board" width="240" height="480"></canvas>
           <div id="startOverlay" class="overlay">
-            <h2 class="display-font">AMBER<br/>TETRIS</h2>
-            <p>ARROWS TO MOVE &amp; SOFT DROP.<br/>UP TO ROTATE.<br/>SPACE TO HARD DROP.<br/>CLEAR LINES TO SCORE.</p>
+            <h2 class="display-font">TETRIS</h2>
+            <p>ARROWS MOVE &amp; SOFT DROP.<br/>UP ROTATE &middot; SPACE HARD DROP.<br/>C OR SHIFT TO HOLD.<br/>CLEAR LINES TO SCORE.</p>
             <button id="startBtn">INSERT COIN</button>
+            <ol class="scores-list" id="startScores"></ol>
           </div>
           <div id="pauseOverlay" class="overlay hidden">
             <h2 class="display-font">PAUSED</h2>
-            <button id="resumeBtn">RESUME</button>
+            <div class="btn-row">
+              <button id="resumeBtn">RESUME</button>
+              <button id="pauseSettingsBtn" class="btn-ghost">SETTINGS</button>
+            </div>
           </div>
           <div id="overOverlay" class="overlay hidden">
             <h2 class="display-font danger">GAME<br/>OVER</h2>
             <p id="finalScore">SCORE: 0</p>
+            <ol class="scores-list" id="finalScores"></ol>
             <button id="restartBtn">CONTINUE</button>
+          </div>
+          <div id="settingsOverlay" class="overlay hidden">
+            <h2 class="display-font">SETTINGS</h2>
+            <div class="theme-grid" id="themeGrid"></div>
+            <div class="hue-row">
+              <span class="hue-label">CUSTOM HUE</span>
+              <input type="range" id="hueSlider" min="0" max="359" value="30" />
+            </div>
+            <div class="settings-divider"></div>
+            <div class="toggle-row">
+              <span>SOUND</span>
+              <button class="toggle-btn" id="soundToggle" data-on="true">ON</button>
+            </div>
+            <div class="toggle-row">
+              <span>GHOST PIECE</span>
+              <button class="toggle-btn" id="ghostToggle" data-on="true">ON</button>
+            </div>
+            <div class="toggle-row">
+              <span>GRID LINES</span>
+              <button class="toggle-btn" id="gridToggle" data-on="true">ON</button>
+            </div>
+            <button id="closeSettingsBtn">DONE</button>
           </div>
         </div>
       </div>
       <div class="side-panel">
         <div class="side-box">
           <div class="label">NEXT</div>
-          <canvas id="nextCanvas" width="80" height="80"></canvas>
+          <canvas id="nextCanvas" width="76" height="228"></canvas>
         </div>
         <div class="side-box">
-          <div class="stat">LEVEL<b id="levelSide">1</b></div>
-        </div>
-        <div class="side-box">
-          <div class="stat">LINES<b id="linesSide">0</b></div>
+          <div class="stat">B2B<b id="b2b">–</b></div>
         </div>
       </div>
     </div>
     <div class="hint">
-      ARROWS MOVE / SOFT DROP &nbsp;·&nbsp; UP ROTATE &nbsp;·&nbsp; SPACE HARD DROP &nbsp;·&nbsp; P PAUSE<br/>
+      ARROWS MOVE / SOFT DROP &nbsp;·&nbsp; UP ROTATE &nbsp;·&nbsp; SPACE DROP &nbsp;·&nbsp; C HOLD &nbsp;·&nbsp; P PAUSE<br/>
       <a class="nav-link" href="index.html">&larr; PLAY AMBER SNAKE</a>
     </div>
     <div class="touch-controls">
-      <button data-act="left">◀</button>
-      <button data-act="rotate">⟳</button>
-      <button data-act="right">▶</button>
-      <button data-act="down">▼</button>
-      <button data-act="drop">⤓</button>
+      <button data-act="left" aria-label="Move left">◀</button>
+      <button data-act="rotate" aria-label="Rotate">⟳</button>
+      <button data-act="right" aria-label="Move right">▶</button>
+      <button data-act="down" aria-label="Soft drop">▼</button>
+      <button data-act="drop" aria-label="Hard drop">⤓</button>
+      <button data-act="hold" aria-label="Hold piece">H</button>
     </div>
   </div>
 
@@ -324,70 +509,243 @@
   const ctx = canvas.getContext('2d');
   const nextCanvas = document.getElementById('nextCanvas');
   const nctx = nextCanvas.getContext('2d');
+  const holdCanvas = document.getElementById('holdCanvas');
+  const hctx = holdCanvas.getContext('2d');
 
   const COLS = 10;
   const ROWS = 20;
   const CELL = canvas.width / COLS;
-
-  const COLOR_GRID = 'rgba(122, 84, 32, 0.22)';
-  const COLOR_SCREEN = '#150f07';
   const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // All piece colors stay within the amber/CRT phosphor family — warm golds
-  // through the danger red-orange — rather than the usual rainbow, to match
-  // the cabinet's single-hue phosphor look.
-  const PIECES = {
-    I: { color: '#ffd88a', glow: 'rgba(255,216,138,0.55)', shape: [[0,1],[1,1],[2,1],[3,1]] },
-    O: { color: '#ffb000', glow: 'rgba(255,176,0,0.55)',   shape: [[1,0],[2,0],[1,1],[2,1]] },
-    T: { color: '#ffcf5c', glow: 'rgba(255,207,92,0.55)',  shape: [[1,0],[0,1],[1,1],[2,1]] },
-    S: { color: '#ff8c3a', glow: 'rgba(255,140,58,0.55)',  shape: [[1,0],[2,0],[0,1],[1,1]] },
-    Z: { color: '#ff5a36', glow: 'rgba(255,90,54,0.55)',   shape: [[0,0],[1,0],[1,1],[2,1]] },
-    J: { color: '#c99a4e', glow: 'rgba(201,154,78,0.55)',  shape: [[0,0],[0,1],[1,1],[2,1]] },
-    L: { color: '#e0942a', glow: 'rgba(224,148,42,0.55)',  shape: [[2,0],[0,1],[1,1],[2,1]] },
+  const PIECE_SHAPES = {
+    I: [[0,1],[1,1],[2,1],[3,1]],
+    O: [[1,0],[2,0],[1,1],[2,1]],
+    T: [[1,0],[0,1],[1,1],[2,1]],
+    S: [[1,0],[2,0],[0,1],[1,1]],
+    Z: [[0,0],[1,0],[1,1],[2,1]],
+    J: [[0,0],[0,1],[1,1],[2,1]],
+    L: [[2,0],[0,1],[1,1],[2,1]],
   };
-  const PIECE_KEYS = Object.keys(PIECES);
+  const PIECE_KEYS = Object.keys(PIECE_SHAPES);
 
+  // ---------- Themes ----------
+  const THEMES = {
+    amber: {
+      label: 'Amber Arcade',
+      cabinet: '#1b140c', cabinetHi: '#33260f', cabinetLo: '#0e0a05',
+      screen: '#150f07', screenEdge: '#0a0703',
+      accent: '#ffb000', accentBright: '#ffd88a', accentDim: '#7a5420', accentFaint: '#4a3618',
+      danger: '#ff5a36', dangerDim: '#8f3521', textHint: '#c99a4e',
+      buttonInk: '#2a1a02', buttonShadow: '#8f5c00',
+      pieces: { I: '#ffd88a', O: '#ffb000', T: '#ffcf5c', S: '#ff8c3a', Z: '#ff5a36', J: '#c99a4e', L: '#e0942a' },
+    },
+    pastel: {
+      label: 'Pastel Dream',
+      cabinet: '#1a1520', cabinetHi: '#332a44', cabinetLo: '#0d0a12',
+      screen: '#120f18', screenEdge: '#09070d',
+      accent: '#c9a6f0', accentBright: '#f0d4ff', accentDim: '#7a5a99', accentFaint: '#4a3a5c',
+      danger: '#ff9eb5', dangerDim: '#a5566b', textHint: '#c9a8d8',
+      buttonInk: '#3a1f4d', buttonShadow: '#8a6ab0',
+      pieces: { I: '#a8e6e6', O: '#ffe3a3', T: '#d9b8f0', S: '#b8f0c2', Z: '#ffb3ba', J: '#b8cdf0', L: '#ffcfa3' },
+    },
+    synthwave: {
+      label: 'Synthwave',
+      cabinet: '#1a0e2e', cabinetHi: '#3a1a5c', cabinetLo: '#0d0718',
+      screen: '#120a1f', screenEdge: '#08040f',
+      accent: '#ff3ec8', accentBright: '#ff9ee8', accentDim: '#8a2a70', accentFaint: '#4d1740',
+      danger: '#ff3b3b', dangerDim: '#8f2020', textHint: '#7fe8ff',
+      buttonInk: '#2a0a3a', buttonShadow: '#a01e88',
+      pieces: { I: '#4deeff', O: '#ffe14d', T: '#ff3ec8', S: '#4dff9e', Z: '#ff3b3b', J: '#4d6bff', L: '#ff9e3b' },
+    },
+    mint: {
+      label: 'Arctic Mint',
+      cabinet: '#0e1f1c', cabinetHi: '#1c3d36', cabinetLo: '#081512',
+      screen: '#0a1613', screenEdge: '#050d0b',
+      accent: '#4fd8b8', accentBright: '#a8f0dd', accentDim: '#2a6b5c', accentFaint: '#1a4038',
+      danger: '#ff6b6b', dangerDim: '#8f3a3a', textHint: '#7fc9b8',
+      buttonInk: '#062a22', buttonShadow: '#2a8a72',
+      pieces: { I: '#a8f0dd', O: '#4fd8b8', T: '#7fe8c8', S: '#5cc9a3', Z: '#ff8f8f', J: '#6ab8a8', L: '#3fae94' },
+    },
+    rainbow: {
+      label: 'Retro Rainbow',
+      cabinet: '#181818', cabinetHi: '#2e2e2e', cabinetLo: '#0c0c0c',
+      screen: '#101010', screenEdge: '#060606',
+      accent: '#f2f2f2', accentBright: '#ffffff', accentDim: '#888888', accentFaint: '#4d4d4d',
+      danger: '#ff4d4d', dangerDim: '#993030', textHint: '#bbbbbb',
+      buttonInk: '#1a1a1a', buttonShadow: '#aaaaaa',
+      pieces: { I: '#4dd9ff', O: '#ffe14d', T: '#b84dff', S: '#4dff88', Z: '#ff4d4d', J: '#4d7bff', L: '#ff9e3b' },
+    },
+    noir: {
+      label: 'Noir',
+      cabinet: '#141414', cabinetHi: '#262626', cabinetLo: '#0a0a0a',
+      screen: '#0a0a0a', screenEdge: '#000000',
+      accent: '#e6e6e6', accentBright: '#ffffff', accentDim: '#666666', accentFaint: '#3a3a3a',
+      danger: '#ff5555', dangerDim: '#a33333', textHint: '#999999',
+      buttonInk: '#000000', buttonShadow: '#999999',
+      pieces: { I: '#ffffff', O: '#d9d9d9', T: '#b3b3b3', S: '#8c8c8c', Z: '#ff5555', J: '#666666', L: '#4d4d4d' },
+    },
+  };
+  const THEME_KEYS = Object.keys(THEMES);
+
+  function hsl(h, s, l) { return `hsl(${((h % 360) + 360) % 360}, ${s}%, ${l}%)`; }
+
+  function buildCustomTheme(hue) {
+    const pieceHues = [0, 51, 103, 154, 206, 257, 309].map(o => hue + o);
+    const pk = PIECE_KEYS;
+    const pieces = {};
+    pk.forEach((k, i) => { pieces[k] = hsl(pieceHues[i], 72, 68); });
+    return {
+      label: 'Custom',
+      cabinet: hsl(hue, 35, 10), cabinetHi: hsl(hue, 40, 17), cabinetLo: hsl(hue, 40, 6),
+      screen: hsl(hue, 30, 7), screenEdge: hsl(hue, 30, 3),
+      accent: hsl(hue, 75, 60), accentBright: hsl(hue, 80, 78), accentDim: hsl(hue, 45, 32), accentFaint: hsl(hue, 35, 20),
+      danger: hsl(hue + 150, 75, 62), dangerDim: hsl(hue + 150, 50, 32), textHint: hsl(hue, 40, 65),
+      buttonInk: hsl(hue, 50, 10), buttonShadow: hsl(hue, 45, 30),
+      pieces,
+    };
+  }
+
+  const ROOT = document.documentElement;
+  let activeTheme = THEMES.amber;
+  let settings = { theme: 'amber', hue: 30, sound: true, ghost: true, grid: true };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem('tetrisSettings');
+      if (raw) settings = Object.assign(settings, JSON.parse(raw));
+    } catch (e) {}
+  }
+  function saveSettings() {
+    try { localStorage.setItem('tetrisSettings', JSON.stringify(settings)); } catch (e) {}
+  }
+
+  function applyTheme() {
+    const theme = settings.theme === 'custom' ? buildCustomTheme(settings.hue) : THEMES[settings.theme];
+    activeTheme = theme;
+    const map = {
+      cabinet: '--cabinet', cabinetHi: '--cabinet-hi', cabinetLo: '--cabinet-lo',
+      screen: '--screen', screenEdge: '--screen-edge',
+      accent: '--accent', accentBright: '--accent-bright', accentDim: '--accent-dim', accentFaint: '--accent-faint',
+      danger: '--danger', dangerDim: '--danger-dim', textHint: '--text-hint',
+      buttonInk: '--button-ink', buttonShadow: '--button-shadow',
+    };
+    Object.entries(map).forEach(([k, cssVar]) => ROOT.style.setProperty(cssVar, theme[k]));
+    drawNext();
+    drawHold();
+  }
+
+  // ---------- Sound ----------
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!settings.sound) return null;
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function beep(freq, duration, type = 'square', gain = 0.06, delay = 0) {
+    if (!settings.sound) return;
+    const ac = ensureAudio();
+    if (!ac) return;
+    const osc = ac.createOscillator();
+    const g = ac.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.value = gain;
+    osc.connect(g).connect(ac.destination);
+    const t0 = ac.currentTime + delay;
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+  const sfx = {
+    move: () => beep(220, 0.04, 'square', 0.03),
+    rotate: () => beep(330, 0.05, 'square', 0.04),
+    lock: () => beep(140, 0.06, 'square', 0.05),
+    hold: () => beep(260, 0.05, 'triangle', 0.05),
+    softdrop: () => beep(180, 0.03, 'square', 0.02),
+    clear: (n) => { for (let i = 0; i < n; i++) beep(440 + i * 110, 0.12, 'square', 0.06, i * 0.05); },
+    tetris: () => { [440, 554, 659, 880].forEach((f, i) => beep(f, 0.14, 'sawtooth', 0.06, i * 0.06)); },
+    levelup: () => { [330, 440, 554, 660].forEach((f, i) => beep(f, 0.1, 'triangle', 0.05, i * 0.05)); },
+    gameover: () => { [330, 262, 220, 165].forEach((f, i) => beep(f, 0.22, 'sawtooth', 0.06, i * 0.16)); },
+  };
+
+  // ---------- HUD elements ----------
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
   const levelEl = document.getElementById('level');
   const linesEl = document.getElementById('lines');
-  const levelSideEl = document.getElementById('levelSide');
-  const linesSideEl = document.getElementById('linesSide');
+  const timeEl = document.getElementById('time');
+  const comboEl = document.getElementById('combo');
+  const b2bEl = document.getElementById('b2b');
   const startOverlay = document.getElementById('startOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const overOverlay = document.getElementById('overOverlay');
+  const settingsOverlay = document.getElementById('settingsOverlay');
   const finalScoreEl = document.getElementById('finalScore');
+  const holdBox = document.getElementById('holdBox');
 
-  const BEST_KEY = 'amberTetrisBest';
-  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let best = 0;
+  try { best = parseInt(localStorage.getItem('amberTetrisBest') || '0', 10); } catch (e) {}
   bestEl.textContent = best;
+
+  let scores = [];
+  try { scores = JSON.parse(localStorage.getItem('amberTetrisScores') || '[]'); } catch (e) { scores = []; }
+  function saveScore(s) {
+    scores.push({ score: s, date: new Date().toISOString().slice(0, 10) });
+    scores.sort((a, b) => b.score - a.score);
+    scores = scores.slice(0, 5);
+    try { localStorage.setItem('amberTetrisScores', JSON.stringify(scores)); } catch (e) {}
+  }
+  function renderScores(target) {
+    target.innerHTML = '';
+    if (scores.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'NO SCORES YET';
+      target.appendChild(li);
+      return;
+    }
+    scores.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${i + 1}. ${s.date}</span><b>${s.score}</b>`;
+      target.appendChild(li);
+    });
+  }
 
   const BASE_INTERVAL = 800;
   const MIN_INTERVAL = 100;
 
-  let grid, current, next, score, level, lines, running, paused, gameOver, lastTick, interval, particles, clearingRows, clearFlashTimer;
+  let grid, current, holdKey, canHold, bag, nextQueue, score, level, lines, running, paused, gameOver;
+  let lastTick, interval, particles, floatTexts, clearingRows, clearFlashTimer, comboCount, b2bActive, startTime, elapsedAtPause;
 
   function emptyGrid() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
   }
 
-  function randomPieceKey() {
-    return PIECE_KEYS[Math.floor(Math.random() * PIECE_KEYS.length)];
+  function shuffledBag() {
+    const b = [...PIECE_KEYS];
+    for (let i = b.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  }
+  function nextFromBag() {
+    if (bag.length === 0) bag = shuffledBag();
+    return bag.pop();
   }
 
   function spawnPiece(key) {
-    const def = PIECES[key];
-    const cells = def.shape.map(([x, y]) => ({ x, y }));
+    const cells = PIECE_SHAPES[key].map(([x, y]) => ({ x, y }));
     const xs = cells.map(c => c.x);
     const width = Math.max(...xs) - Math.min(...xs) + 1;
     const offsetX = Math.floor((COLS - width) / 2) - Math.min(...xs);
-    return {
-      key,
-      color: def.color,
-      glow: def.glow,
-      cells: cells.map(c => ({ x: c.x + offsetX, y: c.y })),
-    };
+    return { key, cells: cells.map(c => ({ x: c.x + offsetX, y: c.y })) };
   }
+
+  function pieceColor(key) { return activeTheme.pieces[key]; }
 
   function reset() {
     grid = emptyGrid();
@@ -399,21 +757,36 @@
     paused = false;
     gameOver = false;
     particles = [];
+    floatTexts = [];
     clearingRows = [];
     clearFlashTimer = 0;
-    next = randomPieceKey();
-    current = spawnPiece(randomPieceKey());
+    comboCount = -1;
+    b2bActive = false;
+    holdKey = null;
+    canHold = true;
+    bag = shuffledBag();
+    nextQueue = [nextFromBag(), nextFromBag(), nextFromBag()];
+    current = spawnPiece(nextQueue.shift());
+    nextQueue.push(nextFromBag());
+    startTime = performance.now();
+    elapsedAtPause = 0;
     updateHud();
     drawNext();
+    drawHold();
+  }
+
+  function formatTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }
 
   function updateHud() {
     scoreEl.textContent = score;
     levelEl.textContent = level;
     linesEl.textContent = lines;
-    levelSideEl.textContent = level;
-    linesSideEl.textContent = lines;
     bestEl.textContent = best;
+    comboEl.textContent = comboCount > 0 ? `x${comboCount}` : '–';
+    b2bEl.textContent = b2bActive ? 'ON' : '–';
   }
 
   function collides(cells) {
@@ -439,43 +812,90 @@
       const ry = pivot.y + (x - pivot.x);
       return { x: rx, y: ry };
     });
-    if (!collides(rotated)) {
-      current.cells = rotated;
-      return;
-    }
+    if (!collides(rotated)) { current.cells = rotated; sfx.rotate(); return; }
     for (const kick of [-1, 1, -2, 2]) {
       const kicked = rotated.map(c => ({ x: c.x + kick, y: c.y }));
-      if (!collides(kicked)) {
-        current.cells = kicked;
-        return;
-      }
+      if (!collides(kicked)) { current.cells = kicked; sfx.rotate(); return; }
     }
+  }
+
+  function ghostCells() {
+    let cells = current.cells;
+    while (true) {
+      const moved = cells.map(c => ({ x: c.x, y: c.y + 1 }));
+      if (collides(moved)) break;
+      cells = moved;
+    }
+    return cells;
   }
 
   function hardDrop() {
     let dropped = 0;
     while (moveBy(0, 1)) dropped++;
     score += dropped * 2;
+    sfx.lock();
     lockPiece();
+  }
+
+  function holdSwap() {
+    if (!canHold) return;
+    sfx.hold();
+    if (holdKey === null) {
+      holdKey = current.key;
+      current = spawnPiece(nextQueue.shift());
+      nextQueue.push(nextFromBag());
+    } else {
+      const swap = holdKey;
+      holdKey = current.key;
+      current = spawnPiece(swap);
+    }
+    canHold = false;
+    drawHold();
+    drawNext();
+  }
+
+  function addFloatText(text, color) {
+    floatTexts.push({ x: canvas.width / 2, y: canvas.height / 2, text, color, life: 1 });
   }
 
   function lockPiece() {
     current.cells.forEach(({ x, y }) => {
-      if (y >= 0) grid[y][x] = current.color;
+      if (y >= 0) grid[y][x] = current.key;
     });
     const fullRows = [];
     for (let y = 0; y < ROWS; y++) {
       if (grid[y].every(cell => cell !== null)) fullRows.push(y);
     }
+    canHold = true;
+
     if (fullRows.length > 0) {
       clearingRows = fullRows;
       clearFlashTimer = 10;
-      applyLineScore(fullRows.length);
+      comboCount++;
+      const table = { 1: 100, 2: 300, 3: 500, 4: 800 };
+      let gained = (table[fullRows.length] || 0) * level;
+      let label = { 1: 'SINGLE', 2: 'DOUBLE', 3: 'TRIPLE', 4: 'TETRIS' }[fullRows.length];
+      if (fullRows.length === 4) {
+        if (b2bActive) { gained = Math.floor(gained * 1.5); label = 'B2B TETRIS!'; }
+        b2bActive = true;
+        sfx.tetris();
+      } else {
+        b2bActive = false;
+        sfx.clear(fullRows.length);
+      }
+      if (comboCount > 0) {
+        const comboBonus = 50 * comboCount * level;
+        gained += comboBonus;
+        label += ` COMBO x${comboCount}`;
+      }
+      score += gained;
+      addFloatText(`+${gained} ${label}`, fullRows.length === 4 ? activeTheme.danger : activeTheme.accentBright);
       lines += fullRows.length;
       const newLevel = Math.floor(lines / 10) + 1;
       if (newLevel !== level) {
         level = newLevel;
         interval = Math.max(MIN_INTERVAL, BASE_INTERVAL - (level - 1) * 60);
+        sfx.levelup();
       }
       updateHud();
       spawnParticlesForRows(fullRows);
@@ -484,24 +904,20 @@
         while (grid.length < ROWS) grid.unshift(Array(COLS).fill(null));
         clearingRows = [];
       }, REDUCE_MOTION ? 0 : 140);
+    } else {
+      comboCount = -1;
     }
+
     if (score > best) {
       best = score;
-      localStorage.setItem(BEST_KEY, String(best));
+      try { localStorage.setItem('amberTetrisBest', String(best)); } catch (e) {}
     }
     updateHud();
 
-    current = spawnPiece(next);
-    next = randomPieceKey();
+    current = spawnPiece(nextQueue.shift());
+    nextQueue.push(nextFromBag());
     drawNext();
-    if (collides(current.cells)) {
-      endGame();
-    }
-  }
-
-  function applyLineScore(count) {
-    const table = { 1: 100, 2: 300, 3: 500, 4: 800 };
-    score += (table[count] || 0) * level;
+    if (collides(current.cells)) endGame();
   }
 
   function spawnParticlesForRows(rows) {
@@ -510,12 +926,9 @@
         for (let i = 0; i < 3; i++) {
           const angle = Math.random() * Math.PI * 2;
           particles.push({
-            x: x * CELL + CELL / 2,
-            y: y * CELL + CELL / 2,
-            vx: Math.cos(angle) * 2.2,
-            vy: Math.sin(angle) * 2.2,
-            life: 1,
-            color: '#ffd88a',
+            x: x * CELL + CELL / 2, y: y * CELL + CELL / 2,
+            vx: Math.cos(angle) * 2.2, vy: Math.sin(angle) * 2.2,
+            life: 1, color: activeTheme.accentBright,
           });
         }
       }
@@ -524,27 +937,29 @@
 
   function setDir(act) {
     if (!running || paused || gameOver) return;
-    if (act === 'left') moveBy(-1, 0);
-    if (act === 'right') moveBy(1, 0);
-    if (act === 'down') { if (!moveBy(0, 1)) lockPiece(); else score += 1; updateHud(); }
+    if (act === 'left') { if (moveBy(-1, 0)) sfx.move(); }
+    if (act === 'right') { if (moveBy(1, 0)) sfx.move(); }
+    if (act === 'down') { if (!moveBy(0, 1)) lockPiece(); else { score += 1; sfx.softdrop(); } updateHud(); }
     if (act === 'rotate') rotate();
     if (act === 'drop') hardDrop();
+    if (act === 'hold') holdSwap();
   }
 
   const KEY_MAP = {
     ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'rotate', ' ': 'drop',
+    c: 'hold', C: 'hold', Shift: 'hold',
   };
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'p' || e.key === 'P') {
+    if (e.repeat && (e.key === 'c' || e.key === 'C' || e.key === 'Shift')) return;
+    if (e.key === 'p' || e.key === 'P') { e.preventDefault(); togglePause(); return; }
+    if (e.key === 'Escape') {
       e.preventDefault();
-      togglePause();
+      if (!settingsOverlay.classList.contains('hidden')) closeSettings();
+      else togglePause();
       return;
     }
-    if (e.key === 'Enter') {
-      if (!running || gameOver) startGame();
-      return;
-    }
+    if (e.key === 'Enter') { if (!running || gameOver) startGame(); return; }
     if (KEY_MAP[e.key]) {
       e.preventDefault();
       if (!running && !gameOver) startGame();
@@ -567,18 +982,23 @@
     if (!running || gameOver) return;
     paused = !paused;
     pauseOverlay.classList.toggle('hidden', !paused);
-    if (!paused) {
+    if (paused) {
+      elapsedAtPause += performance.now() - startTime;
+    } else {
+      startTime = performance.now();
       lastTick = performance.now();
       requestAnimationFrame(loop);
     }
   }
 
   function startGame() {
+    ensureAudio();
     reset();
     running = true;
     startOverlay.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
+    settingsOverlay.classList.add('hidden');
     lastTick = performance.now();
     requestAnimationFrame(loop);
   }
@@ -586,7 +1006,10 @@
   function endGame() {
     running = false;
     gameOver = true;
+    sfx.gameover();
+    saveScore(score);
     finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${best})`;
+    renderScores(document.getElementById('finalScores'));
     overOverlay.classList.remove('hidden');
     drawParticleBurst();
   }
@@ -603,60 +1026,63 @@
   }
 
   function updateParticles() {
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life -= 0.05;
-    });
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.05; });
     particles = particles.filter(p => p.life > 0);
+    floatTexts.forEach(t => { t.y -= 0.6; t.life -= 0.02; });
+    floatTexts = floatTexts.filter(t => t.life > 0);
   }
 
-  function drawCell(x, y, color, glow) {
+  function drawCell(targetCtx, x, y, color) {
     const px = x * CELL, py = y * CELL;
-    ctx.save();
-    if (glow) {
-      ctx.shadowColor = glow;
-      ctx.shadowBlur = 8;
-    }
-    ctx.fillStyle = color;
-    ctx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px + 1.5, py + 1.5, CELL - 3, CELL - 3);
+    targetCtx.save();
+    targetCtx.shadowColor = color;
+    targetCtx.shadowBlur = 8;
+    targetCtx.fillStyle = color;
+    targetCtx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+    targetCtx.restore();
+    targetCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+    targetCtx.lineWidth = 1;
+    targetCtx.strokeRect(px + 1.5, py + 1.5, CELL - 3, CELL - 3);
   }
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = COLOR_GRID;
-    ctx.lineWidth = 1;
-    for (let i = 1; i < COLS; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * CELL, 0);
-      ctx.lineTo(i * CELL, canvas.height);
-      ctx.stroke();
-    }
-    for (let i = 1; i < ROWS; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL);
-      ctx.lineTo(canvas.width, i * CELL);
-      ctx.stroke();
+    if (settings.grid) {
+      ctx.strokeStyle = `color-mix(in srgb, ${activeTheme.accentDim} 30%, transparent)`;
+      ctx.lineWidth = 1;
+      for (let i = 1; i < COLS; i++) {
+        ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, canvas.height); ctx.stroke();
+      }
+      for (let i = 1; i < ROWS; i++) {
+        ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(canvas.width, i * CELL); ctx.stroke();
+      }
     }
 
     for (let y = 0; y < ROWS; y++) {
       const flashing = clearingRows.includes(y) && clearFlashTimer > 0;
       for (let x = 0; x < COLS; x++) {
-        const cell = grid[y][x];
-        if (cell) {
-          drawCell(x, y, flashing ? '#ffd88a' : cell, null);
-        }
+        const cellKey = grid[y][x];
+        if (cellKey) drawCell(ctx, x, y, flashing ? activeTheme.accentBright : pieceColor(cellKey));
       }
     }
 
     if (running && !gameOver) {
+      if (settings.ghost) {
+        const ghost = ghostCells();
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ghost.forEach(({ x, y }) => {
+          if (y >= 0) {
+            ctx.strokeStyle = pieceColor(current.key);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x * CELL + 2, y * CELL + 2, CELL - 4, CELL - 4);
+          }
+        });
+        ctx.restore();
+      }
       current.cells.forEach(({ x, y }) => {
-        if (y >= 0) drawCell(x, y, current.color, current.glow);
+        if (y >= 0) drawCell(ctx, x, y, pieceColor(current.key));
       });
     }
 
@@ -668,31 +1094,51 @@
       ctx.fill();
     });
     ctx.globalAlpha = 1;
+
+    floatTexts.forEach(t => {
+      ctx.globalAlpha = Math.max(t.life, 0);
+      ctx.fillStyle = t.color;
+      ctx.font = "10px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(t.text, t.x, t.y);
+    });
+    ctx.globalAlpha = 1;
   }
 
-  function drawNext() {
-    nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-    const def = PIECES[next];
-    const cellSize = 16;
-    const cells = def.shape;
+  function drawPieceInBox(targetCtx, key, boxX, boxY, boxW, boxH, cellSize) {
+    const cells = PIECE_SHAPES[key];
     const xs = cells.map(c => c[0]);
     const ys = cells.map(c => c[1]);
     const w = Math.max(...xs) - Math.min(...xs) + 1;
     const h = Math.max(...ys) - Math.min(...ys) + 1;
-    const offsetX = (nextCanvas.width - w * cellSize) / 2 - Math.min(...xs) * cellSize;
-    const offsetY = (nextCanvas.height - h * cellSize) / 2 - Math.min(...ys) * cellSize;
+    const offsetX = boxX + (boxW - w * cellSize) / 2 - Math.min(...xs) * cellSize;
+    const offsetY = boxY + (boxH - h * cellSize) / 2 - Math.min(...ys) * cellSize;
+    const color = pieceColor(key);
     cells.forEach(([x, y]) => {
       const px = offsetX + x * cellSize;
       const py = offsetY + y * cellSize;
-      nctx.save();
-      nctx.shadowColor = def.glow;
-      nctx.shadowBlur = 6;
-      nctx.fillStyle = def.color;
-      nctx.fillRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
-      nctx.restore();
-      nctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      nctx.strokeRect(px + 1.5, py + 1.5, cellSize - 3, cellSize - 3);
+      targetCtx.save();
+      targetCtx.shadowColor = color;
+      targetCtx.shadowBlur = 6;
+      targetCtx.fillStyle = color;
+      targetCtx.fillRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
+      targetCtx.restore();
+      targetCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+      targetCtx.strokeRect(px + 1.5, py + 1.5, cellSize - 3, cellSize - 3);
     });
+  }
+
+  function drawNext() {
+    nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (!nextQueue) return;
+    const slotH = nextCanvas.height / 3;
+    nextQueue.forEach((key, i) => drawPieceInBox(nctx, key, 0, i * slotH, nextCanvas.width, slotH, 14));
+  }
+
+  function drawHold() {
+    hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+    holdBox.style.opacity = canHold ? '1' : '0.45';
+    if (holdKey) drawPieceInBox(hctx, holdKey, 0, 0, holdCanvas.width, holdCanvas.height, 16);
   }
 
   function loop(now) {
@@ -703,10 +1149,91 @@
       if (gameOver) return;
     }
     if (clearFlashTimer > 0) clearFlashTimer--;
+    timeEl.textContent = formatTime(elapsedAtPause + (performance.now() - startTime));
     draw();
+    updateParticles();
     requestAnimationFrame(loop);
   }
 
+  // ---------- Settings UI ----------
+  const themeGrid = document.getElementById('themeGrid');
+  const hueSlider = document.getElementById('hueSlider');
+  const soundToggle = document.getElementById('soundToggle');
+  const ghostToggle = document.getElementById('ghostToggle');
+  const gridToggle = document.getElementById('gridToggle');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const pauseSettingsBtn = document.getElementById('pauseSettingsBtn');
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+
+  function buildThemeGrid() {
+    themeGrid.innerHTML = '';
+    THEME_KEYS.concat(['custom']).forEach(key => {
+      const theme = key === 'custom' ? buildCustomTheme(settings.hue) : THEMES[key];
+      const el = document.createElement('div');
+      el.className = 'theme-swatch' + (settings.theme === key ? ' active' : '');
+      el.dataset.key = key;
+      const dotColors = key === 'custom'
+        ? [theme.pieces.I, theme.pieces.T, theme.pieces.Z]
+        : [theme.pieces.I, theme.pieces.O, theme.pieces.Z];
+      el.innerHTML = `
+        <div class="dots">${dotColors.map(c => `<span class="dot" style="background:${c}"></span>`).join('')}</div>
+        <span>${theme.label}</span>
+      `;
+      el.addEventListener('click', () => {
+        settings.theme = key;
+        saveSettings();
+        applyTheme();
+        buildThemeGrid();
+      });
+      themeGrid.appendChild(el);
+    });
+  }
+
+  function openSettings() {
+    if (running && !gameOver && !paused) togglePause();
+    buildThemeGrid();
+    hueSlider.value = settings.hue;
+    soundToggle.dataset.on = String(settings.sound);
+    soundToggle.textContent = settings.sound ? 'ON' : 'OFF';
+    ghostToggle.dataset.on = String(settings.ghost);
+    ghostToggle.textContent = settings.ghost ? 'ON' : 'OFF';
+    gridToggle.dataset.on = String(settings.grid);
+    gridToggle.textContent = settings.grid ? 'ON' : 'OFF';
+    settingsOverlay.classList.remove('hidden');
+  }
+  function closeSettings() {
+    settingsOverlay.classList.add('hidden');
+  }
+
+  settingsBtn.addEventListener('click', openSettings);
+  pauseSettingsBtn.addEventListener('click', openSettings);
+  closeSettingsBtn.addEventListener('click', closeSettings);
+
+  hueSlider.addEventListener('input', () => {
+    settings.hue = parseInt(hueSlider.value, 10);
+    settings.theme = 'custom';
+    saveSettings();
+    applyTheme();
+    buildThemeGrid();
+  });
+
+  function bindToggle(btn, settingKey) {
+    btn.addEventListener('click', () => {
+      settings[settingKey] = !settings[settingKey];
+      btn.dataset.on = String(settings[settingKey]);
+      btn.textContent = settings[settingKey] ? 'ON' : 'OFF';
+      saveSettings();
+      if (settingKey === 'sound' && settings.sound) ensureAudio();
+    });
+  }
+  bindToggle(soundToggle, 'sound');
+  bindToggle(ghostToggle, 'ghost');
+  bindToggle(gridToggle, 'grid');
+
+  // ---------- Init ----------
+  loadSettings();
+  applyTheme();
+  renderScores(document.getElementById('startScores'));
   reset();
   draw();
 })();
