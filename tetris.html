@@ -23,6 +23,7 @@
     --text-hint: #c99a4e;
     --button-ink: #2a1a02;
     --button-shadow: #8f5c00;
+    --ink: #ffd88a;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -81,7 +82,7 @@
     text-align: center;
     font-size: 15px;
     letter-spacing: 3px;
-    color: var(--cabinet-lo);
+    color: var(--button-ink);
     background: linear-gradient(180deg, var(--accent-bright), var(--accent) 70%);
     padding: 10px 22px;
     border-radius: 6px;
@@ -117,9 +118,9 @@
     row-gap: 4px;
   }
   .hud b {
-    color: var(--accent-bright);
+    color: var(--ink);
     font-weight: 700;
-    text-shadow: 0 0 6px color-mix(in srgb, var(--accent-bright) 60%, transparent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--ink) 60%, transparent);
   }
 
   .play-area {
@@ -215,8 +216,8 @@
   .stat b {
     display: block;
     font-size: 15px;
-    color: var(--accent-bright);
-    text-shadow: 0 0 6px color-mix(in srgb, var(--accent-bright) 60%, transparent);
+    color: var(--ink);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--ink) 60%, transparent);
     margin-top: 2px;
   }
 
@@ -238,8 +239,8 @@
     margin: 0;
     font-size: 16px;
     line-height: 1.6;
-    color: var(--accent-bright);
-    text-shadow: 0 0 14px color-mix(in srgb, var(--accent-bright) 70%, transparent);
+    color: var(--ink);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--ink) 70%, transparent);
   }
   .overlay p {
     margin: 0;
@@ -268,7 +269,7 @@
     border-bottom: 1px dotted var(--accent-faint);
     padding: 2px 4px;
   }
-  .scores-list b { color: var(--accent-bright); }
+  .scores-list b { color: var(--ink); }
 
   button {
     font-family: 'Space Mono', monospace;
@@ -291,7 +292,7 @@
   .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .btn-ghost {
     background: transparent;
-    color: var(--accent-bright);
+    color: var(--ink);
     border: 1px solid var(--accent-dim);
     box-shadow: none;
     padding: 10px 18px;
@@ -349,7 +350,7 @@
     padding: 8px 4px;
     border-radius: 8px;
     border: 1.5px solid var(--accent-faint);
-    background: rgba(0,0,0,0.25);
+    background: var(--screen-edge);
     cursor: pointer;
     color: var(--text-hint);
     font-size: 8.5px;
@@ -358,7 +359,7 @@
   .theme-swatch.active {
     border-color: var(--accent-bright);
     box-shadow: 0 0 10px color-mix(in srgb, var(--accent-bright) 50%, transparent);
-    color: var(--accent-bright);
+    color: var(--ink);
   }
   .theme-swatch .dots { display: flex; gap: 3px; }
   .theme-swatch .dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -396,7 +397,7 @@
     padding: 6px 14px;
     box-shadow: none;
     background: color-mix(in srgb, var(--accent) 18%, transparent);
-    color: var(--accent-bright);
+    color: var(--ink);
     border: 1px solid var(--accent-dim);
   }
   .toggle-btn:active { transform: none; }
@@ -439,7 +440,7 @@
           <div id="startOverlay" class="overlay">
             <h2 class="display-font">TETRIS</h2>
             <p>ARROWS MOVE &amp; SOFT DROP.<br/>UP ROTATE &middot; SPACE HARD DROP.<br/>C OR SHIFT TO HOLD.<br/>CLEAR LINES TO SCORE.</p>
-            <button id="startBtn">INSERT COIN</button>
+            <button id="startBtn">PLAY</button>
             <ol class="scores-list" id="startScores"></ol>
           </div>
           <div id="pauseOverlay" class="overlay hidden">
@@ -541,16 +542,25 @@
       cabinet: '#1b140c', cabinetHi: '#33260f', cabinetLo: '#0e0a05',
       screen: '#150f07', screenEdge: '#0a0703',
       accent: '#ffb000', accentBright: '#ffd88a', accentDim: '#7a5420', accentFaint: '#4a3618',
-      danger: '#ff5a36', dangerDim: '#8f3521', textHint: '#c99a4e',
+      danger: '#ff5a36', dangerDim: '#8f3521', textHint: '#c99a4e', ink: '#ffd88a',
       buttonInk: '#2a1a02', buttonShadow: '#8f5c00',
       pieces: { I: '#ffd88a', O: '#ffb000', T: '#ffcf5c', S: '#ff8c3a', Z: '#ff5a36', J: '#c99a4e', L: '#e0942a' },
+    },
+    daylight: {
+      label: 'Daylight',
+      cabinet: '#eef2f7', cabinetHi: '#ffffff', cabinetLo: '#d7dee8',
+      screen: '#fbfcfe', screenEdge: '#e4e9f0',
+      accent: '#2f6fed', accentBright: '#6fa4ff', accentDim: '#5b6b85', accentFaint: '#8fa0b8',
+      danger: '#e0393f', dangerDim: '#a52328', textHint: '#5b6b85', ink: '#1c2333',
+      buttonInk: '#ffffff', buttonShadow: '#1d4fb0',
+      pieces: { I: '#2f9bd6', O: '#e8a93a', T: '#8b5fd1', S: '#3fae6a', Z: '#e0393f', J: '#3958c9', L: '#e0742e' },
     },
     pastel: {
       label: 'Pastel Dream',
       cabinet: '#1a1520', cabinetHi: '#332a44', cabinetLo: '#0d0a12',
       screen: '#120f18', screenEdge: '#09070d',
       accent: '#c9a6f0', accentBright: '#f0d4ff', accentDim: '#7a5a99', accentFaint: '#4a3a5c',
-      danger: '#ff9eb5', dangerDim: '#a5566b', textHint: '#c9a8d8',
+      danger: '#ff9eb5', dangerDim: '#a5566b', textHint: '#c9a8d8', ink: '#f0d4ff',
       buttonInk: '#3a1f4d', buttonShadow: '#8a6ab0',
       pieces: { I: '#a8e6e6', O: '#ffe3a3', T: '#d9b8f0', S: '#b8f0c2', Z: '#ffb3ba', J: '#b8cdf0', L: '#ffcfa3' },
     },
@@ -559,7 +569,7 @@
       cabinet: '#1a0e2e', cabinetHi: '#3a1a5c', cabinetLo: '#0d0718',
       screen: '#120a1f', screenEdge: '#08040f',
       accent: '#ff3ec8', accentBright: '#ff9ee8', accentDim: '#8a2a70', accentFaint: '#4d1740',
-      danger: '#ff3b3b', dangerDim: '#8f2020', textHint: '#7fe8ff',
+      danger: '#ff3b3b', dangerDim: '#8f2020', textHint: '#7fe8ff', ink: '#ff9ee8',
       buttonInk: '#2a0a3a', buttonShadow: '#a01e88',
       pieces: { I: '#4deeff', O: '#ffe14d', T: '#ff3ec8', S: '#4dff9e', Z: '#ff3b3b', J: '#4d6bff', L: '#ff9e3b' },
     },
@@ -568,7 +578,7 @@
       cabinet: '#0e1f1c', cabinetHi: '#1c3d36', cabinetLo: '#081512',
       screen: '#0a1613', screenEdge: '#050d0b',
       accent: '#4fd8b8', accentBright: '#a8f0dd', accentDim: '#2a6b5c', accentFaint: '#1a4038',
-      danger: '#ff6b6b', dangerDim: '#8f3a3a', textHint: '#7fc9b8',
+      danger: '#ff6b6b', dangerDim: '#8f3a3a', textHint: '#7fc9b8', ink: '#a8f0dd',
       buttonInk: '#062a22', buttonShadow: '#2a8a72',
       pieces: { I: '#a8f0dd', O: '#4fd8b8', T: '#7fe8c8', S: '#5cc9a3', Z: '#ff8f8f', J: '#6ab8a8', L: '#3fae94' },
     },
@@ -577,7 +587,7 @@
       cabinet: '#181818', cabinetHi: '#2e2e2e', cabinetLo: '#0c0c0c',
       screen: '#101010', screenEdge: '#060606',
       accent: '#f2f2f2', accentBright: '#ffffff', accentDim: '#888888', accentFaint: '#4d4d4d',
-      danger: '#ff4d4d', dangerDim: '#993030', textHint: '#bbbbbb',
+      danger: '#ff4d4d', dangerDim: '#993030', textHint: '#bbbbbb', ink: '#ffffff',
       buttonInk: '#1a1a1a', buttonShadow: '#aaaaaa',
       pieces: { I: '#4dd9ff', O: '#ffe14d', T: '#b84dff', S: '#4dff88', Z: '#ff4d4d', J: '#4d7bff', L: '#ff9e3b' },
     },
@@ -586,7 +596,7 @@
       cabinet: '#141414', cabinetHi: '#262626', cabinetLo: '#0a0a0a',
       screen: '#0a0a0a', screenEdge: '#000000',
       accent: '#e6e6e6', accentBright: '#ffffff', accentDim: '#666666', accentFaint: '#3a3a3a',
-      danger: '#ff5555', dangerDim: '#a33333', textHint: '#999999',
+      danger: '#ff5555', dangerDim: '#a33333', textHint: '#999999', ink: '#ffffff',
       buttonInk: '#000000', buttonShadow: '#999999',
       pieces: { I: '#ffffff', O: '#d9d9d9', T: '#b3b3b3', S: '#8c8c8c', Z: '#ff5555', J: '#666666', L: '#4d4d4d' },
     },
@@ -605,7 +615,7 @@
       cabinet: hsl(hue, 35, 10), cabinetHi: hsl(hue, 40, 17), cabinetLo: hsl(hue, 40, 6),
       screen: hsl(hue, 30, 7), screenEdge: hsl(hue, 30, 3),
       accent: hsl(hue, 75, 60), accentBright: hsl(hue, 80, 78), accentDim: hsl(hue, 45, 32), accentFaint: hsl(hue, 35, 20),
-      danger: hsl(hue + 150, 75, 62), dangerDim: hsl(hue + 150, 50, 32), textHint: hsl(hue, 40, 65),
+      danger: hsl(hue + 150, 75, 62), dangerDim: hsl(hue + 150, 50, 32), textHint: hsl(hue, 40, 65), ink: hsl(hue, 80, 78),
       buttonInk: hsl(hue, 50, 10), buttonShadow: hsl(hue, 45, 30),
       pieces,
     };
@@ -632,7 +642,7 @@
       cabinet: '--cabinet', cabinetHi: '--cabinet-hi', cabinetLo: '--cabinet-lo',
       screen: '--screen', screenEdge: '--screen-edge',
       accent: '--accent', accentBright: '--accent-bright', accentDim: '--accent-dim', accentFaint: '--accent-faint',
-      danger: '--danger', dangerDim: '--danger-dim', textHint: '--text-hint',
+      danger: '--danger', dangerDim: '--danger-dim', textHint: '--text-hint', ink: '--ink',
       buttonInk: '--button-ink', buttonShadow: '--button-shadow',
     };
     Object.entries(map).forEach(([k, cssVar]) => ROOT.style.setProperty(cssVar, theme[k]));
@@ -895,7 +905,7 @@
         label += ` COMBO x${comboCount}`;
       }
       score += gained;
-      addFloatText(`+${gained} ${label}`, fullRows.length === 4 ? activeTheme.danger : activeTheme.accentBright);
+      addFloatText(`+${gained} ${label}`, fullRows.length === 4 ? activeTheme.danger : activeTheme.ink);
       lines += fullRows.length;
       const newLevel = Math.floor(lines / 10) + 1;
       if (newLevel !== level) {
@@ -934,7 +944,7 @@
           particles.push({
             x: x * CELL + CELL / 2, y: y * CELL + CELL / 2,
             vx: Math.cos(angle) * 2.2, vy: Math.sin(angle) * 2.2,
-            life: 1, color: activeTheme.accentBright,
+            life: 1, color: activeTheme.ink,
           });
         }
       }
@@ -1081,7 +1091,7 @@
       const flashing = clearingRows.includes(y) && clearFlashTimer > 0;
       for (let x = 0; x < COLS; x++) {
         const cellKey = grid[y][x];
-        if (cellKey) drawCell(ctx, x, y, flashing ? activeTheme.accentBright : pieceColor(cellKey));
+        if (cellKey) drawCell(ctx, x, y, flashing ? activeTheme.ink : pieceColor(cellKey));
       }
     }
 

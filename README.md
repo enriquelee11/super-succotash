@@ -36,7 +36,7 @@ Gameplay:
 - Level speed-up every 10 lines, elapsed-time display, and a local top-5 high-score list
 
 Customizable theme (⚙ settings button, in-game or from the title screen):
-- Six built-in skins — Amber Arcade, Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
+- Seven built-in skins — Amber Arcade, Daylight (light), Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
 - A custom-hue slider that generates its own palette and piece colors on the fly
 - Toggles for sound, the ghost piece, and grid lines
 - All choices are saved locally and persist between visits
