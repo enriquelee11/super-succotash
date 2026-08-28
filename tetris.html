@@ -570,7 +570,7 @@
       <span>TIME <b id="time">0:00</b></span>
     </div>
     <div class="play-area">
-      <div class="side-panel">
+      <div class="side-panel hidden" id="leftPanel">
         <div class="side-box" id="holdBox">
           <div class="label">HOLD</div>
           <canvas id="holdCanvas" width="76" height="76"></canvas>
@@ -667,7 +667,7 @@
           </div>
         </div>
       </div>
-      <div class="side-panel">
+      <div class="side-panel hidden" id="rightPanel">
         <div class="side-box">
           <div class="label">NEXT</div>
           <canvas id="nextCanvas" width="76" height="228"></canvas>
@@ -983,6 +983,12 @@
   const finalScoreEl = document.getElementById('finalScore');
   const holdBox = document.getElementById('holdBox');
   const boardWrapEl = document.getElementById('boardWrap');
+  const leftPanel = document.getElementById('leftPanel');
+  const rightPanel = document.getElementById('rightPanel');
+  function setSidePanelsVisible(visible) {
+    leftPanel.classList.toggle('hidden', !visible);
+    rightPanel.classList.toggle('hidden', !visible);
+  }
   const cabinetEl = document.querySelector('.cabinet');
 
   function triggerShake() {
@@ -1426,6 +1432,7 @@
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
+    setSidePanelsVisible(false);
     refreshStartScores();
     startMascotCycle();
     draw();
@@ -1455,6 +1462,7 @@
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
+    setSidePanelsVisible(true);
     stopMascotCycle();
     startMusic();
     lastTick = performance.now();
