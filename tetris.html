@@ -673,6 +673,7 @@
   <div class="cabinet flicker">
     <div class="header-row">
       <div class="marquee display-font" id="marqueeText">PIGRIS</div>
+      <button id="pauseBtn" class="icon-btn hidden" aria-label="Pause" title="Pause">⏸</button>
       <button id="fullscreenBtn" class="icon-btn" aria-label="Fullscreen" title="Fullscreen">⛶</button>
       <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
     </div>
@@ -1290,6 +1291,11 @@
   const boardWrapEl = document.getElementById('boardWrap');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
+  const pauseBtn = document.getElementById('pauseBtn');
+  function setPauseButtonVisible(visible) {
+    pauseBtn.classList.toggle('hidden', !visible);
+  }
+  pauseBtn.addEventListener('click', togglePause);
   function setSidePanelsVisible(visible) {
     leftPanel.classList.toggle('hidden', !visible);
     rightPanel.classList.toggle('hidden', !visible);
@@ -1740,6 +1746,7 @@
     settingsOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
     setSidePanelsVisible(false);
+    setPauseButtonVisible(false);
     refreshStartScores();
     startMascotCycle();
     startMascotWalk();
@@ -1750,6 +1757,9 @@
     if (!running || gameOver) return;
     paused = !paused;
     pauseOverlay.classList.toggle('hidden', !paused);
+    pauseBtn.textContent = paused ? '▶' : '⏸';
+    pauseBtn.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
+    pauseBtn.setAttribute('title', paused ? 'Resume' : 'Pause');
     if (paused) {
       elapsedAtPause += performance.now() - startTime;
       stopMusic();
@@ -1771,6 +1781,10 @@
     overOverlay.classList.add('hidden');
     settingsOverlay.classList.add('hidden');
     setSidePanelsVisible(true);
+    setPauseButtonVisible(true);
+    pauseBtn.textContent = '⏸';
+    pauseBtn.setAttribute('aria-label', 'Pause');
+    pauseBtn.setAttribute('title', 'Pause');
     stopMascotCycle();
     stopMascotWalk();
     startMusic();
@@ -1785,6 +1799,7 @@
   function endGame() {
     running = false;
     gameOver = true;
+    setPauseButtonVisible(false);
     stopMusic();
     sfx.gameover();
     vibrate([40, 30, 40, 30, 80]);
@@ -1810,6 +1825,7 @@
   function finishSprint() {
     running = false;
     gameOver = true;
+    setPauseButtonVisible(false);
     stopMusic();
     const finishTime = elapsedAtPause + (performance.now() - startTime);
     saveSprintTime(finishTime);
