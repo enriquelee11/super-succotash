@@ -915,9 +915,12 @@
 
   /* ============================== UI STATE ============================== */
 
+  // U+FE0E forces monochrome text presentation; without it some platforms render
+  // the pawn glyphs (and only the pawns) as fixed-color emoji, ignoring `color`.
+  const VS15 = '︎';
   const PIECE_UNICODE = {
-    w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
-    b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
+    w: { k: '♔' + VS15, q: '♕' + VS15, r: '♖' + VS15, b: '♗' + VS15, n: '♘' + VS15, p: '♙' + VS15 },
+    b: { k: '♚' + VS15, q: '♛' + VS15, r: '♜' + VS15, b: '♝' + VS15, n: '♞' + VS15, p: '♟' + VS15 },
   };
   const INITIAL_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
   const TIER_LABELS = [
