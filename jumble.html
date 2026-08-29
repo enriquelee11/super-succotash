@@ -469,6 +469,7 @@
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
       <span class="combo-tag" id="comboWrap" style="opacity:0">COMBO<b id="combo">x1</b></span>
+      <span title="Daily play streak">🔥<b id="streakHud">0</b></span>
     </div>
     <div class="icon-toolbar">
       <button class="hud-btn" id="undoBtn" title="Undo Last Move" disabled>↩️</button>
@@ -706,6 +707,7 @@
   const statLinesEl = document.getElementById('statLines');
   const statComboEl = document.getElementById('statCombo');
   const statStreakEl = document.getElementById('statStreak');
+  const streakHudEl = document.getElementById('streakHud');
   const toastEl = document.getElementById('toast');
 
   let board, cells, tray, score, combo, running, gameOver;
@@ -734,6 +736,7 @@
     statLinesEl.textContent = stats.totalLinesCleared;
     statComboEl.textContent = 'x' + stats.bestCombo;
     statStreakEl.textContent = stats.streak || 0;
+    streakHudEl.textContent = stats.streak || 0;
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
