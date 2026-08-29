@@ -610,6 +610,27 @@
     return { matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color };
   }
 
+  // Deals a fresh set of 3 pieces. If a fully random draw would leave the player
+  // with no legal move at all, the last slot is redrawn from only the shapes that
+  // still fit somewhere on the board — so a tight board never ends the game
+  // purely from bad luck, only when nothing could have fit regardless of piece.
+  function randomTray() {
+    const newTray = [randomPiece(), randomPiece()];
+    if (newTray.some(p => canPlaceAnywhere(p))) {
+      newTray.push(randomPiece());
+      return newTray;
+    }
+    const viableShapes = SHAPES.filter(canPlaceAnywhere);
+    if (viableShapes.length) {
+      const shape = viableShapes[Math.floor(Math.random() * viableShapes.length)];
+      const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      newTray.push({ matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color });
+    } else {
+      newTray.push(randomPiece());
+    }
+    return newTray;
+  }
+
   const boardEl = document.getElementById('board');
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
@@ -769,7 +790,7 @@
   function performReroll() {
     if (rerollsLeft <= 0 || !running) return;
     rerollsLeft--;
-    tray = [randomPiece(), randomPiece(), randomPiece()];
+    tray = randomTray();
     // A fresh tray invalidates any pending undo (its snapshot references the old pieces).
     undoSnapshot = null;
     updateUndoButton();
@@ -798,7 +819,7 @@
 
   function reset() {
     board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
-    tray = [randomPiece(), randomPiece(), randomPiece()];
+    tray = randomTray();
     score = 0;
     combo = 0;
     running = true;
@@ -961,7 +982,7 @@
 
   function afterMove() {
     if (tray.every(p => p === null)) {
-      tray = [randomPiece(), randomPiece(), randomPiece()];
+      tray = randomTray();
       renderTray();
     }
     const anyFits = tray.some(p => p && canPlaceAnywhere(p));
