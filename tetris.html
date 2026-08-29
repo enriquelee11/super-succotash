@@ -209,6 +209,17 @@
     gap: 10px;
     width: 96px;
   }
+  /* Board width (~268px) plus two 96px side panels needs ~510px of content
+     width, which no phone offers in portrait — so below that, put the
+     board first (visible without scrolling past two tall stat columns)
+     and lay each side panel out as a single compact row instead of a
+     stack, rather than just letting them wrap above the board. */
+  @media (max-width: 620px) {
+    .play-area { flex-direction: column; align-items: center; }
+    .screen-frame { order: 1; }
+    .side-panel { order: 2; flex-direction: row; width: auto; max-width: 100%; }
+    .side-panel .side-box { flex: 1; min-width: 0; }
+  }
   .side-box {
     border-radius: 8px;
     padding: 10px;
@@ -290,16 +301,36 @@
     width: 100%;
     height: 205px;
   }
-  .mascot-trail-canvas {
+  .mascot-trail-layer {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
+    overflow: visible;
     z-index: 0;
     display: none;
   }
-  .mascot-trail-canvas.active { display: block; }
+  .mascot-trail-layer.active { display: block; }
+  .mascot-trail-dot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    opacity: 0.6;
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .mascot-sparkle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 13px;
+    line-height: 1;
+    margin: -8px 0 0 -8px;
+    opacity: 1;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
   .mascot-walker {
     position: absolute;
     left: 0;
@@ -669,7 +700,7 @@
             <h2 class="display-font">PIGRIS</h2>
             <div class="mascot-wrap">
             <div class="mascot-stage" id="mascotStage">
-              <canvas class="mascot-trail-canvas" id="mascotTrailCanvas" aria-hidden="true"></canvas>
+              <div class="mascot-trail-layer" id="mascotTrailLayer" aria-hidden="true"></div>
               <div class="mascot-walker" id="mascotWalker">
                 <div class="mascot-lift" id="mascotLift">
                   <div class="mascot-flip" id="mascotFlip">
@@ -1045,14 +1076,11 @@
   const mascotLift = document.getElementById('mascotLift');
   const mascotFlip = document.getElementById('mascotFlip');
   const mascotShadowEl = document.getElementById('mascotShadowEl');
-  const mascotTrailCanvas = document.getElementById('mascotTrailCanvas');
-  const mascotTrailCtx = mascotTrailCanvas.getContext('2d');
+  const mascotTrailLayer = document.getElementById('mascotTrailLayer');
   let mascotWalkTimer = null;
   let mascotWalkX = 0;
   let mascotFlying = false;
   let mascotTrailRafId = null;
-  let mascotTrailPoints = [];
-  let mascotSparkles = [];
   let mascotLastSparkleTime = 0;
 
   function mascotReadTranslate(el) {
@@ -1062,87 +1090,62 @@
     const parts = m[1].split(',').map(Number);
     return { tx: parts[4], ty: parts[5] };
   }
+  // Plain DOM elements rather than canvas: a couple of real devices have
+  // rendered the trail's <canvas> as an opaque block instead of a
+  // transparent one (once hiding Blox entirely, once as a stray white
+  // square), and positioned/absolute divs with CSS transitions don't have
+  // that failure mode.
+  function mascotSpawnTrailDot(x, y, hue) {
+    const dot = document.createElement('div');
+    dot.className = 'mascot-trail-dot';
+    dot.style.left = `${x}px`;
+    dot.style.top = `${y}px`;
+    dot.style.background = `hsl(${hue}, 90%, 65%)`;
+    mascotTrailLayer.appendChild(dot);
+    requestAnimationFrame(() => {
+      dot.style.opacity = '0';
+      dot.style.transform = 'scale(0.2)';
+    });
+    setTimeout(() => dot.remove(), 600);
+  }
+  function mascotSpawnSparkle(x, y, hue) {
+    const sp = document.createElement('div');
+    sp.className = 'mascot-sparkle';
+    sp.style.left = `${x}px`;
+    sp.style.top = `${y}px`;
+    sp.style.color = `hsl(${hue}, 95%, 78%)`;
+    sp.textContent = '✦';
+    mascotTrailLayer.appendChild(sp);
+    requestAnimationFrame(() => {
+      sp.style.opacity = '0';
+      sp.style.transform = `scale(1.8) rotate(${45 + Math.random() * 60}deg)`;
+    });
+    setTimeout(() => sp.remove(), 550);
+  }
   function mascotTrailFrame(now) {
     if (!mascotFlying) {
-      mascotTrailCtx.clearRect(0, 0, mascotTrailCanvas.width, mascotTrailCanvas.height);
-      mascotTrailPoints = [];
-      mascotSparkles = [];
       mascotTrailRafId = null;
-      mascotTrailCanvas.classList.remove('active');
+      mascotTrailLayer.classList.remove('active');
       return;
     }
-    const stageW = mascotStage.clientWidth;
     const stageH = mascotStage.clientHeight;
-    if (mascotTrailCanvas.width !== stageW || mascotTrailCanvas.height !== stageH) {
-      mascotTrailCanvas.width = stageW;
-      mascotTrailCanvas.height = stageH;
-    }
     const { tx } = mascotReadTranslate(mascotWalker);
     const { ty } = mascotReadTranslate(mascotLift);
     const px = tx + MASCOT_IMG_W / 2;
     const py = stageH + ty - MASCOT_IMG_W / 2;
 
-    mascotTrailPoints.push({ x: px, y: py, hue: (now / 6) % 360 });
-    if (mascotTrailPoints.length > 55) mascotTrailPoints.shift();
-
-    if (now - mascotLastSparkleTime > 65) {
+    mascotSpawnTrailDot(px, py, (now / 6) % 360);
+    if (now - mascotLastSparkleTime > 90) {
       mascotLastSparkleTime = now;
-      mascotSparkles.push({
-        x: px + (Math.random() - 0.5) * 24,
-        y: py + (Math.random() - 0.5) * 24,
-        size: 2 + Math.random() * 2.5,
-        hue: Math.random() * 360,
-        life: 1,
-        rot: Math.random() * Math.PI,
-      });
+      mascotSpawnSparkle(px + (Math.random() - 0.5) * 24, py + (Math.random() - 0.5) * 24, Math.random() * 360);
     }
-
-    mascotTrailCtx.clearRect(0, 0, stageW, stageH);
-
-    mascotTrailCtx.lineCap = 'round';
-    for (let i = 1; i < mascotTrailPoints.length; i++) {
-      const p0 = mascotTrailPoints[i - 1];
-      const p1 = mascotTrailPoints[i];
-      const t = i / mascotTrailPoints.length;
-      mascotTrailCtx.strokeStyle = `hsla(${p1.hue}, 90%, 65%, ${t * 0.65})`;
-      mascotTrailCtx.lineWidth = 2 + t * 6;
-      mascotTrailCtx.beginPath();
-      mascotTrailCtx.moveTo(p0.x, p0.y);
-      mascotTrailCtx.lineTo(p1.x, p1.y);
-      mascotTrailCtx.stroke();
-    }
-
-    mascotSparkles.forEach(s => { s.life -= 0.045; });
-    mascotSparkles = mascotSparkles.filter(s => s.life > 0);
-    mascotSparkles.forEach(s => {
-      const r = s.size * (0.5 + s.life * 0.5);
-      mascotTrailCtx.save();
-      mascotTrailCtx.translate(s.x, s.y);
-      mascotTrailCtx.rotate(s.rot);
-      mascotTrailCtx.globalAlpha = Math.max(0, s.life);
-      mascotTrailCtx.fillStyle = `hsl(${s.hue}, 95%, 78%)`;
-      mascotTrailCtx.beginPath();
-      mascotTrailCtx.moveTo(0, -r * 2);
-      mascotTrailCtx.lineTo(r * 0.5, -r * 0.5);
-      mascotTrailCtx.lineTo(r * 2, 0);
-      mascotTrailCtx.lineTo(r * 0.5, r * 0.5);
-      mascotTrailCtx.lineTo(0, r * 2);
-      mascotTrailCtx.lineTo(-r * 0.5, r * 0.5);
-      mascotTrailCtx.lineTo(-r * 2, 0);
-      mascotTrailCtx.lineTo(-r * 0.5, -r * 0.5);
-      mascotTrailCtx.closePath();
-      mascotTrailCtx.fill();
-      mascotTrailCtx.restore();
-    });
 
     mascotTrailRafId = requestAnimationFrame(mascotTrailFrame);
   }
   function startMascotTrail() {
     if (mascotTrailRafId || REDUCE_MOTION) return;
-    mascotTrailPoints = [];
-    mascotSparkles = [];
     mascotLastSparkleTime = 0;
-    mascotTrailCanvas.classList.add('active');
+    mascotTrailLayer.classList.add('active');
     mascotTrailRafId = requestAnimationFrame(mascotTrailFrame);
   }
 
@@ -1159,8 +1162,8 @@
     mascotShadowEl.style.opacity = '';
     mascotFlying = false;
     mascotFlip.classList.remove('flying');
-    mascotTrailCanvas.classList.remove('active');
-    mascotTrailCtx.clearRect(0, 0, mascotTrailCanvas.width, mascotTrailCanvas.height);
+    mascotTrailLayer.classList.remove('active');
+    mascotTrailLayer.replaceChildren();
   }
   function mascotWalkTo(x, liftPx) {
     const distance = Math.abs(x - mascotWalkX);
