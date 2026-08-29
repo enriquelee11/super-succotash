@@ -19,6 +19,7 @@ python3 -m http.server 8000
 - Move list in simplified algebraic notation, captured-piece tray with material difference
 - Play as White or Black, undo, and start a new game at any time
 - Optional chess clock with selectable time controls (1, 3, 5, 10, 15, 30 minutes, or no limit) — the game ends immediately if a side's clock runs out
+- Customizable appearance: six full theme presets (Midnight, Daylight, Wood Classic, Deep Ocean, Forest, Sunset), plus individual color pickers for light squares, dark squares, white pieces, and black pieces — choices are saved locally in the browser
 
 ## Notes
 

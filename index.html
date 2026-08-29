@@ -28,12 +28,16 @@
     --black-piece: #1c1c1c;
     --danger: #ff6b6b;
     --success: #5fd68b;
+    --bg-glow: #232b40;
+    --frame-a: #3a3222;
+    --frame-b: #241f14;
+    --frame-shadow: #1a140c;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     min-height: 100%;
-    background: radial-gradient(1200px 800px at 50% -10%, #232b40 0%, var(--bg) 60%);
+    background: radial-gradient(1200px 800px at 50% -10%, var(--bg-glow) 0%, var(--bg) 60%);
     color: var(--text);
     font-family: 'Inter', system-ui, sans-serif;
   }
@@ -121,7 +125,7 @@
 
   .board-frame {
     padding: 10px;
-    background: linear-gradient(155deg, #3a3222, #241f14);
+    background: linear-gradient(155deg, var(--frame-a), var(--frame-b));
     border-radius: 10px;
     box-shadow: 0 14px 40px rgba(0,0,0,0.5);
   }
@@ -133,7 +137,7 @@
     aspect-ratio: 1 / 1;
     border-radius: 3px;
     overflow: hidden;
-    box-shadow: inset 0 0 0 2px #1a140c;
+    box-shadow: inset 0 0 0 2px var(--frame-shadow);
   }
   .square {
     position: relative;
@@ -296,6 +300,69 @@
     color: var(--text-dim);
   }
 
+  .theme-swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 60px;
+    background: none;
+    border: none;
+    padding: 5px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .theme-card:hover { background: var(--panel-hi); }
+  .theme-card.active { background: var(--accent-dim); }
+  .theme-preview {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+  }
+  .theme-card .theme-label {
+    font-size: 9.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.2px;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .theme-card.active .theme-label { color: var(--text); font-weight: 600; }
+
+  .color-pickers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  .color-picker-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .color-picker-field input[type="color"] {
+    width: 100%;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel-hi);
+    cursor: pointer;
+  }
+  .color-picker-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  .color-picker-field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+  .color-picker-field input[type="color"]::-moz-color-swatch { border: none; border-radius: 4px; }
+
+  .reset-theme-btn { width: 100%; margin-top: 10px; }
+
   .move-list {
     max-height: 260px;
     overflow-y: auto;
@@ -392,6 +459,30 @@
           </div>
           <input type="range" id="ratingSlider" min="0" max="2000" step="10" value="800" />
           <div class="rating-ticks"><span>0</span><span>500</span><span>1000</span><span>1500</span><span>2000</span></div>
+        </div>
+
+        <div class="panel">
+          <h2>Appearance</h2>
+          <div class="theme-swatch-row" id="themeSwatchRow"></div>
+          <div class="color-pickers">
+            <label class="color-picker-field">
+              <span>Light squares</span>
+              <input type="color" id="pickLightSq" />
+            </label>
+            <label class="color-picker-field">
+              <span>Dark squares</span>
+              <input type="color" id="pickDarkSq" />
+            </label>
+            <label class="color-picker-field">
+              <span>White pieces</span>
+              <input type="color" id="pickWhitePiece" />
+            </label>
+            <label class="color-picker-field">
+              <span>Black pieces</span>
+              <input type="color" id="pickBlackPiece" />
+            </label>
+          </div>
+          <button id="resetThemeBtn" class="reset-theme-btn">Reset to Default</button>
         </div>
 
         <div class="panel">
@@ -830,6 +921,83 @@
   const TIER_LABELS = [
     [400, 'Beginner'], [800, 'Novice'], [1200, 'Intermediate'], [1600, 'Advanced'], [2001, 'Expert'],
   ];
+  const THEMES = [
+    {
+      name: 'Midnight',
+      vars: {
+        bg: '#1a1f2b', panel: '#232a3a', 'panel-hi': '#2b3346', border: '#384057',
+        text: '#e9edf5', 'text-dim': '#8b93a8', accent: '#5b9cff', 'accent-dim': '#2e4670',
+        'bg-glow': '#232b40',
+        'light-sq': '#eddcc0', 'dark-sq': '#8c6c4a',
+        'white-piece': '#fbfbfb', 'black-piece': '#1c1c1c',
+        selected: 'rgba(91, 156, 255, 0.55)', 'last-move': 'rgba(255, 209, 102, 0.45)',
+        'frame-a': '#3a3222', 'frame-b': '#241f14', 'frame-shadow': '#1a140c',
+      },
+    },
+    {
+      name: 'Daylight',
+      vars: {
+        bg: '#eef1f7', panel: '#ffffff', 'panel-hi': '#f3f5fa', border: '#d7dce6',
+        text: '#1c2333', 'text-dim': '#6b7488', accent: '#2f6fed', 'accent-dim': '#dbe6fd',
+        'bg-glow': '#ffffff',
+        'light-sq': '#f4ead9', 'dark-sq': '#7c9473',
+        'white-piece': '#ffffff', 'black-piece': '#22282f',
+        selected: 'rgba(47, 111, 237, 0.35)', 'last-move': 'rgba(255, 196, 64, 0.4)',
+        'frame-a': '#cdd6e4', 'frame-b': '#aab6c9', 'frame-shadow': '#8f9cb3',
+      },
+    },
+    {
+      name: 'Wood Classic',
+      vars: {
+        bg: '#241a12', panel: '#33251a', 'panel-hi': '#402e20', border: '#57402c',
+        text: '#f3e6d6', 'text-dim': '#b89b7c', accent: '#e0a54c', 'accent-dim': '#5b3f1e',
+        'bg-glow': '#3a2c1e',
+        'light-sq': '#f0d9b5', 'dark-sq': '#b58863',
+        'white-piece': '#fbfbfb', 'black-piece': '#1c1c1c',
+        selected: 'rgba(224, 165, 76, 0.45)', 'last-move': 'rgba(255, 235, 140, 0.4)',
+        'frame-a': '#5c4128', 'frame-b': '#2e1f10', 'frame-shadow': '#1a1109',
+      },
+    },
+    {
+      name: 'Deep Ocean',
+      vars: {
+        bg: '#0b1f2b', panel: '#102c3c', 'panel-hi': '#15384b', border: '#20516a',
+        text: '#e3f2fa', 'text-dim': '#7ea6bd', accent: '#38c6ea', 'accent-dim': '#123c4e',
+        'bg-glow': '#123a4c',
+        'light-sq': '#d3ecf4', 'dark-sq': '#3f7f9c',
+        'white-piece': '#fefefe', 'black-piece': '#0c2530',
+        selected: 'rgba(56, 198, 234, 0.4)', 'last-move': 'rgba(255, 205, 110, 0.4)',
+        'frame-a': '#12475d', 'frame-b': '#082431', 'frame-shadow': '#041620',
+      },
+    },
+    {
+      name: 'Forest',
+      vars: {
+        bg: '#141d17', panel: '#1c281f', 'panel-hi': '#243329', border: '#33472e',
+        text: '#e7f0e8', 'text-dim': '#8aa691', accent: '#72c079', 'accent-dim': '#204a29',
+        'bg-glow': '#1f2e22',
+        'light-sq': '#e6e1c6', 'dark-sq': '#5d7c4f',
+        'white-piece': '#fbfbf3', 'black-piece': '#1a2416',
+        selected: 'rgba(114, 192, 121, 0.4)', 'last-move': 'rgba(255, 214, 120, 0.4)',
+        'frame-a': '#3a2e1c', 'frame-b': '#20190f', 'frame-shadow': '#120d07',
+      },
+    },
+    {
+      name: 'Sunset',
+      vars: {
+        bg: '#221019', panel: '#301a26', 'panel-hi': '#3c2131', border: '#552d43',
+        text: '#fbe6ef', 'text-dim': '#c48aa1', accent: '#ff6f8f', 'accent-dim': '#5c2337',
+        'bg-glow': '#3a1f2c',
+        'light-sq': '#ffe2ce', 'dark-sq': '#c9636d',
+        'white-piece': '#fff7f0', 'black-piece': '#2b131c',
+        selected: 'rgba(255, 111, 143, 0.4)', 'last-move': 'rgba(255, 205, 120, 0.45)',
+        'frame-a': '#5a2c3a', 'frame-b': '#2c1420', 'frame-shadow': '#1a0c12',
+      },
+    },
+  ];
+  const CUSTOMIZABLE_VARS = ['light-sq', 'dark-sq', 'white-piece', 'black-piece'];
+  const APPEARANCE_KEY = 'chessMachineAppearance';
+
   const TIME_PRESETS = [
     { label: '1 min', minutes: 1 },
     { label: '3 min', minutes: 3 },
@@ -856,6 +1024,9 @@
   let clockIntervalId = null;
   let lastTickTime = 0;
 
+  let currentThemeIndex = 0;
+  let colorOverrides = {};
+
   const boardEl = document.getElementById('board');
   const statusEl = document.getElementById('statusLine');
   const ratingSlider = document.getElementById('ratingSlider');
@@ -875,6 +1046,91 @@
   const clockTopEl = document.getElementById('clockTop');
   const clockBottomEl = document.getElementById('clockBottom');
   const timeControlRow = document.getElementById('timeControlRow');
+  const themeSwatchRow = document.getElementById('themeSwatchRow');
+  const pickLightSq = document.getElementById('pickLightSq');
+  const pickDarkSq = document.getElementById('pickDarkSq');
+  const pickWhitePiece = document.getElementById('pickWhitePiece');
+  const pickBlackPiece = document.getElementById('pickBlackPiece');
+  const resetThemeBtn = document.getElementById('resetThemeBtn');
+
+  function loadAppearance() {
+    try {
+      const raw = localStorage.getItem(APPEARANCE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (typeof data.themeIndex === 'number' && THEMES[data.themeIndex]) currentThemeIndex = data.themeIndex;
+      if (data.overrides && typeof data.overrides === 'object') {
+        CUSTOMIZABLE_VARS.forEach(v => { if (typeof data.overrides[v] === 'string') colorOverrides[v] = data.overrides[v]; });
+      }
+    } catch (e) { /* ignore malformed or inaccessible storage */ }
+  }
+
+  function saveAppearance() {
+    try {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ themeIndex: currentThemeIndex, overrides: colorOverrides }));
+    } catch (e) { /* ignore inaccessible storage */ }
+  }
+
+  function effectiveVar(name) {
+    return colorOverrides[name] || THEMES[currentThemeIndex].vars[name];
+  }
+
+  function applyAppearance() {
+    const root = document.documentElement.style;
+    const theme = THEMES[currentThemeIndex];
+    Object.entries(theme.vars).forEach(([k, v]) => root.setProperty('--' + k, v));
+    Object.entries(colorOverrides).forEach(([k, v]) => root.setProperty('--' + k, v));
+    pickLightSq.value = effectiveVar('light-sq');
+    pickDarkSq.value = effectiveVar('dark-sq');
+    pickWhitePiece.value = effectiveVar('white-piece');
+    pickBlackPiece.value = effectiveVar('black-piece');
+    themeSwatchRow.querySelectorAll('.theme-card').forEach((el, i) => el.classList.toggle('active', i === currentThemeIndex));
+  }
+
+  THEMES.forEach((theme, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'theme-card';
+    btn.title = theme.name;
+    const preview = document.createElement('span');
+    preview.className = 'theme-preview';
+    const light = theme.vars['light-sq'], dark = theme.vars['dark-sq'];
+    preview.style.background = `conic-gradient(from 0deg, ${light} 0deg 90deg, ${dark} 90deg 180deg, ${light} 180deg 270deg, ${dark} 270deg 360deg)`;
+    const label = document.createElement('span');
+    label.className = 'theme-label';
+    label.textContent = theme.name;
+    btn.appendChild(preview);
+    btn.appendChild(label);
+    btn.addEventListener('click', () => {
+      currentThemeIndex = i;
+      colorOverrides = {};
+      applyAppearance();
+      saveAppearance();
+    });
+    themeSwatchRow.appendChild(btn);
+  });
+
+  function wireColorPicker(inputEl, varName) {
+    inputEl.addEventListener('input', () => {
+      colorOverrides[varName] = inputEl.value;
+      document.documentElement.style.setProperty('--' + varName, inputEl.value);
+      saveAppearance();
+    });
+  }
+  wireColorPicker(pickLightSq, 'light-sq');
+  wireColorPicker(pickDarkSq, 'dark-sq');
+  wireColorPicker(pickWhitePiece, 'white-piece');
+  wireColorPicker(pickBlackPiece, 'black-piece');
+
+  resetThemeBtn.addEventListener('click', () => {
+    currentThemeIndex = 0;
+    colorOverrides = {};
+    applyAppearance();
+    saveAppearance();
+  });
+
+  loadAppearance();
+  applyAppearance();
 
   TIME_PRESETS.forEach(preset => {
     const btn = document.createElement('button');
