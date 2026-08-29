@@ -95,6 +95,14 @@
     color: var(--ink-bright);
     font-size: 15px;
   }
+  .hud .streak-hud {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .hud .streak-hud b {
+    display: inline;
+  }
   .hud .combo-tag {
     color: var(--accent2-deep);
   }
@@ -469,7 +477,7 @@
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
       <span class="combo-tag" id="comboWrap" style="opacity:0">COMBO<b id="combo">x1</b></span>
-      <span title="Daily play streak">🔥<b id="streakHud">0</b></span>
+      <span class="streak-hud" title="Daily play streak">🔥<b id="streakHud">0</b></span>
     </div>
     <div class="icon-toolbar">
       <button class="hud-btn" id="undoBtn" title="Undo Last Move" disabled>↩️</button>
