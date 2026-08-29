@@ -53,7 +53,7 @@ Gameplay:
 - Level speed-up every 10 lines, elapsed-time display, fullscreen toggle, and local leaderboards (high scores for Marathon, best times for Sprint)
 
 Customizable theme (⚙ settings button, in-game or from the title screen):
-- Seven built-in skins — Amber Arcade, Daylight (light), Pastel Dream, Synthwave, Arctic Mint, Retro Rainbow, Noir
+- Eight built-in skins — Amber Arcade, Daylight (light), Pastel Dream, Sherbet (pink/green/yellow), Synthwave, Arctic Mint, Retro Rainbow, Noir
 - A custom-hue slider that generates its own palette and piece colors on the fly
 - Toggles for sound, music, the ghost piece, grid lines, and haptics
 - All choices are saved locally and persist between visits
