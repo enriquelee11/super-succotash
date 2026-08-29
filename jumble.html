@@ -610,25 +610,75 @@
     return { matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color };
   }
 
-  // Deals a fresh set of 3 pieces. If a fully random draw would leave the player
-  // with no legal move at all, the last slot is redrawn from only the shapes that
-  // still fit somewhere on the board — so a tight board never ends the game
-  // purely from bad luck, only when nothing could have fit regardless of piece.
+  // --- Fair dealing: guarantee a fresh hand of 3 can always be played through
+  // to completion with the right moves. Misplaying is still on the player —
+  // this only rules out hands that are unplayable no matter what you do.
+  function fitsOn(boardBool, rowStart, colStart, piece) {
+    for (let r = 0; r < piece.rows; r++) {
+      for (let c = 0; c < piece.cols; c++) {
+        if (!piece.matrix[r][c]) continue;
+        const br = rowStart + r, bc = colStart + c;
+        if (br < 0 || br >= SIZE || bc < 0 || bc >= SIZE || boardBool[br][bc]) return false;
+      }
+    }
+    return true;
+  }
+
+  function simulatePlacement(boardBool, rowStart, colStart, piece) {
+    const next = boardBool.map(row => row.slice());
+    for (let r = 0; r < piece.rows; r++) {
+      for (let c = 0; c < piece.cols; c++) {
+        if (piece.matrix[r][c]) next[rowStart + r][colStart + c] = true;
+      }
+    }
+    for (let r = 0; r < SIZE; r++) if (next[r].every(Boolean)) next[r].fill(false);
+    for (let c = 0; c < SIZE; c++) {
+      let full = true;
+      for (let r = 0; r < SIZE; r++) if (!next[r][c]) { full = false; break; }
+      if (full) for (let r = 0; r < SIZE; r++) next[r][c] = false;
+    }
+    return next;
+  }
+
+  // Tries every ordering and position for the given pieces (with simulated line
+  // clears along the way) and returns true as soon as one full sequence succeeds.
+  function traySolvable(boardBool, pieces) {
+    function solve(remaining, currentBoard) {
+      if (remaining.length === 0) return true;
+      for (let i = 0; i < remaining.length; i++) {
+        const piece = remaining[i];
+        const rest = remaining.slice(0, i).concat(remaining.slice(i + 1));
+        for (let r = 0; r <= SIZE - piece.rows; r++) {
+          for (let c = 0; c <= SIZE - piece.cols; c++) {
+            if (fitsOn(currentBoard, r, c, piece) &&
+                solve(rest, simulatePlacement(currentBoard, r, c, piece))) return true;
+          }
+        }
+      }
+      return false;
+    }
+    return solve(pieces, boardBool);
+  }
+
+  const TRAY_DEAL_ATTEMPTS = 40;
+
+  // Deals a fresh set of 3 pieces, retrying random draws until one is provably
+  // playable through to the end. Falls back to guaranteed-fit single cells if
+  // the board is so tight nothing else works, and only gives up (accepting a
+  // dead hand) when literally no shape could ever fit — a truly full board.
   function randomTray() {
-    const newTray = [randomPiece(), randomPiece()];
-    if (newTray.some(p => canPlaceAnywhere(p))) {
-      newTray.push(randomPiece());
-      return newTray;
+    const boardBool = board.map(row => row.map(Boolean));
+    for (let attempt = 0; attempt < TRAY_DEAL_ATTEMPTS; attempt++) {
+      const candidate = [randomPiece(), randomPiece(), randomPiece()];
+      if (traySolvable(boardBool, candidate)) return candidate;
     }
-    const viableShapes = SHAPES.filter(canPlaceAnywhere);
-    if (viableShapes.length) {
-      const shape = viableShapes[Math.floor(Math.random() * viableShapes.length)];
-      const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-      newTray.push({ matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color });
-    } else {
-      newTray.push(randomPiece());
-    }
-    return newTray;
+    const singleCell = SHAPES.find(s => s.rows === 1 && s.cols === 1);
+    const fallback = [0, 1, 2].map(() => ({
+      matrix: singleCell.matrix, rows: 1, cols: 1,
+      color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    }));
+    if (traySolvable(boardBool, fallback)) return fallback;
+    return [randomPiece(), randomPiece(), randomPiece()];
   }
 
   const boardEl = document.getElementById('board');
