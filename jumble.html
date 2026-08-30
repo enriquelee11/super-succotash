@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Jumble</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('blockBlastTheme');
+    if (t && t !== 'peach') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
@@ -25,12 +33,65 @@
     --danger-deep: #e3505a;
     --cell-empty: #f5edf7;
     --cell-border: rgba(139, 111, 130, 0.18);
+    --page-bg: #fff3e4;
+    --overlay-bg: rgba(255, 251, 245, 0.94);
+    --panel-bg: rgba(255,255,255,0.6);
+    --panel-border: rgba(165, 145, 160, 0.35);
+    --heading-shadow: rgba(139,111,130,0.25);
+  }
+  [data-theme="lavender"] {
+    --card-top: #ece4fb; --card-mid: #ddd0f7; --card-bottom: #cbb8f0;
+    --screen: #faf7ff; --screen-edge: #ece0f9;
+    --ink: #564a6b; --ink-bright: #372b4d; --ink-dim: #9c8fb5;
+    --accent: #9c7fe0; --accent-deep: #7c5cc7;
+    --accent2: #7fb8e0; --accent2-deep: #5c93c2;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #f0eaf9; --cell-border: rgba(120,100,160,0.18);
+    --page-bg: #ede3fb; --overlay-bg: rgba(250,247,255,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(140,120,170,0.35);
+    --heading-shadow: rgba(100,80,140,0.25);
+  }
+  [data-theme="mint"] {
+    --card-top: #d9f5e6; --card-mid: #c3edd8; --card-bottom: #aee0cc;
+    --screen: #f5fdf9; --screen-edge: #e0f3e8;
+    --ink: #3f6b5a; --ink-bright: #294a3d; --ink-dim: #86ab9c;
+    --accent: #4fb98a; --accent-deep: #349068;
+    --accent2: #7fd9d4; --accent2-deep: #4fb0aa;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #e8f7ee; --cell-border: rgba(60,120,95,0.18);
+    --page-bg: #e2f6ea; --overlay-bg: rgba(245,253,249,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(90,150,120,0.35);
+    --heading-shadow: rgba(50,110,85,0.25);
+  }
+  [data-theme="sunset"] {
+    --card-top: #ffdcb0; --card-mid: #ffbd91; --card-bottom: #ff9d84;
+    --screen: #fff6ec; --screen-edge: #ffe4cc;
+    --ink: #7a4a3e; --ink-bright: #532c22; --ink-dim: #c19483;
+    --accent: #ff7a5c; --accent-deep: #e6543a;
+    --accent2: #ffb37a; --accent2-deep: #e6923f;
+    --danger: #ff5566; --danger-deep: #d93a4d;
+    --cell-empty: #fdece0; --cell-border: rgba(180,90,60,0.18);
+    --page-bg: #ffe8d2; --overlay-bg: rgba(255,246,236,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(190,120,90,0.35);
+    --heading-shadow: rgba(150,70,45,0.25);
+  }
+  [data-theme="midnight"] {
+    --card-top: #2e2a45; --card-mid: #24213a; --card-bottom: #1b1830;
+    --screen: #14121f; --screen-edge: #1e1b30;
+    --ink: #b9b3d6; --ink-bright: #ede9ff; --ink-dim: #776f9c;
+    --accent: #8f7fe0; --accent-deep: #6c5cc2;
+    --accent2: #5cc8d9; --accent2-deep: #3fa3b3;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #221f38; --cell-border: rgba(150,140,220,0.18);
+    --page-bg: #0f0d1a; --overlay-bg: rgba(20,18,31,0.94);
+    --panel-bg: rgba(255,255,255,0.08); --panel-border: rgba(180,170,230,0.25);
+    --heading-shadow: rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0;
     height: 100%;
-    background: #fff3e4;
+    background: var(--page-bg);
     color: var(--ink);
     font-family: 'Baloo 2', 'Trebuchet MS', sans-serif;
     font-weight: 600;
@@ -112,8 +173,8 @@
     gap: 10px;
   }
   .hud-btn {
-    background: rgba(255,255,255,0.6);
-    border: 1.5px solid rgba(165, 145, 160, 0.35);
+    background: var(--panel-bg);
+    border: 1.5px solid var(--panel-border);
     color: var(--ink);
     border-radius: 12px;
     padding: 6px 10px;
@@ -229,8 +290,8 @@
     flex: 1;
     height: 92px;
     border-radius: 14px;
-    background: rgba(255,255,255,0.55);
-    box-shadow: inset 0 0 0 1px rgba(165,145,160,0.22), 0 2px 6px rgba(190,140,110,0.1);
+    background: var(--panel-bg);
+    box-shadow: inset 0 0 0 1px var(--panel-border), 0 2px 6px rgba(190,140,110,0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -272,7 +333,7 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: rgba(255, 251, 245, 0.94);
+    background: var(--overlay-bg);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     text-align: center;
@@ -283,7 +344,7 @@
     -webkit-overflow-scrolling: touch;
   }
   .overlay h2 {
-    --block-shadow: rgba(139,111,130,0.25);
+    --block-shadow: var(--heading-shadow);
     margin: 0;
     font-size: 19px;
     line-height: 1.25;
@@ -337,8 +398,8 @@
     text-transform: uppercase;
     width: 130px;
     text-align: center;
-    background: #fff;
-    border: 2px solid rgba(165,145,160,0.35);
+    background: var(--screen);
+    border: 2px solid var(--panel-border);
     color: var(--ink-bright);
     border-radius: 10px;
     padding: 10px 8px;
@@ -415,7 +476,7 @@
     gap: 10px;
     padding: 8px 10px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.5);
+    background: var(--panel-bg);
     text-align: left;
   }
   .achievements-list li.unlocked {
@@ -479,6 +540,91 @@
   .colors-actions {
     display: flex;
     gap: 10px;
+  }
+
+  .settings-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .settings-label {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    color: var(--ink-dim);
+  }
+  .theme-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .theme-swatch {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 2.5px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.18);
+    transition: transform 0.08s ease, border-color 0.1s ease;
+  }
+  .theme-swatch:active { transform: translateY(1px); }
+  .theme-swatch.selected {
+    border-color: var(--accent-deep);
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 220px;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink-bright);
+    flex-shrink: 0;
+  }
+  .toggle-btn {
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(165,145,160,0.3);
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease;
+  }
+  .toggle-btn::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease;
+  }
+  .toggle-btn.on {
+    background: linear-gradient(135deg, var(--accent2), var(--accent2-deep));
+  }
+  .toggle-btn.on::after { transform: translateX(18px); }
+
+  button.action.danger-action {
+    font-size: 11px;
+    background: linear-gradient(180deg, var(--danger), var(--danger-deep));
+    box-shadow: 0 4px 0 var(--danger-deep), 0 6px 14px rgba(227,80,90,0.35);
+  }
+  button.action.danger-action:active { box-shadow: 0 0 0 var(--danger-deep), 0 2px 6px rgba(227,80,90,0.3); }
+  button.action.danger-action.confirm {
+    background: linear-gradient(180deg, #ff3b4a, #c81f2e);
+    box-shadow: 0 4px 0 #c81f2e, 0 6px 14px rgba(200,31,46,0.4);
   }
 
   .hint {
@@ -550,9 +696,9 @@
     <div class="icon-toolbar">
       <button class="hud-btn" id="undoBtn" title="Undo Last Move" disabled>↩️</button>
       <button class="hud-btn" id="rerollBtn" title="Reroll Pieces (1 per game)">🔀</button>
-      <button class="hud-btn" id="colorsBtn" title="Customize Colors">🎨</button>
       <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
+      <button class="hud-btn" id="settingsBtn" title="Settings">⚙️</button>
     </div>
     <div class="fill-meter" title="Board fill">
       <div class="fill-meter-bar" id="fillBar"></div>
@@ -567,7 +713,7 @@
           <p>DRAG PIECES ONTO THE GRID. CLEAR A FULL ROW OR COLUMN TO BLAST IT AWAY. GAME OVER WHEN NOTHING FITS.</p>
           <button class="action" id="startBtn">START GAME</button>
           <button class="action secondary" id="startScoresBtn">HIGH SCORES</button>
-          <button class="action secondary" id="startColorsBtn">CUSTOMIZE COLORS</button>
+          <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
         </div>
 
         <div id="overOverlay" class="overlay hidden">
@@ -612,6 +758,29 @@
             <button class="action" id="closeColorsBtn">DONE</button>
           </div>
         </div>
+
+        <div id="settingsOverlay" class="overlay hidden">
+          <h2 class="display-font">SETTINGS</h2>
+          <div class="settings-section">
+            <span class="settings-label">THEME</span>
+            <div class="theme-grid" id="themeGrid"></div>
+          </div>
+          <div class="settings-section">
+            <button class="action secondary" id="settingsColorsBtn">🎨 CUSTOMIZE COLORS</button>
+          </div>
+          <div class="settings-row">
+            <span>SOUND</span>
+            <button class="toggle-btn" id="soundToggle" title="Toggle sound"></button>
+          </div>
+          <div class="settings-row">
+            <span>HAPTICS</span>
+            <button class="toggle-btn" id="hapticsToggle" title="Toggle vibration"></button>
+          </div>
+          <div class="settings-section">
+            <button class="action danger-action" id="resetProgressBtn">RESET ALL PROGRESS</button>
+          </div>
+          <button class="action" id="closeSettingsBtn">DONE</button>
+        </div>
       </div>
     </div>
     <div class="tray hidden" id="tray">
@@ -619,7 +788,7 @@
       <div class="tray-slot" data-slot="1"></div>
       <div class="tray-slot" data-slot="2"></div>
     </div>
-    <div class="hint">DRAG A PIECE FROM THE TRAY ONTO THE GRID &nbsp;·&nbsp; CLEAR ROWS/COLUMNS FOR COMBOS &nbsp;·&nbsp; 🎨 TO CUSTOMIZE COLORS</div>
+    <div class="hint">DRAG A PIECE FROM THE TRAY ONTO THE GRID &nbsp;·&nbsp; CLEAR ROWS/COLUMNS FOR COMBOS &nbsp;·&nbsp; ⚙️ FOR SETTINGS &amp; THEMES</div>
   </div>
 
 <script>
@@ -802,6 +971,11 @@
   const shareBtn = document.getElementById('shareBtn');
   const achievementsOverlay = document.getElementById('achievementsOverlay');
   const achievementsList = document.getElementById('achievementsList');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const themeGrid = document.getElementById('themeGrid');
+  const soundToggle = document.getElementById('soundToggle');
+  const hapticsToggle = document.getElementById('hapticsToggle');
+  const resetProgressBtn = document.getElementById('resetProgressBtn');
 
   let board, cells, tray, score, combo, running, gameOver;
   let undoSnapshot = null;
@@ -842,8 +1016,46 @@
     stats.lastPlayedDate = today;
   }
 
+  // --- Theme ---
+  const THEME_KEY = 'blockBlastTheme';
+  const THEMES = [
+    { id: 'peach', name: 'Peach', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'] },
+    { id: 'lavender', name: 'Lavender Dream', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'] },
+    { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'] },
+    { id: 'sunset', name: 'Sunset', colors: ['#ffdcb0', '#ffbd91', '#ff9d84'] },
+    { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'] },
+  ];
+  function loadTheme() {
+    const t = localStorage.getItem(THEME_KEY);
+    return THEMES.some(th => th.id === t) ? t : 'peach';
+  }
+  let currentTheme = loadTheme();
+  function applyTheme(id) {
+    currentTheme = id;
+    localStorage.setItem(THEME_KEY, id);
+    if (id === 'peach') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', id);
+    renderThemeGrid();
+  }
+  function renderThemeGrid() {
+    themeGrid.innerHTML = '';
+    THEMES.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'theme-swatch' + (t.id === currentTheme ? ' selected' : '');
+      btn.title = t.name;
+      btn.style.background = `linear-gradient(135deg, ${t.colors[0]} 0%, ${t.colors[1]} 50%, ${t.colors[2]} 100%)`;
+      btn.addEventListener('click', () => applyTheme(t.id));
+      themeGrid.appendChild(btn);
+    });
+  }
+
+  // --- Haptics preference ---
+  const HAPTICS_KEY = 'blockBlastHaptics';
+  let hapticsEnabled = localStorage.getItem(HAPTICS_KEY) !== '0';
+  function updateHapticsToggle() { hapticsToggle.classList.toggle('on', hapticsEnabled); }
+
   function vibrate(pattern) {
-    if (navigator.vibrate) {
+    if (hapticsEnabled && navigator.vibrate) {
       try { navigator.vibrate(pattern); } catch (e) {}
     }
   }
@@ -862,7 +1074,10 @@
   const MUTE_KEY = 'blockBlastMuted';
   let muted = localStorage.getItem(MUTE_KEY) === '1';
   let audioCtx = null;
-  function updateMuteBtn() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+  function updateMuteBtn() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    soundToggle.classList.toggle('on', !muted);
+  }
   updateMuteBtn();
   function ensureAudio() {
     if (muted) return;
@@ -1498,16 +1713,6 @@
   undoBtn.addEventListener('click', performUndo);
   rerollBtn.addEventListener('click', performReroll);
 
-  document.getElementById('colorsBtn').addEventListener('click', () => {
-    scoresOverlay.classList.add('hidden');
-    renderSwatches();
-    colorsOverlay.classList.remove('hidden');
-  });
-  document.getElementById('startColorsBtn').addEventListener('click', () => {
-    scoresOverlay.classList.add('hidden');
-    renderSwatches();
-    colorsOverlay.classList.remove('hidden');
-  });
   document.getElementById('closeColorsBtn').addEventListener('click', () => {
     colorsOverlay.classList.add('hidden');
   });
@@ -1517,6 +1722,49 @@
     renderSwatches();
   });
 
+  // --- Settings ---
+  function openSettings() {
+    scoresOverlay.classList.add('hidden');
+    renderThemeGrid();
+    updateSoundToggle();
+    updateHapticsToggle();
+    settingsOverlay.classList.remove('hidden');
+  }
+  function updateSoundToggle() { soundToggle.classList.toggle('on', !muted); }
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('startSettingsBtn').addEventListener('click', openSettings);
+  document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+    settingsOverlay.classList.add('hidden');
+  });
+  document.getElementById('settingsColorsBtn').addEventListener('click', () => {
+    settingsOverlay.classList.add('hidden');
+    renderSwatches();
+    colorsOverlay.classList.remove('hidden');
+  });
+  soundToggle.addEventListener('click', () => muteBtn.click());
+  hapticsToggle.addEventListener('click', () => {
+    hapticsEnabled = !hapticsEnabled;
+    localStorage.setItem(HAPTICS_KEY, hapticsEnabled ? '1' : '0');
+    updateHapticsToggle();
+    if (hapticsEnabled) vibrate(20);
+  });
+
+  let resetConfirmTimeout = null;
+  resetProgressBtn.addEventListener('click', () => {
+    if (!resetProgressBtn.classList.contains('confirm')) {
+      resetProgressBtn.classList.add('confirm');
+      resetProgressBtn.textContent = 'TAP AGAIN TO CONFIRM';
+      resetConfirmTimeout = setTimeout(() => {
+        resetProgressBtn.classList.remove('confirm');
+        resetProgressBtn.textContent = 'RESET ALL PROGRESS';
+      }, 3000);
+      return;
+    }
+    clearTimeout(resetConfirmTimeout);
+    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY].forEach(k => localStorage.removeItem(k));
+    location.reload();
+  });
+
   // --- Keyboard shortcuts ---
   window.addEventListener('keydown', (e) => {
     if (document.activeElement === nameInput) return;
@@ -1524,6 +1772,7 @@
       scoresOverlay.classList.add('hidden');
       colorsOverlay.classList.add('hidden');
       achievementsOverlay.classList.add('hidden');
+      settingsOverlay.classList.add('hidden');
     } else if (e.key === 'm' || e.key === 'M') {
       muteBtn.click();
     } else if ((e.key === 'u' || e.key === 'U') && !undoBtn.disabled) {
