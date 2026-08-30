@@ -278,6 +278,13 @@
     margin-top: -6px;
   }
 
+  .daily-preview {
+    margin: -6px 0 0;
+    font-size: 10px;
+    color: var(--ink-dim);
+    text-align: center;
+  }
+
   .hud {
     display: flex;
     justify-content: space-between;
@@ -970,6 +977,7 @@
           <p>DRAG PIECES ONTO THE GRID. CLEAR A FULL ROW OR COLUMN TO BLAST IT AWAY. GAME OVER WHEN NOTHING FITS.</p>
           <button class="action" id="startBtn">START GAME</button>
           <button class="action secondary" id="dailyChallengeBtn">📅 DAILY CHALLENGE</button>
+          <p class="daily-preview" id="dailyPreview"></p>
           <button class="action secondary" id="startScoresBtn">HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
@@ -984,6 +992,7 @@
             <li>You're never dealt a hand that's unplayable from the start — but misplaying can still box you in.</li>
             <li>↩️ Undo reverts your last placement (if it didn't clear a line). 🔀 Reroll swaps your hand once per game.</li>
             <li>Settings ⚙️ has Zen Mode (never lose — a stuck hand reshuffles), Hard Mode (no Undo or Reroll), colorblind-friendly shape marks, and 15+ visual themes.</li>
+            <li>📅 Daily Challenge deals the same numbered puzzle to everyone each day, with a rotating twist — No Reroll, Double Bonus, Head Start (a pre-filled board), Combo Frenzy, or plain Classic. Complete it to keep your daily streak alive.</li>
           </ul>
           <button class="action" id="closeHowToPlayBtn">GOT IT</button>
         </div>
@@ -1016,6 +1025,7 @@
             <div><b id="statToday">0</b><span>TODAY'S BEST</span></div>
             <div><b id="statTimePlayed">0m</b><span>TIME PLAYED</span></div>
             <div><b id="statDaily">0</b><span>📅 DAILY BEST</span></div>
+            <div><b id="statDailyStreak">0</b><span>📅 DAILY STREAK</span></div>
           </div>
           <div class="colors-actions">
             <button class="action secondary" id="achievementsBtn">🏅 BADGES</button>
@@ -1376,6 +1386,27 @@
   }
   let currentRng = Math.random;
 
+  // --- Daily Challenge identity + modifier ---
+  // A numbered challenge (like Wordle's #N) plus one of a few twists,
+  // both picked deterministically from the date so everyone gets the same
+  // challenge — and the same twist — on a given day.
+  const DAILY_EPOCH_UTC = Date.UTC(2025, 0, 1);
+  function dailyChallengeNumber() {
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return Math.floor((todayUTC - DAILY_EPOCH_UTC) / 86400000) + 1;
+  }
+  const DAILY_MODIFIERS = [
+    { id: 'classic', emoji: '🎮', name: 'Classic', desc: 'No twist today — just the pure daily deal.' },
+    { id: 'noReroll', emoji: '🚫', name: 'No Reroll', desc: 'Reroll is disabled for this run.' },
+    { id: 'doubleBonus', emoji: '💰', name: 'Double Bonus', desc: 'Every line-clear bonus is doubled.' },
+    { id: 'headStart', emoji: '🧊', name: 'Head Start', desc: 'The board starts with some cells already filled.' },
+    { id: 'comboFrenzy', emoji: '🔥', name: 'Combo Frenzy', desc: 'Combo bonuses hit 50% harder.' },
+  ];
+  function todaysModifier() {
+    return DAILY_MODIFIERS[Math.abs(seedFromDate()) % DAILY_MODIFIERS.length];
+  }
+
   function randomPiece() {
     const shape = SHAPES[Math.floor(currentRng() * SHAPES.length)];
     const color = PALETTE[Math.floor(currentRng() * PALETTE.length)];
@@ -1525,6 +1556,7 @@
   const statTodayEl = document.getElementById('statToday');
   const statTimePlayedEl = document.getElementById('statTimePlayed');
   const statDailyEl = document.getElementById('statDaily');
+  const statDailyStreakEl = document.getElementById('statDailyStreak');
   const achProgressEl = document.getElementById('achProgress');
   const streakHudEl = document.getElementById('streakHud');
   const toastEl = document.getElementById('toast');
@@ -1545,6 +1577,7 @@
   const quitBtn = document.getElementById('quitBtn');
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
   const dailyBadge = document.getElementById('dailyBadge');
+  const dailyPreviewEl = document.getElementById('dailyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
   const scoreSizeToggle = document.getElementById('scoreSizeToggle');
   const dataOverlay = document.getElementById('dataOverlay');
@@ -1555,6 +1588,23 @@
   let rerollsLeft = 1;
   let usedUndoThisGame = false;
   let dailyChallengeMode = false;
+  let dailyModifier = null;
+
+  // Fills a seeded fraction of the board before dealing starts (Head Start
+  // modifier) — uses the same daily RNG, so it's identical for everyone.
+  function applyHeadStart() {
+    const cellsToFill = Math.round(SIZE * SIZE * 0.15);
+    let filled = 0, attempts = 0;
+    while (filled < cellsToFill && attempts < 200) {
+      attempts++;
+      const r = Math.floor(currentRng() * SIZE);
+      const c = Math.floor(currentRng() * SIZE);
+      if (!board[r][c]) {
+        board[r][c] = PALETTE[Math.floor(currentRng() * PALETTE.length)];
+        filled++;
+      }
+    }
+  }
   let leaderboardViewSize = SIZE;
   let gameStartTime = 0;
   // Adds elapsed time since the game started to the cumulative play-time stat;
@@ -1591,6 +1641,7 @@
       todayBest: 0, todayBestDate: null, themesUsedCount: 0, zenGamesPlayed: 0, gamesWithNoUndo: 0,
       hardGamesCompleted: 0, totalPlayTimeSec: 0,
       dailyBest: 0, dailyBestDate: null, dailyChallengesCompleted: 0, bestMiniScore: 0,
+      dailyStreak: 0, lastDailyDate: null,
     };
   }
   function saveStats() {
@@ -1633,6 +1684,7 @@
     statTodayEl.textContent = todaysBest();
     statTimePlayedEl.textContent = formatPlayTime(stats.totalPlayTimeSec || 0);
     statDailyEl.textContent = dailyBest();
+    statDailyStreakEl.textContent = stats.dailyStreak || 0;
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
@@ -1643,6 +1695,16 @@
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     stats.streak = stats.lastPlayedDate === yesterday ? (stats.streak || 0) + 1 : 1;
     stats.lastPlayedDate = today;
+  }
+
+  // Same day-streak logic, but specifically for completed (score > 0) Daily
+  // Challenge runs — only bumped once per day, on the run that finishes it.
+  function updateDailyStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (stats.lastDailyDate === today) return;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    stats.dailyStreak = stats.lastDailyDate === yesterday ? (stats.dailyStreak || 0) + 1 : 1;
+    stats.lastDailyDate = today;
   }
 
   const TRIED_THEMES_KEY = 'blockBlastTriedThemes';
@@ -1865,6 +1927,7 @@
     { id: 'purist', emoji: '💪', title: 'PURIST', desc: 'Finish a game without using Undo', check: s => (s.gamesWithNoUndo || 0) >= 1 },
     { id: 'daredevil', emoji: '💀', title: 'DAREDEVIL', desc: 'Finish a game in Hard Mode', check: s => (s.hardGamesCompleted || 0) >= 1 },
     { id: 'dailyChampion', emoji: '📅', title: 'DAILY CHAMPION', desc: 'Complete a Daily Challenge', check: s => (s.dailyChallengesCompleted || 0) >= 1 },
+    { id: 'dailyStreak7', emoji: '🗓️', title: 'WEEK OF CHALLENGES', desc: 'Complete 7 Daily Challenges in a row', check: s => (s.dailyStreak || 0) >= 7 },
     { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', check: s => (s.bestMiniScore || 0) >= 200 },
   ];
   const ACH_KEY = 'blockBlastAchievements';
@@ -1909,7 +1972,9 @@
   }
 
   function shareScore() {
-    const text = `I scored ${score} in Jumble! 🧱 Best combo: x${combo || 1}. Can you beat me?`;
+    const text = (dailyChallengeMode && dailyModifier)
+      ? `Jumble Daily Challenge #${dailyChallengeNumber()} (${dailyModifier.emoji} ${dailyModifier.name}): scored ${score}! 🧱 Best combo: x${combo || 1}. Can you beat me?`
+      : `I scored ${score} in Jumble! 🧱 Best combo: x${combo || 1}. Can you beat me?`;
     const done = () => {
       const original = shareBtn.textContent;
       shareBtn.textContent = 'COPIED!';
@@ -1993,16 +2058,20 @@
   function reset() {
     buildBoardDom();
     board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+    if (dailyChallengeMode && dailyModifier && dailyModifier.id === 'headStart') applyHeadStart();
     tray = randomTray();
     score = 0;
     combo = 0;
     running = true;
     gameOver = false;
     undoSnapshot = null;
-    rerollsLeft = 1;
+    rerollsLeft = (dailyChallengeMode && dailyModifier && dailyModifier.id === 'noReroll') ? 0 : 1;
     usedUndoThisGame = false;
     gameStartTime = Date.now();
     dailyBadge.classList.toggle('hidden', !dailyChallengeMode);
+    if (dailyChallengeMode && dailyModifier) {
+      dailyBadge.textContent = `📅 #${dailyChallengeNumber()} — ${dailyModifier.emoji} ${dailyModifier.name.toUpperCase()}`;
+    }
     updateHud();
     updateUndoButton();
     updateRerollButton();
@@ -2142,7 +2211,11 @@
         const [r, c] = key.split(',').map(Number);
         cells[r][c].classList.add('clearing');
       });
-      const bonus = lineCount * 10 * combo + (lineCount > 1 ? (lineCount - 1) * 20 : 0);
+      let bonus = lineCount * 10 * combo + (lineCount > 1 ? (lineCount - 1) * 20 : 0);
+      if (dailyChallengeMode && dailyModifier) {
+        if (dailyModifier.id === 'doubleBonus') bonus *= 2;
+        else if (dailyModifier.id === 'comboFrenzy') bonus = Math.round(bonus * 1.5);
+      }
       score += bonus;
       setTimeout(() => {
         toClear.forEach(key => {
@@ -2207,7 +2280,10 @@
     if (hardMode && score > 0) stats.hardGamesCompleted = (stats.hardGamesCompleted || 0) + 1;
     if (dailyChallengeMode) {
       updateDailyBest(score);
-      if (score > 0) stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
+      if (score > 0) {
+        stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
+        updateDailyStreak();
+      }
     }
     if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
     accruePlayTime();
@@ -2453,6 +2529,7 @@
   document.getElementById('startBtn').addEventListener('click', () => {
     ensureAudio();
     dailyChallengeMode = false;
+    dailyModifier = null;
     currentRng = Math.random;
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -2462,6 +2539,7 @@
   document.getElementById('dailyChallengeBtn').addEventListener('click', () => {
     ensureAudio();
     dailyChallengeMode = true;
+    dailyModifier = todaysModifier();
     currentRng = mulberry32(seedFromDate());
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -2471,6 +2549,7 @@
   playAgainBtn.addEventListener('click', () => {
     ensureAudio();
     dailyChallengeMode = false;
+    dailyModifier = null;
     currentRng = Math.random;
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
@@ -2694,6 +2773,8 @@
   bestEl.textContent = bestScore();
   renderStats();
   checkAchievements(true);
+  const todaysMod = todaysModifier();
+  dailyPreviewEl.textContent = `#${dailyChallengeNumber()} · ${todaysMod.emoji} ${todaysMod.name.toUpperCase()} · ${todaysMod.desc}`;
 })();
 </script>
 </body>
