@@ -20,7 +20,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Drag pieces with mouse, touch, or pen (pointer events)
 - Row/column clears, combo multiplier, and score popups
 - While dragging, cells that would complete a line light up so you can plan ahead
-- Clearing the entire board earns a Perfect Clear bonus
+- Clearing the entire board earns a Perfect Clear bonus — dealing quietly favors hands that can finish one off once the board is already close to empty
 - Undo (↩️) reverts your last placement, as long as it didn't clear a line
 - Reroll (🔀) swaps your current three pieces for new ones — one free use per game
 - Settings menu (⚙️) with 15 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Sunrise, Pink Lemonade, Beach, Bubblegum, Forest, Autumn, Frost, Galaxy, Cyberpunk, Volcano, Midnight) plus a fully custom theme you build from 4 picked colors, sound/haptics toggles, and a two-tap "reset all progress" option

@@ -1231,7 +1231,44 @@
     return solve(pieces, boardBool);
   }
 
+  function boardEmpty(boardBool) {
+    return boardBool.every(row => row.every(v => !v));
+  }
+
+  // Same search as traySolvable, but only succeeds if the hand can be played
+  // all the way down to a completely empty board — used to occasionally deal
+  // a hand that can finish off a Perfect Clear once the board is nearly bare.
+  // Bounded by a node budget: unlike traySolvable (which must be exhaustive to
+  // guarantee fairness), missing a real solution here just skips a nice-to-have
+  // bonus, so it's fine to bail out early rather than risk a multi-hundred-ms
+  // stall on an unlucky, deeply-branching hand.
+  const TO_EMPTY_SEARCH_BUDGET = 3000;
+  function traySolvableToEmpty(boardBool, pieces) {
+    let budget = TO_EMPTY_SEARCH_BUDGET;
+    function solve(remaining, currentBoard) {
+      if (remaining.length === 0) return boardEmpty(currentBoard);
+      for (let i = 0; i < remaining.length; i++) {
+        const piece = remaining[i];
+        const rest = remaining.slice(0, i).concat(remaining.slice(i + 1));
+        for (let r = 0; r <= SIZE - piece.rows; r++) {
+          for (let c = 0; c <= SIZE - piece.cols; c++) {
+            if (budget-- <= 0) return false;
+            if (fitsOn(currentBoard, r, c, piece) &&
+                solve(rest, simulatePlacement(currentBoard, r, c, piece))) return true;
+          }
+        }
+      }
+      return false;
+    }
+    return solve(pieces, boardBool);
+  }
+
   const TRAY_DEAL_ATTEMPTS = 40;
+  const PERFECT_CLEAR_DEAL_ATTEMPTS = 60;
+  // Below this many filled cells, a hand that finishes the board off is
+  // plausible enough to be worth actively hunting for. Comfortably covers the
+  // common case of 3 lines each missing just one cell (21 filled cells).
+  const PERFECT_CLEAR_DEAL_THRESHOLD = 24;
 
   // Deals a fresh set of 3 pieces, retrying random draws until one is provably
   // playable through to the end. Falls back to guaranteed-fit single cells if
@@ -1239,6 +1276,13 @@
   // dead hand) when literally no shape could ever fit — a truly full board.
   function randomTray() {
     const boardBool = board.map(row => row.map(Boolean));
+    const filledCount = boardBool.reduce((sum, row) => sum + row.filter(Boolean).length, 0);
+    if (filledCount > 0 && filledCount <= PERFECT_CLEAR_DEAL_THRESHOLD) {
+      for (let attempt = 0; attempt < PERFECT_CLEAR_DEAL_ATTEMPTS; attempt++) {
+        const candidate = [randomPiece(), randomPiece(), randomPiece()];
+        if (traySolvableToEmpty(boardBool, candidate)) return candidate;
+      }
+    }
     for (let attempt = 0; attempt < TRAY_DEAL_ATTEMPTS; attempt++) {
       const candidate = [randomPiece(), randomPiece(), randomPiece()];
       if (traySolvable(boardBool, candidate)) return candidate;
