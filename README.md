@@ -23,7 +23,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Clearing the entire board earns a Perfect Clear bonus
 - Undo (↩️) reverts your last placement, as long as it didn't clear a line
 - Reroll (🔀) swaps your current three pieces for new ones — one free use per game
-- Settings menu (⚙️) with 5 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Midnight), sound/haptics toggles, and a two-tap "reset all progress" option
+- Settings menu (⚙️) with 6 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Sunrise, Midnight), sound/haptics toggles, and a two-tap "reset all progress" option
 - Customizable block colors (🎨), with a reset-to-defaults option
 - Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak)
 - Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, and a 500+ score
@@ -33,6 +33,6 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
 - Share Score copies a shareable result to your clipboard from the game-over screen
 - Home button on the game-over screen to return to the title without restarting
-- Warm pastel visual theme by default, with chunky, blocky display type and 4 alternate themes to pick from
+- Warm pastel visual theme by default, with chunky, blocky display type and 5 alternate themes to pick from
 - All game data (high scores, stats, preferences) saved locally per-browser (`localStorage`) — nothing leaves your device
 - Fully responsive, single-file, no external dependencies beyond Google Fonts

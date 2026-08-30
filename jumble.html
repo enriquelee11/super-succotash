@@ -64,16 +64,28 @@
     --heading-shadow: rgba(50,110,85,0.25);
   }
   [data-theme="sunset"] {
-    --card-top: #ffdcb0; --card-mid: #ffbd91; --card-bottom: #ff9d84;
-    --screen: #fff6ec; --screen-edge: #ffe4cc;
-    --ink: #7a4a3e; --ink-bright: #532c22; --ink-dim: #c19483;
-    --accent: #ff7a5c; --accent-deep: #e6543a;
-    --accent2: #ffb37a; --accent2-deep: #e6923f;
+    --card-top: #ff7eb3; --card-mid: #ff9d4d; --card-bottom: #ffd166;
+    --screen: #fff8ec; --screen-edge: #ffe3b8;
+    --ink: #8a4a5e; --ink-bright: #5c2a3a; --ink-dim: #c78a9c;
+    --accent: #ff5c8a; --accent-deep: #e63f6d;
+    --accent2: #ffb347; --accent2-deep: #e6923f;
     --danger: #ff5566; --danger-deep: #d93a4d;
-    --cell-empty: #fdece0; --cell-border: rgba(180,90,60,0.18);
-    --page-bg: #ffe8d2; --overlay-bg: rgba(255,246,236,0.94);
-    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(190,120,90,0.35);
-    --heading-shadow: rgba(150,70,45,0.25);
+    --cell-empty: #fff0dd; --cell-border: rgba(210,90,90,0.2);
+    --page-bg: #ffd9b8; --overlay-bg: rgba(255,248,236,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(220,120,90,0.35);
+    --heading-shadow: rgba(160,60,70,0.25);
+  }
+  [data-theme="sunrise"] {
+    --card-top: #a9c8f2; --card-mid: #f2b4d0; --card-bottom: #ffdd8a;
+    --screen: #fffaf2; --screen-edge: #f7e6dd;
+    --ink: #6e5a72; --ink-bright: #46374c; --ink-dim: #a897ac;
+    --accent: #f28ec0; --accent-deep: #d669a0;
+    --accent2: #7fa8e8; --accent2-deep: #5c85c9;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #f6eff8; --cell-border: rgba(120,110,170,0.18);
+    --page-bg: #fbeee0; --overlay-bg: rgba(255,250,242,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(150,130,180,0.35);
+    --heading-shadow: rgba(110,90,140,0.25);
   }
   [data-theme="midnight"] {
     --card-top: #2e2a45; --card-mid: #24213a; --card-bottom: #1b1830;
@@ -362,6 +374,11 @@
   }
   .overlay .danger { color: var(--danger-deep); }
   .overlay .score-line { color: var(--ink-bright); font-size: 14px; }
+  #settingsOverlay {
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 18px;
+  }
 
   button.action {
     font-family: 'Baloo 2', sans-serif;
@@ -560,12 +577,12 @@
   .theme-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
   }
   .theme-swatch {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 12px;
     border: 2.5px solid transparent;
     cursor: pointer;
@@ -1022,7 +1039,8 @@
     { id: 'peach', name: 'Peach', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'] },
     { id: 'lavender', name: 'Lavender Dream', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'] },
     { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'] },
-    { id: 'sunset', name: 'Sunset', colors: ['#ffdcb0', '#ffbd91', '#ff9d84'] },
+    { id: 'sunset', name: 'Sunset', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'] },
+    { id: 'sunrise', name: 'Sunrise', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'] },
     { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'] },
   ];
   function loadTheme() {
