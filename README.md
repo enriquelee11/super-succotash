@@ -26,14 +26,17 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Settings menu (⚙️) with 15 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Sunrise, Pink Lemonade, Beach, Bubblegum, Forest, Autumn, Frost, Galaxy, Cyberpunk, Volcano, Midnight) plus a fully custom theme you build from 4 picked colors, sound/haptics toggles, and a two-tap "reset all progress" option
 - Piece colors automatically match whichever theme is active — pick a theme and the blocks follow, unless you've manually customized them
 - Customizable block colors (🎨), with a reset-to-theme-defaults option
-- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak)
-- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, and a 500+ score
+- Zen Mode (🧘, in Settings) removes the fail state — a hand with nowhere to go quietly reshuffles instead of ending the game
+- Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
+- Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
+- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak, today's best score)
+- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, and finishing a game without Undo
 - A live fill meter shows how full the board is, shifting from green to red as things get risky
 - Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score or unlock a badge
 - Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
 - Share Score copies a shareable result to your clipboard from the game-over screen
-- Home button on the game-over screen to return to the title without restarting
+- Home button on the game-over screen (or the toolbar Quit button, mid-game) to return to the title without restarting
 - Warm pastel visual theme by default, with chunky, blocky display type, 14 alternate preset themes, and a build-your-own custom theme
 - All game data (high scores, stats, preferences) saved locally per-browser (`localStorage`) — nothing leaves your device
 - Fully responsive, single-file, no external dependencies beyond Google Fonts

@@ -312,6 +312,10 @@
   }
   .hud-btn:active { transform: translateY(1px); }
   .hud-btn[disabled] { opacity: 0.4; cursor: default; }
+  .hud-btn.confirm {
+    background: linear-gradient(180deg, var(--danger), var(--danger-deep));
+    border-color: var(--danger-deep);
+  }
 
   .fill-meter {
     width: 100%;
@@ -434,6 +438,7 @@
   .tray-cell {
     border-radius: 5px;
     background: transparent;
+    position: relative;
   }
   .tray-cell.on {
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.25);
@@ -449,8 +454,24 @@
     opacity: 0.92;
     filter: drop-shadow(0 8px 14px rgba(0,0,0,0.5));
   }
-  .ghost-cell { border-radius: 6px; background: transparent; }
+  .ghost-cell { border-radius: 6px; background: transparent; position: relative; }
   .ghost-cell.on { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4); }
+
+  .cell.filled[data-mark]::after,
+  .tray-cell.on[data-mark]::after,
+  .ghost-cell.on[data-mark]::after {
+    content: attr(data-mark);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60%;
+    line-height: 1;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+    pointer-events: none;
+  }
 
   .overlay {
     position: absolute;
@@ -567,9 +588,11 @@
 
   .stats-row {
     display: flex;
-    gap: 18px;
+    flex-wrap: wrap;
+    gap: 14px 18px;
     justify-content: center;
     flex-shrink: 0;
+    max-width: 280px;
   }
   .stats-row div {
     display: flex;
@@ -843,6 +866,7 @@
       <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
       <button class="hud-btn" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="hud-btn" id="quitBtn" title="Quit to Home" disabled>🏠</button>
     </div>
     <div class="fill-meter" title="Board fill">
       <div class="fill-meter-bar" id="fillBar"></div>
@@ -881,6 +905,7 @@
             <div><b id="statLines">0</b><span>LINES CLEARED</span></div>
             <div><b id="statCombo">x0</b><span>BEST COMBO</span></div>
             <div><b id="statStreak">0</b><span>🔥 DAY STREAK</span></div>
+            <div><b id="statToday">0</b><span>TODAY'S BEST</span></div>
           </div>
           <div class="colors-actions">
             <button class="action secondary" id="achievementsBtn">🏅 BADGES</button>
@@ -920,6 +945,14 @@
           <div class="settings-row">
             <span>HAPTICS</span>
             <button class="toggle-btn" id="hapticsToggle" title="Toggle vibration"></button>
+          </div>
+          <div class="settings-row">
+            <span>🧘 ZEN MODE</span>
+            <button class="toggle-btn" id="zenToggle" title="No game over — a stuck hand reshuffles instead"></button>
+          </div>
+          <div class="settings-row">
+            <span>🔲 SHAPE MARKS</span>
+            <button class="toggle-btn" id="cbToggle" title="Colorblind-friendly shape markers on pieces"></button>
           </div>
           <div class="settings-section">
             <button class="action danger-action" id="resetProgressBtn">RESET ALL PROGRESS</button>
@@ -1117,8 +1150,10 @@
     const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
+  // idx pins each color to a fixed shape-mark slot (see CB_SYMBOLS) regardless
+  // of which hex is at that position, so the marks stay stable across themes.
   function buildPalette(hexes) {
-    return hexes.map(hex => ({ fill: hex, glow: hexToRgba(hex, 0.55) }));
+    return hexes.map((hex, idx) => ({ fill: hex, glow: hexToRgba(hex, 0.55), idx }));
   }
 
   const PALETTE_KEY = 'blockBlastPalette';
@@ -1321,6 +1356,7 @@
   const statLinesEl = document.getElementById('statLines');
   const statComboEl = document.getElementById('statCombo');
   const statStreakEl = document.getElementById('statStreak');
+  const statTodayEl = document.getElementById('statToday');
   const streakHudEl = document.getElementById('streakHud');
   const toastEl = document.getElementById('toast');
   const fillBarEl = document.getElementById('fillBar');
@@ -1334,10 +1370,14 @@
   const resetProgressBtn = document.getElementById('resetProgressBtn');
   const customThemeOverlay = document.getElementById('customThemeOverlay');
   const customThemeGrid = document.getElementById('customThemeGrid');
+  const zenToggle = document.getElementById('zenToggle');
+  const cbToggle = document.getElementById('cbToggle');
+  const quitBtn = document.getElementById('quitBtn');
 
   let board, cells, tray, score, combo, running, gameOver;
   let undoSnapshot = null;
   let rerollsLeft = 1;
+  let usedUndoThisGame = false;
 
   function bestScore() {
     return highScores.length ? highScores[0].score : 0;
@@ -1350,18 +1390,36 @@
       const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
       if (raw && typeof raw === 'object') return raw;
     } catch (e) {}
-    return { gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0, streak: 0, lastPlayedDate: null, perfectClears: 0 };
+    return {
+      gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0, streak: 0, lastPlayedDate: null, perfectClears: 0,
+      todayBest: 0, todayBestDate: null, themesUsedCount: 0, zenGamesPlayed: 0, gamesWithNoUndo: 0,
+    };
   }
   function saveStats() {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
   }
   let stats = loadStats();
+  function todaysBest() {
+    const today = new Date().toISOString().slice(0, 10);
+    return stats.todayBestDate === today ? (stats.todayBest || 0) : 0;
+  }
+  // Called whenever a game ends (win or lose) so "today's best" reflects every
+  // finished game, not just ones that made the all-time leaderboard.
+  function updateTodayBest(finalScore) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (stats.todayBestDate !== today) {
+      stats.todayBestDate = today;
+      stats.todayBest = 0;
+    }
+    if (finalScore > stats.todayBest) stats.todayBest = finalScore;
+  }
   function renderStats() {
     statGamesEl.textContent = stats.gamesPlayed;
     statLinesEl.textContent = stats.totalLinesCleared;
     statComboEl.textContent = 'x' + stats.bestCombo;
     statStreakEl.textContent = stats.streak || 0;
     streakHudEl.textContent = stats.streak || 0;
+    statTodayEl.textContent = todaysBest();
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
@@ -1372,6 +1430,19 @@
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     stats.streak = stats.lastPlayedDate === yesterday ? (stats.streak || 0) + 1 : 1;
     stats.lastPlayedDate = today;
+  }
+
+  const TRIED_THEMES_KEY = 'blockBlastTriedThemes';
+  function markThemeTried(id) {
+    let tried;
+    try { tried = JSON.parse(localStorage.getItem(TRIED_THEMES_KEY) || '[]'); } catch (e) { tried = []; }
+    if (!Array.isArray(tried)) tried = [];
+    if (!tried.includes(id)) {
+      tried.push(id);
+      localStorage.setItem(TRIED_THEMES_KEY, JSON.stringify(tried));
+    }
+    stats.themesUsedCount = tried.length;
+    saveStats();
   }
 
   function applyTheme(id) {
@@ -1388,6 +1459,8 @@
     }
     syncPaletteToTheme();
     renderThemeGrid();
+    markThemeTried(id);
+    checkAchievements();
   }
   function renderThemeGrid() {
     themeGrid.innerHTML = '';
@@ -1444,6 +1517,31 @@
       try { navigator.vibrate(pattern); } catch (e) {}
     }
   }
+
+  // --- Zen Mode: a stuck hand reshuffles instead of ending the game ---
+  const ZEN_KEY = 'blockBlastZenMode';
+  let zenMode = localStorage.getItem(ZEN_KEY) === '1';
+  function updateZenToggle() { zenToggle.classList.toggle('on', zenMode); }
+  zenToggle.addEventListener('click', () => {
+    zenMode = !zenMode;
+    localStorage.setItem(ZEN_KEY, zenMode ? '1' : '0');
+    updateZenToggle();
+  });
+
+  // --- Colorblind-friendly shape marks ---
+  // Each palette slot gets a fixed glyph so pieces stay distinguishable by
+  // shape, not just hue, regardless of which theme/colors are active.
+  const CB_KEY = 'blockBlastColorblind';
+  const CB_SYMBOLS = ['●', '▲', '■', '◆', '★', '✚', '⬟', '◐'];
+  let colorblindMode = localStorage.getItem(CB_KEY) === '1';
+  function updateCbToggle() { cbToggle.classList.toggle('on', colorblindMode); }
+  cbToggle.addEventListener('click', () => {
+    colorblindMode = !colorblindMode;
+    localStorage.setItem(CB_KEY, colorblindMode ? '1' : '0');
+    updateCbToggle();
+    renderBoard();
+    renderTray();
+  });
 
   function showToast(text) {
     toastEl.textContent = text;
@@ -1520,6 +1618,9 @@
     { id: 'century', emoji: '💯', title: 'CENTURY CLUB', desc: 'Clear 100 lines total', check: s => s.totalLinesCleared >= 100 },
     { id: 'streak7', emoji: '📅', title: 'WEEK WARRIOR', desc: 'Play 7 days in a row', check: s => s.streak >= 7 },
     { id: 'highRoller', emoji: '🏆', title: 'HIGH ROLLER', desc: 'Score 500+ in one game', check: () => bestScore() >= 500 },
+    { id: 'zenSeeker', emoji: '🧘', title: 'ZEN SEEKER', desc: 'Play a game in Zen Mode', check: s => (s.zenGamesPlayed || 0) >= 1 },
+    { id: 'trendSetter', emoji: '🎨', title: 'TREND SETTER', desc: 'Try 5 different themes', check: s => (s.themesUsedCount || 0) >= 5 },
+    { id: 'purist', emoji: '💪', title: 'PURIST', desc: 'Finish a game without using Undo', check: s => (s.gamesWithNoUndo || 0) >= 1 },
   ];
   const ACH_KEY = 'blockBlastAchievements';
   function loadUnlocked() {
@@ -1595,10 +1696,15 @@
     score = undoSnapshot.score;
     combo = undoSnapshot.combo;
     undoSnapshot = null;
+    usedUndoThisGame = true;
     renderBoard();
     renderTray();
     updateHud();
     updateUndoButton();
+  }
+
+  function updateQuitButton() {
+    quitBtn.disabled = !running;
   }
 
   function updateRerollButton() {
@@ -1644,12 +1750,15 @@
     gameOver = false;
     undoSnapshot = null;
     rerollsLeft = 1;
+    usedUndoThisGame = false;
     updateHud();
     updateUndoButton();
     updateRerollButton();
+    updateQuitButton();
     renderBoard();
     renderTray();
     stats.gamesPlayed++;
+    if (zenMode) stats.zenGamesPlayed = (stats.zenGamesPlayed || 0) + 1;
     updateStreak();
     saveStats();
     renderStats();
@@ -1672,10 +1781,13 @@
           cell.classList.add('filled');
           cell.style.setProperty('--glow', val.glow);
           cell.style.backgroundColor = val.fill;
+          if (colorblindMode) cell.dataset.mark = CB_SYMBOLS[val.idx];
+          else delete cell.dataset.mark;
         } else {
           cell.classList.remove('filled');
           cell.style.removeProperty('--glow');
           cell.style.backgroundColor = '';
+          delete cell.dataset.mark;
         }
       }
     }
@@ -1698,7 +1810,10 @@
         for (let c = 0; c < piece.cols; c++) {
           const tc = document.createElement('div');
           tc.className = 'tray-cell' + (piece.matrix[r][c] ? ' on' : '');
-          if (piece.matrix[r][c]) tc.style.backgroundColor = piece.color.fill;
+          if (piece.matrix[r][c]) {
+            tc.style.backgroundColor = piece.color.fill;
+            if (colorblindMode) tc.dataset.mark = CB_SYMBOLS[piece.color.idx];
+          }
           wrap.appendChild(tc);
         }
       }
@@ -1809,7 +1924,18 @@
       renderTray();
     }
     const anyFits = tray.some(p => p && canPlaceAnywhere(p));
-    if (!anyFits) endGame();
+    if (!anyFits) {
+      if (zenMode) {
+        tray = randomTray();
+        renderTray();
+        const stillFits = tray.some(p => p && canPlaceAnywhere(p));
+        if (stillFits) {
+          showToast('🧘 ZEN RESHUFFLE');
+          return;
+        }
+      }
+      endGame();
+    }
   }
 
   function endGame() {
@@ -1818,6 +1944,12 @@
     undoSnapshot = null;
     updateUndoButton();
     updateRerollButton();
+    updateQuitButton();
+    updateTodayBest(score);
+    if (!usedUndoThisGame && score > 0) stats.gamesWithNoUndo = (stats.gamesWithNoUndo || 0) + 1;
+    saveStats();
+    renderStats();
+    checkAchievements();
     beep(400, 80, 0.5, 'sawtooth', 0.15);
     vibrate(200);
     boardWrap.classList.add('shake-die');
@@ -1922,6 +2054,7 @@
           if (piece.matrix[r][c]) {
             gc.style.backgroundColor = piece.color.fill;
             gc.style.boxShadow = `inset 0 0 0 1px rgba(255,255,255,0.4), 0 0 8px ${piece.color.glow}`;
+            if (colorblindMode) gc.dataset.mark = CB_SYMBOLS[piece.color.idx];
           }
           ghost.appendChild(gc);
         }
@@ -2098,6 +2231,25 @@
   undoBtn.addEventListener('click', performUndo);
   rerollBtn.addEventListener('click', performReroll);
 
+  let quitConfirmTimeout = null;
+  quitBtn.addEventListener('click', () => {
+    if (!running) return;
+    if (!quitBtn.classList.contains('confirm')) {
+      quitBtn.classList.add('confirm');
+      quitConfirmTimeout = setTimeout(() => quitBtn.classList.remove('confirm'), 2500);
+      return;
+    }
+    clearTimeout(quitConfirmTimeout);
+    quitBtn.classList.remove('confirm');
+    running = false;
+    undoSnapshot = null;
+    updateQuitButton();
+    updateUndoButton();
+    updateRerollButton();
+    trayEl.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
+
   document.getElementById('closeColorsBtn').addEventListener('click', () => {
     colorsOverlay.classList.add('hidden');
   });
@@ -2115,6 +2267,8 @@
     renderThemeGrid();
     updateSoundToggle();
     updateHapticsToggle();
+    updateZenToggle();
+    updateCbToggle();
     settingsOverlay.classList.remove('hidden');
   }
   function updateSoundToggle() { soundToggle.classList.toggle('on', !muted); }
@@ -2157,8 +2311,8 @@
       return;
     }
     clearTimeout(resetConfirmTimeout);
-    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY, CUSTOM_KEY]
-      .forEach(k => localStorage.removeItem(k));
+    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY, CUSTOM_KEY,
+      ZEN_KEY, CB_KEY, TRIED_THEMES_KEY].forEach(k => localStorage.removeItem(k));
     location.reload();
   });
 
@@ -2171,6 +2325,7 @@
       achievementsOverlay.classList.add('hidden');
       settingsOverlay.classList.add('hidden');
       customThemeOverlay.classList.add('hidden');
+      quitBtn.classList.remove('confirm');
     } else if (e.key === 'm' || e.key === 'M') {
       muteBtn.click();
     } else if ((e.key === 'u' || e.key === 'U') && !undoBtn.disabled) {
