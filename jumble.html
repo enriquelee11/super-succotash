@@ -265,6 +265,19 @@
     box-shadow: 0 4px 0 var(--accent2-deep), 0 8px 16px rgba(156,127,224,0.35);
   }
 
+  .daily-badge {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--accent-deep);
+    background: var(--panel-bg);
+    box-shadow: inset 0 0 0 1.5px var(--panel-border);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-top: -6px;
+  }
+
   .hud {
     display: flex;
     justify-content: space-between;
@@ -438,26 +451,6 @@
     justify-content: center;
     position: relative;
   }
-  .rotate-btn {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: none;
-    background: var(--panel-bg);
-    box-shadow: inset 0 0 0 1px var(--panel-border), 0 1px 3px rgba(0,0,0,0.15);
-    color: var(--ink);
-    font-size: 11px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-  }
-  .rotate-btn:active { transform: scale(0.9); }
   .tray-piece {
     display: grid;
     gap: 2px;
@@ -743,6 +736,15 @@
     display: flex;
     gap: 10px;
   }
+  #dataOverlay .colors-actions {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  #dataOverlay .colors-actions button.action {
+    width: 100%;
+    max-width: 260px;
+  }
 
   .settings-section {
     display: flex;
@@ -830,6 +832,44 @@
   }
   .toggle-btn.on::after { transform: translateX(18px); }
 
+  .size-toggle {
+    display: flex;
+    gap: 4px;
+    background: rgba(165,145,160,0.15);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .size-btn {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    border: none;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: transparent;
+    color: var(--ink-dim);
+    cursor: pointer;
+  }
+  .size-btn.selected {
+    background: linear-gradient(135deg, var(--accent2), var(--accent2-deep));
+    color: #fff;
+  }
+
+  .data-textarea {
+    width: 100%;
+    max-width: 300px;
+    height: 70px;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    line-height: 1.4;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--panel-border);
+    background: var(--screen);
+    color: var(--ink);
+    resize: none;
+  }
+
   button.action.danger-action {
     font-size: 11px;
     background: linear-gradient(180deg, var(--danger), var(--danger-deep));
@@ -901,6 +941,7 @@
 <body>
   <div class="cabinet">
     <div class="marquee display-font">JUMBLE</div>
+    <div class="daily-badge hidden" id="dailyBadge">📅 DAILY CHALLENGE</div>
     <div class="hud">
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
@@ -927,6 +968,7 @@
           <h2 class="display-font">JUMBLE</h2>
           <p>DRAG PIECES ONTO THE GRID. CLEAR A FULL ROW OR COLUMN TO BLAST IT AWAY. GAME OVER WHEN NOTHING FITS.</p>
           <button class="action" id="startBtn">START GAME</button>
+          <button class="action secondary" id="dailyChallengeBtn">📅 DAILY CHALLENGE</button>
           <button class="action secondary" id="startScoresBtn">HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
@@ -937,7 +979,6 @@
           <ul class="howto-list">
             <li>Drag pieces from the tray onto the 8×8 grid.</li>
             <li>Fill a full row or column to blast it and score points — chain clears back-to-back for a rising combo multiplier.</li>
-            <li>Tap 🔄 on a tray piece to rotate it before you place it.</li>
             <li>Clearing the whole board earns a Perfect Clear bonus — dealing quietly favors hands that can finish one off once the board's already close to empty.</li>
             <li>You're never dealt a hand that's unplayable from the start — but misplaying can still box you in.</li>
             <li>↩️ Undo reverts your last placement (if it didn't clear a line). 🔀 Reroll swaps your hand once per game.</li>
@@ -969,6 +1010,7 @@
             <div><b id="statStreak">0</b><span>🔥 DAY STREAK</span></div>
             <div><b id="statToday">0</b><span>TODAY'S BEST</span></div>
             <div><b id="statTimePlayed">0m</b><span>TIME PLAYED</span></div>
+            <div><b id="statDaily">0</b><span>📅 DAILY BEST</span></div>
           </div>
           <div class="colors-actions">
             <button class="action secondary" id="achievementsBtn">🏅 BADGES</button>
@@ -978,6 +1020,7 @@
 
         <div id="achievementsOverlay" class="overlay hidden">
           <h2 class="display-font">BADGES</h2>
+          <p id="achProgress" class="score-line">0 / 0 UNLOCKED</p>
           <ul class="achievements-list" id="achievementsList"></ul>
           <button class="action" id="closeAchievementsBtn">CLOSE</button>
         </div>
@@ -1021,6 +1064,16 @@
             <span>🔲 SHAPE MARKS</span>
             <button class="toggle-btn" id="cbToggle" title="Colorblind-friendly shape markers on pieces"></button>
           </div>
+          <div class="settings-row">
+            <span>BOARD SIZE</span>
+            <div class="size-toggle" id="sizeToggle">
+              <button class="size-btn" data-size="8">8×8</button>
+              <button class="size-btn" data-size="6">6×6</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <button class="action secondary" id="openDataBtn">💾 BACKUP / RESTORE</button>
+          </div>
           <div class="settings-section">
             <button class="action danger-action" id="resetProgressBtn">RESET ALL PROGRESS</button>
           </div>
@@ -1035,6 +1088,17 @@
             <button class="action" id="closeCustomThemeBtn">DONE</button>
           </div>
         </div>
+
+        <div id="dataOverlay" class="overlay hidden">
+          <h2 class="display-font">BACKUP &<br/>RESTORE</h2>
+          <p>COPY THIS CODE SOMEWHERE SAFE TO BACK UP YOUR PROGRESS, OR PASTE ONE IN BELOW TO RESTORE IT ON THIS DEVICE.</p>
+          <textarea id="dataTextarea" class="data-textarea" placeholder="YOUR SAVE CODE APPEARS HERE"></textarea>
+          <div class="colors-actions">
+            <button class="action secondary" id="exportDataBtn">📤 COPY MY DATA</button>
+            <button class="action" id="importDataBtn">📥 RESTORE FROM CODE</button>
+          </div>
+          <button class="action secondary" id="closeDataBtn">CLOSE</button>
+        </div>
       </div>
     </div>
     <div class="tray hidden" id="tray">
@@ -1047,7 +1111,12 @@
 
 <script>
 (() => {
-  const SIZE = 8;
+  const BOARD_SIZE_KEY = 'blockBlastBoardSize';
+  function loadBoardSize() {
+    const n = parseInt(localStorage.getItem(BOARD_SIZE_KEY), 10);
+    return n === 6 ? 6 : 8;
+  }
+  let SIZE = loadBoardSize();
   const SHAPE_DEFS = [
     ['1'],
     ['11'],
@@ -1277,9 +1346,28 @@
   }
   const SHAPES = SHAPE_DEFS.map(parseShape);
 
+  // --- Seeded RNG (Daily Challenge dealing) ---
+  // A deterministic PRNG so a Daily Challenge run deals the exact same
+  // sequence of pieces for everyone, every time, on a given calendar day.
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromDate() {
+    const d = new Date().toISOString().slice(0, 10);
+    let h = 0;
+    for (let i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) | 0;
+    return h;
+  }
+  let currentRng = Math.random;
+
   function randomPiece() {
-    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-    const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    const shape = SHAPES[Math.floor(currentRng() * SHAPES.length)];
+    const color = PALETTE[Math.floor(currentRng() * PALETTE.length)];
     return { matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color };
   }
 
@@ -1392,7 +1480,7 @@
     const singleCell = SHAPES.find(s => s.rows === 1 && s.cols === 1);
     const fallback = [0, 1, 2].map(() => ({
       matrix: singleCell.matrix, rows: 1, cols: 1,
-      color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      color: PALETTE[Math.floor(currentRng() * PALETTE.length)],
     }));
     if (traySolvable(boardBool, fallback)) return fallback;
     return [randomPiece(), randomPiece(), randomPiece()];
@@ -1425,6 +1513,8 @@
   const statStreakEl = document.getElementById('statStreak');
   const statTodayEl = document.getElementById('statToday');
   const statTimePlayedEl = document.getElementById('statTimePlayed');
+  const statDailyEl = document.getElementById('statDaily');
+  const achProgressEl = document.getElementById('achProgress');
   const streakHudEl = document.getElementById('streakHud');
   const toastEl = document.getElementById('toast');
   const fillBarEl = document.getElementById('fillBar');
@@ -1443,11 +1533,16 @@
   const hardToggle = document.getElementById('hardToggle');
   const quitBtn = document.getElementById('quitBtn');
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
+  const dailyBadge = document.getElementById('dailyBadge');
+  const sizeToggle = document.getElementById('sizeToggle');
+  const dataOverlay = document.getElementById('dataOverlay');
+  const dataTextarea = document.getElementById('dataTextarea');
 
   let board, cells, tray, score, combo, running, gameOver;
   let undoSnapshot = null;
   let rerollsLeft = 1;
   let usedUndoThisGame = false;
+  let dailyChallengeMode = false;
   let gameStartTime = 0;
   // Adds elapsed time since the game started to the cumulative play-time stat;
   // called whenever a game stops, whether by losing or quitting.
@@ -1478,6 +1573,7 @@
       gamesPlayed: 0, totalLinesCleared: 0, bestCombo: 0, streak: 0, lastPlayedDate: null, perfectClears: 0,
       todayBest: 0, todayBestDate: null, themesUsedCount: 0, zenGamesPlayed: 0, gamesWithNoUndo: 0,
       hardGamesCompleted: 0, totalPlayTimeSec: 0,
+      dailyBest: 0, dailyBestDate: null, dailyChallengesCompleted: 0, bestMiniScore: 0,
     };
   }
   function saveStats() {
@@ -1498,6 +1594,19 @@
     }
     if (finalScore > stats.todayBest) stats.todayBest = finalScore;
   }
+  function dailyBest() {
+    const today = new Date().toISOString().slice(0, 10);
+    return stats.dailyBestDate === today ? (stats.dailyBest || 0) : 0;
+  }
+  // Only called for Daily Challenge runs, so it never mixes with free-play scores.
+  function updateDailyBest(finalScore) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (stats.dailyBestDate !== today) {
+      stats.dailyBestDate = today;
+      stats.dailyBest = 0;
+    }
+    if (finalScore > stats.dailyBest) stats.dailyBest = finalScore;
+  }
   function renderStats() {
     statGamesEl.textContent = stats.gamesPlayed;
     statLinesEl.textContent = stats.totalLinesCleared;
@@ -1506,6 +1615,7 @@
     streakHudEl.textContent = stats.streak || 0;
     statTodayEl.textContent = todaysBest();
     statTimePlayedEl.textContent = formatPlayTime(stats.totalPlayTimeSec || 0);
+    statDailyEl.textContent = dailyBest();
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
@@ -1625,6 +1735,20 @@
     if (running) { updateUndoButton(); updateRerollButton(); }
   });
 
+  // --- Board size (takes effect on the next game start) ---
+  function updateSizeToggle() {
+    sizeToggle.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('selected', parseInt(btn.dataset.size, 10) === SIZE);
+    });
+  }
+  sizeToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      SIZE = parseInt(btn.dataset.size, 10);
+      localStorage.setItem(BOARD_SIZE_KEY, String(SIZE));
+      updateSizeToggle();
+    });
+  });
+
   // --- Colorblind-friendly shape marks ---
   // Each palette slot gets a fixed glyph so pieces stay distinguishable by
   // shape, not just hue, regardless of which theme/colors are active.
@@ -1719,6 +1843,8 @@
     { id: 'trendSetter', emoji: '🎨', title: 'TREND SETTER', desc: 'Try 5 different themes', check: s => (s.themesUsedCount || 0) >= 5 },
     { id: 'purist', emoji: '💪', title: 'PURIST', desc: 'Finish a game without using Undo', check: s => (s.gamesWithNoUndo || 0) >= 1 },
     { id: 'daredevil', emoji: '💀', title: 'DAREDEVIL', desc: 'Finish a game in Hard Mode', check: s => (s.hardGamesCompleted || 0) >= 1 },
+    { id: 'dailyChampion', emoji: '📅', title: 'DAILY CHAMPION', desc: 'Complete a Daily Challenge', check: s => (s.dailyChallengesCompleted || 0) >= 1 },
+    { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', check: s => (s.bestMiniScore || 0) >= 200 },
   ];
   const ACH_KEY = 'blockBlastAchievements';
   function loadUnlocked() {
@@ -1742,6 +1868,7 @@
     });
   }
   function renderAchievements() {
+    achProgressEl.textContent = `${unlockedAchievements.length} / ${ACHIEVEMENTS.length} UNLOCKED`;
     achievementsList.innerHTML = '';
     ACHIEVEMENTS.forEach(a => {
       const unlocked = unlockedAchievements.includes(a.id);
@@ -1825,6 +1952,8 @@
 
   function buildBoardDom() {
     boardEl.innerHTML = '';
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${SIZE}, 1fr)`;
     cells = [];
     for (let r = 0; r < SIZE; r++) {
       const row = [];
@@ -1841,6 +1970,7 @@
   }
 
   function reset() {
+    buildBoardDom();
     board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
     tray = randomTray();
     score = 0;
@@ -1851,6 +1981,7 @@
     rerollsLeft = 1;
     usedUndoThisGame = false;
     gameStartTime = Date.now();
+    dailyBadge.classList.toggle('hidden', !dailyChallengeMode);
     updateHud();
     updateUndoButton();
     updateRerollButton();
@@ -1894,36 +2025,11 @@
     updateFillMeter();
   }
 
-  // Returns a new piece rotated 90° clockwise — never mutates the original,
-  // since the live tray array can be aliased by an undo snapshot.
-  function rotatedPiece(piece) {
-    const newRows = piece.cols, newCols = piece.rows;
-    const newMatrix = Array.from({ length: newRows }, () => Array(newCols).fill(false));
-    for (let r = 0; r < piece.rows; r++) {
-      for (let c = 0; c < piece.cols; c++) {
-        if (piece.matrix[r][c]) newMatrix[c][piece.rows - 1 - r] = true;
-      }
-    }
-    return { matrix: newMatrix, rows: newRows, cols: newCols, color: piece.color };
-  }
-
   function renderTray() {
     trayEl.querySelectorAll('.tray-slot').forEach((slot, i) => {
       slot.innerHTML = '';
       const piece = tray[i];
       if (!piece) return;
-      if (running && (piece.rows > 1 || piece.cols > 1)) {
-        const rotateBtn = document.createElement('button');
-        rotateBtn.className = 'rotate-btn';
-        rotateBtn.title = 'Rotate';
-        rotateBtn.textContent = '🔄';
-        rotateBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          tray[i] = rotatedPiece(tray[i]);
-          renderTray();
-        });
-        slot.appendChild(rotateBtn);
-      }
       const wrap = document.createElement('div');
       wrap.className = 'tray-piece';
       wrap.style.gridTemplateColumns = `repeat(${piece.cols}, 1fr)`;
@@ -2004,6 +2110,10 @@
       saveStats();
       beep(600 + combo * 30, 950 + combo * 30, 0.15, 'triangle', 0.12);
       vibrate([15, 30, 15]);
+      if (combo % 5 === 0) {
+        showToast(`⚡ COMBO x${combo}!`);
+        celebrate(boardWrap);
+      }
       const toClear = new Set();
       fullRows.forEach(r => { for (let c = 0; c < SIZE; c++) toClear.add(r + ',' + c); });
       fullCols.forEach(c => { for (let r = 0; r < SIZE; r++) toClear.add(r + ',' + c); });
@@ -2074,6 +2184,11 @@
     updateTodayBest(score);
     if (!usedUndoThisGame && score > 0) stats.gamesWithNoUndo = (stats.gamesWithNoUndo || 0) + 1;
     if (hardMode && score > 0) stats.hardGamesCompleted = (stats.hardGamesCompleted || 0) + 1;
+    if (dailyChallengeMode) {
+      updateDailyBest(score);
+      if (score > 0) stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
+    }
+    if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
     accruePlayTime();
     saveStats();
     renderStats();
@@ -2311,6 +2426,17 @@
   // --- UI wiring ---
   document.getElementById('startBtn').addEventListener('click', () => {
     ensureAudio();
+    dailyChallengeMode = false;
+    currentRng = Math.random;
+    startOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    trayEl.classList.remove('hidden');
+    reset();
+  });
+  document.getElementById('dailyChallengeBtn').addEventListener('click', () => {
+    ensureAudio();
+    dailyChallengeMode = true;
+    currentRng = mulberry32(seedFromDate());
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
@@ -2318,6 +2444,8 @@
   });
   playAgainBtn.addEventListener('click', () => {
     ensureAudio();
+    dailyChallengeMode = false;
+    currentRng = Math.random;
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
     reset();
@@ -2402,6 +2530,7 @@
     updateZenToggle();
     updateHardToggle();
     updateCbToggle();
+    updateSizeToggle();
     settingsOverlay.classList.remove('hidden');
   }
   function updateSoundToggle() { soundToggle.classList.toggle('on', !muted); }
@@ -2438,6 +2567,11 @@
     if (hapticsEnabled) vibrate(20);
   });
 
+  // All persisted keys — shared by Reset Progress (clears them) and
+  // Backup/Restore (exports/imports them as one bundle).
+  const SAVE_DATA_KEYS = [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
+    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY];
+
   let resetConfirmTimeout = null;
   resetProgressBtn.addEventListener('click', () => {
     if (!resetProgressBtn.classList.contains('confirm')) {
@@ -2450,8 +2584,50 @@
       return;
     }
     clearTimeout(resetConfirmTimeout);
-    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY, CUSTOM_KEY,
-      ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY].forEach(k => localStorage.removeItem(k));
+    SAVE_DATA_KEYS.forEach(k => localStorage.removeItem(k));
+    location.reload();
+  });
+
+  // --- Backup / Restore (manual export/import via a copy-paste code) ---
+  document.getElementById('openDataBtn').addEventListener('click', () => {
+    settingsOverlay.classList.add('hidden');
+    dataTextarea.value = '';
+    dataOverlay.classList.remove('hidden');
+  });
+  document.getElementById('closeDataBtn').addEventListener('click', () => {
+    dataOverlay.classList.add('hidden');
+  });
+  document.getElementById('exportDataBtn').addEventListener('click', () => {
+    const data = {};
+    SAVE_DATA_KEYS.forEach(k => {
+      const v = localStorage.getItem(k);
+      if (v !== null) data[k] = v;
+    });
+    const code = JSON.stringify(data);
+    dataTextarea.value = code;
+    dataTextarea.select();
+    const done = () => showToast('📋 COPIED!');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(done).catch(() => {});
+    } else {
+      try { document.execCommand('copy'); done(); } catch (e) {}
+    }
+  });
+  document.getElementById('importDataBtn').addEventListener('click', () => {
+    let data;
+    try {
+      data = JSON.parse(dataTextarea.value.trim());
+    } catch (e) {
+      showToast('⚠️ INVALID CODE');
+      return;
+    }
+    if (!data || typeof data !== 'object') {
+      showToast('⚠️ INVALID CODE');
+      return;
+    }
+    SAVE_DATA_KEYS.forEach(k => {
+      if (typeof data[k] === 'string') localStorage.setItem(k, data[k]);
+    });
     location.reload();
   });
 
@@ -2465,6 +2641,7 @@
       settingsOverlay.classList.add('hidden');
       customThemeOverlay.classList.add('hidden');
       howToPlayOverlay.classList.add('hidden');
+      dataOverlay.classList.add('hidden');
       quitBtn.classList.remove('confirm');
     } else if (e.key === 'm' || e.key === 'M') {
       muteBtn.click();

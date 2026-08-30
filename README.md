@@ -17,7 +17,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 
 ## Features
 
-- Drag pieces with mouse, touch, or pen (pointer events); tap 🔄 on a tray piece to rotate it 90° before placing
+- Drag pieces with mouse, touch, or pen (pointer events)
 - Row/column clears, combo multiplier, and score popups
 - While dragging, cells that would complete a line light up so you can plan ahead
 - Clearing the entire board earns a Perfect Clear bonus — dealing quietly favors hands that can finish one off once the board is already close to empty
@@ -32,8 +32,12 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
 - How to Play (❓, on the title screen) walks through the rules and every feature above
 - Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak, today's best score, total time played)
-- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, and finishing a game without Undo
+- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, finishing a game without Undo, completing a Daily Challenge, and scoring 200+ on the Mini board — with a live "X / Y unlocked" count in the Badges screen
 - A live fill meter shows how full the board is, shifting from green to red as things get risky, with a pulsing board outline once it's critically full
+- Daily Challenge (📅, on the title screen) deals the same seeded sequence of pieces to everyone on a given day, with its own personal-best tracker
+- Board Size (Settings) switches between Classic 8×8 and a faster Mini 6×6 board
+- A bigger celebration — toast + confetti — every 5 combo tier (x5, x10, x15…)
+- Backup / Restore (💾, in Settings) exports all your progress as a copyable text code, and can restore it back in on any device that code is pasted into
 - Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score or unlock a badge
 - Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
