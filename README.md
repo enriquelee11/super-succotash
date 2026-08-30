@@ -17,7 +17,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 
 ## Features
 
-- Drag pieces with mouse, touch, or pen (pointer events)
+- Drag pieces with mouse, touch, or pen (pointer events); tap 🔄 on a tray piece to rotate it 90° before placing
 - Row/column clears, combo multiplier, and score popups
 - While dragging, cells that would complete a line light up so you can plan ahead
 - Clearing the entire board earns a Perfect Clear bonus — dealing quietly favors hands that can finish one off once the board is already close to empty
@@ -27,11 +27,13 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Piece colors automatically match whichever theme is active — pick a theme and the blocks follow, unless you've manually customized them
 - Customizable block colors (🎨), with a reset-to-theme-defaults option
 - Zen Mode (🧘, in Settings) removes the fail state — a hand with nowhere to go quietly reshuffles instead of ending the game
+- Hard Mode (💀, in Settings) disables Undo and Reroll for a stricter, no-safety-net challenge
 - Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
-- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak, today's best score)
-- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, and finishing a game without Undo
-- A live fill meter shows how full the board is, shifting from green to red as things get risky
+- How to Play (❓, on the title screen) walks through the rules and every feature above
+- Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak, today's best score, total time played)
+- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, and finishing a game without Undo
+- A live fill meter shows how full the board is, shifting from green to red as things get risky, with a pulsing board outline once it's critically full
 - Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score or unlock a badge
 - Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
