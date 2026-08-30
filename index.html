@@ -88,12 +88,15 @@
   .captured-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
     min-height: 26px;
     width: min(92vw, 520px);
-    font-size: 20px;
     color: var(--text-dim);
-    letter-spacing: -2px;
+  }
+  .captured-piece {
+    width: 16px;
+    height: 16px;
+    display: block;
   }
   .captured-row .adv {
     margin-left: auto;
@@ -187,13 +190,14 @@
     pointer-events: none;
   }
   .piece {
-    font-size: clamp(24px, 8.5vw, 46px);
-    line-height: 1;
+    width: clamp(24px, 8.5vw, 46px);
+    height: clamp(24px, 8.5vw, 46px);
     position: relative;
     z-index: 2;
     pointer-events: none;
     transition: transform 0.08s ease;
   }
+  .piece-icon { width: 100%; height: 100%; display: block; }
   .white-piece { color: var(--white-piece); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.75)); }
   .black-piece { color: var(--black-piece); filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
   .square:hover .piece { transform: scale(1.06); }
@@ -417,10 +421,9 @@
   .promo-box p { margin: 0 0 10px; font-size: 13px; color: var(--text-dim); }
   .promo-choices { display: flex; gap: 8px; }
   .promo-choices button {
-    font-size: 30px;
-    padding: 6px 10px;
-    line-height: 1;
+    padding: 8px;
   }
+  .promo-choices .piece-icon { width: 30px; height: 30px; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
 
   .footer-hint {
     text-align: center;
@@ -915,13 +918,65 @@
 
   /* ============================== UI STATE ============================== */
 
-  // U+FE0E forces monochrome text presentation; without it some platforms render
-  // the pawn glyphs (and only the pawns) as fixed-color emoji, ignoring `color`.
-  const VS15 = '︎';
-  const PIECE_UNICODE = {
-    w: { k: '♔' + VS15, q: '♕' + VS15, r: '♖' + VS15, b: '♗' + VS15, n: '♘' + VS15, p: '♙' + VS15 },
-    b: { k: '♚' + VS15, q: '♛' + VS15, r: '♜' + VS15, b: '♝' + VS15, n: '♞' + VS15, p: '♟' + VS15 },
+  // Pieces are drawn as inline SVG rather than Unicode glyphs: some platforms
+  // render the chess characters (the pawns especially) as fixed-color emoji
+  // that ignore CSS color, so text glyphs can't be reliably recolored. SVG
+  // with fill="currentColor" always follows the .white-piece/.black-piece
+  // color, on every browser and OS.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const BASE_SHAPE = { tag: 'rect', attrs: { x: '9', y: '35', width: '27', height: '5', rx: '2' } };
+  const PIECE_SHAPES = {
+    p: [
+      { tag: 'circle', attrs: { cx: '22.5', cy: '13', r: '6.5' } },
+      { tag: 'path', attrs: { d: 'M14.5,35 C14.5,24 18,19 22.5,19 C27,19 30.5,24 30.5,35 Z' } },
+      BASE_SHAPE,
+    ],
+    r: [
+      { tag: 'rect', attrs: { x: '13', y: '18', width: '19', height: '17', rx: '1.5' } },
+      { tag: 'rect', attrs: { x: '12', y: '16', width: '21', height: '3', rx: '1' } },
+      { tag: 'rect', attrs: { x: '12', y: '8', width: '5', height: '10', rx: '1' } },
+      { tag: 'rect', attrs: { x: '20', y: '8', width: '5', height: '10', rx: '1' } },
+      { tag: 'rect', attrs: { x: '28', y: '8', width: '5', height: '10', rx: '1' } },
+      BASE_SHAPE,
+    ],
+    n: [
+      { tag: 'path', attrs: { d: 'M13,35 L13,27 L19,17 L16,12 L21,6 L26,10 L24,14 L31,13 L29,18 L34,20 L33,35 Z' } },
+      BASE_SHAPE,
+    ],
+    b: [
+      { tag: 'circle', attrs: { cx: '22.5', cy: '8', r: '2.6' } },
+      { tag: 'path', attrs: { d: 'M13,35 C13,22 17,15 22.5,15 C28,15 32,22 32,35 Z' } },
+      BASE_SHAPE,
+    ],
+    q: [
+      { tag: 'path', attrs: { d: 'M11,20 L15,9 L19,17 L22.5,7 L26,17 L30,9 L34,20 L31,35 L14,35 Z' } },
+      { tag: 'circle', attrs: { cx: '15', cy: '9', r: '1.6' } },
+      { tag: 'circle', attrs: { cx: '22.5', cy: '7', r: '1.8' } },
+      { tag: 'circle', attrs: { cx: '30', cy: '9', r: '1.6' } },
+      BASE_SHAPE,
+    ],
+    k: [
+      { tag: 'rect', attrs: { x: '21', y: '3', width: '3', height: '8', rx: '1' } },
+      { tag: 'rect', attrs: { x: '17.5', y: '6', width: '10', height: '3', rx: '1' } },
+      { tag: 'rect', attrs: { x: '13', y: '13', width: '19', height: '4', rx: '1.5' } },
+      { tag: 'path', attrs: { d: 'M14,35 L13,17 L32,17 L31,35 Z' } },
+      BASE_SHAPE,
+    ],
   };
+
+  function createPieceIcon(type) {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 45 45');
+    svg.setAttribute('fill', 'currentColor');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('piece-icon');
+    PIECE_SHAPES[type].forEach(shape => {
+      const el = document.createElementNS(SVG_NS, shape.tag);
+      Object.entries(shape.attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      svg.appendChild(el);
+    });
+    return svg;
+  }
   const INITIAL_COUNTS = { p: 8, n: 2, b: 2, r: 2, q: 1 };
   const TIER_LABELS = [
     [400, 'Beginner'], [800, 'Novice'], [1200, 'Intermediate'], [1600, 'Advanced'], [2001, 'Expert'],
@@ -1255,7 +1310,7 @@
       if (piece) {
         const span = document.createElement('span');
         span.className = 'piece ' + (piece.color === 'w' ? 'white-piece' : 'black-piece');
-        span.textContent = PIECE_UNICODE[piece.color][piece.type];
+        span.appendChild(createPieceIcon(piece.type));
         div.appendChild(span);
       }
       const screenRow = Math.floor(pos / 8), screenCol = pos % 8;
@@ -1303,14 +1358,16 @@
     topEl.querySelectorAll('.pc').forEach(n => n.remove());
     blackCaptured.forEach(t => {
       const s = document.createElement('span');
-      s.className = 'pc';
-      s.textContent = PIECE_UNICODE.b[t];
+      s.className = 'pc black-piece';
+      s.appendChild(createPieceIcon(t));
+      s.lastChild.classList.add('captured-piece');
       bottomEl.insertBefore(s, bottomEl.firstChild);
     });
     whiteCaptured.forEach(t => {
       const s = document.createElement('span');
-      s.className = 'pc';
-      s.textContent = PIECE_UNICODE.w[t];
+      s.className = 'pc white-piece';
+      s.appendChild(createPieceIcon(t));
+      s.lastChild.classList.add('captured-piece');
       topEl.insertBefore(s, topEl.firstChild);
     });
     advBottom.textContent = diff > 0 ? '+' + diff : '';
@@ -1411,7 +1468,7 @@
     promoChoices.innerHTML = '';
     ['q', 'r', 'b', 'n'].forEach(t => {
       const btn = document.createElement('button');
-      btn.textContent = PIECE_UNICODE[color][t];
+      btn.appendChild(createPieceIcon(t));
       btn.className = color === 'w' ? 'white-piece' : 'black-piece';
       btn.addEventListener('click', () => {
         promoOverlay.classList.add('hidden');
