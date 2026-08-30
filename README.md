@@ -23,8 +23,9 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Clearing the entire board earns a Perfect Clear bonus
 - Undo (↩️) reverts your last placement, as long as it didn't clear a line
 - Reroll (🔀) swaps your current three pieces for new ones — one free use per game
-- Settings menu (⚙️) with 7 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Sunrise, Pink Lemonade, Midnight), sound/haptics toggles, and a two-tap "reset all progress" option
-- Customizable block colors (🎨), with a reset-to-defaults option
+- Settings menu (⚙️) with 8 selectable color themes (Peach, Lavender Dream, Minty Fresh, Sunset, Sunrise, Pink Lemonade, Beach, Midnight) plus a fully custom theme you build from 4 picked colors, sound/haptics toggles, and a two-tap "reset all progress" option
+- Piece colors automatically match whichever theme is active — pick a theme and the blocks follow, unless you've manually customized them
+- Customizable block colors (🎨), with a reset-to-theme-defaults option
 - Top-10 named high score leaderboard (🏆), plus session stats (games played, lines cleared, best combo, daily play streak)
 - Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, and a 500+ score
 - A live fill meter shows how full the board is, shifting from green to red as things get risky
@@ -33,6 +34,6 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
 - Share Score copies a shareable result to your clipboard from the game-over screen
 - Home button on the game-over screen to return to the title without restarting
-- Warm pastel visual theme by default, with chunky, blocky display type and 6 alternate themes to pick from
+- Warm pastel visual theme by default, with chunky, blocky display type, 7 alternate preset themes, and a build-your-own custom theme
 - All game data (high scores, stats, preferences) saved locally per-browser (`localStorage`) — nothing leaves your device
 - Fully responsive, single-file, no external dependencies beyond Google Fonts

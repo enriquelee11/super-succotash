@@ -9,6 +9,13 @@
   try {
     var t = localStorage.getItem('blockBlastTheme');
     if (t && t !== 'peach') document.documentElement.setAttribute('data-theme', t);
+    if (t === 'custom') {
+      var raw = JSON.parse(localStorage.getItem('blockBlastCustomTheme') || 'null');
+      if (raw && raw.vars) {
+        var style = document.documentElement.style;
+        Object.keys(raw.vars).forEach(function (k) { style.setProperty(k, raw.vars[k]); });
+      }
+    }
   } catch (e) {}
 })();
 </script>
@@ -98,6 +105,18 @@
     --page-bg: #fff2c9; --overlay-bg: rgba(255,252,242,0.94);
     --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(230,100,150,0.35);
     --heading-shadow: rgba(180,50,100,0.25);
+  }
+  [data-theme="beach"] {
+    --card-top: #9fd8f0; --card-mid: #4fa8c9; --card-bottom: #e8d4a0;
+    --screen: #fdf8ef; --screen-edge: #f0e2c0;
+    --ink: #3a5a6b; --ink-bright: #1f3a48; --ink-dim: #8aa5ad;
+    --accent: #2a9fb0; --accent-deep: #1c7e8c;
+    --accent2: #e0a850; --accent2-deep: #c2872f;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #eef6f7; --cell-border: rgba(60,120,140,0.18);
+    --page-bg: #cfe8f0; --overlay-bg: rgba(253,248,239,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(80,140,160,0.35);
+    --heading-shadow: rgba(30,70,90,0.25);
   }
   [data-theme="midnight"] {
     --card-top: #2e2a45; --card-mid: #24213a; --card-bottom: #1b1830;
@@ -606,6 +625,18 @@
   .theme-swatch.selected {
     border-color: var(--accent-deep);
   }
+  .custom-theme-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+  }
+  .custom-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
   .settings-row {
     display: flex;
     align-items: center;
@@ -793,9 +824,10 @@
           <div class="settings-section">
             <span class="settings-label">THEME</span>
             <div class="theme-grid" id="themeGrid"></div>
+            <button class="action secondary" id="editCustomThemeBtn">🖌️ EDIT CUSTOM THEME</button>
           </div>
           <div class="settings-section">
-            <button class="action secondary" id="settingsColorsBtn">🎨 CUSTOMIZE COLORS</button>
+            <button class="action secondary" id="settingsColorsBtn">🎨 CUSTOMIZE PIECE COLORS</button>
           </div>
           <div class="settings-row">
             <span>SOUND</span>
@@ -809,6 +841,15 @@
             <button class="action danger-action" id="resetProgressBtn">RESET ALL PROGRESS</button>
           </div>
           <button class="action" id="closeSettingsBtn">DONE</button>
+        </div>
+
+        <div id="customThemeOverlay" class="overlay hidden">
+          <h2 class="display-font">CUSTOM<br/>THEME</h2>
+          <p>PICK 4 COLORS — THE REST OF THE LOOK IS BUILT AROUND THEM. PIECE COLORS UPDATE TO MATCH TOO.</p>
+          <div class="custom-theme-grid" id="customThemeGrid"></div>
+          <div class="colors-actions">
+            <button class="action" id="closeCustomThemeBtn">DONE</button>
+          </div>
         </div>
       </div>
     </div>
@@ -845,6 +886,134 @@
   ];
   const DEFAULT_HEXES = ['#ff8fa3', '#7fdcb0', '#8fcbef', '#ffd66b', '#c9b6f2', '#ffb37a', '#7fd9d4', '#f4a6c9'];
 
+  // --- Color math (used by the custom theme builder and its matching piece palette) ---
+  function hexToHsl(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s;
+    const l = (max + min) / 2;
+    if (max === min) { h = s = 0; } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+  function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    l = Math.max(0, Math.min(100, l)) / 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; } else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; } else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; } else { r = c; g = 0; b = x; }
+    const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  // --- Theme ---
+  // Every theme carries its own default piece palette so pieces read as part of
+  // the theme; picking a theme applies its palette unless the player has
+  // manually customized piece colors (in which case that choice is kept).
+  const THEME_KEY = 'blockBlastTheme';
+  const THEMES = [
+    { id: 'peach', name: 'Peach', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'],
+      palette: ['#ff8fa3', '#7fdcb0', '#8fcbef', '#ffd66b', '#c9b6f2', '#ffb37a', '#7fd9d4', '#f4a6c9'] },
+    { id: 'lavender', name: 'Lavender Dream', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'],
+      palette: ['#9c7fe0', '#7fb8e0', '#c9a8f0', '#7fd9d4', '#f2a6d0', '#b39ddb', '#8fcbef', '#e0c3fc'] },
+    { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'],
+      palette: ['#4fb98a', '#7fd9d4', '#a8e0c3', '#ffd66b', '#8fcbef', '#6fc9a0', '#c9e8a0', '#5ecfc0'] },
+    { id: 'sunset', name: 'Sunset', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'],
+      palette: ['#ff5c8a', '#ff9d4d', '#ffd166', '#ff7eb3', '#ffb347', '#ff8a65', '#ffcc80', '#ff6f91'] },
+    { id: 'sunrise', name: 'Sunrise', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'],
+      palette: ['#7fa8e8', '#f28ec0', '#ffdd8a', '#a9c8f2', '#f2b4d0', '#8fcbef', '#ffcf9c', '#d7a8e0'] },
+    { id: 'lemonade', name: 'Pink Lemonade', colors: ['#ff6fa8', '#fff4d6', '#ffe14d'],
+      palette: ['#ff4f94', '#ffd43b', '#ff85b3', '#ffe066', '#ff6fa8', '#fff066', '#ff99c8', '#ffdd55'] },
+    { id: 'beach', name: 'Beach', colors: ['#9fd8f0', '#4fa8c9', '#e8d4a0'],
+      palette: ['#4a90c2', '#2ec4b6', '#e8d4a0', '#ff9f6b', '#ffd6a5', '#8ecae6', '#c9a66b', '#f4e04d'] },
+    { id: 'custom', name: 'Custom' },
+    { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'],
+      palette: ['#8f7fe0', '#5cc8d9', '#ff8fa3', '#7fdcb0', '#ffd66b', '#c9a8f0', '#5aa9e6', '#f4a6c9'] },
+  ];
+  function loadTheme() {
+    const t = localStorage.getItem(THEME_KEY);
+    return THEMES.some(th => th.id === t) ? t : 'peach';
+  }
+  let currentTheme = loadTheme();
+
+  // --- Custom theme: 4 user-picked colors, everything else derived from them ---
+  const CUSTOM_KEY = 'blockBlastCustomTheme';
+  const CUSTOM_DEFAULTS = { top: '#ffb6c1', mid: '#c9b6f2', bottom: '#8ecae6', accent: '#ff6fa8' };
+  const CUSTOM_VAR_KEYS = ['--card-top', '--card-mid', '--card-bottom', '--accent', '--accent-deep',
+    '--accent2', '--accent2-deep', '--screen', '--screen-edge', '--ink', '--ink-bright', '--ink-dim',
+    '--cell-empty', '--cell-border', '--page-bg', '--overlay-bg', '--panel-bg', '--panel-border', '--heading-shadow'];
+  function loadCustomTheme() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(CUSTOM_KEY) || 'null');
+      if (raw && ['top', 'mid', 'bottom', 'accent'].every(k => /^#[0-9a-fA-F]{6}$/.test(raw[k]))) return raw;
+    } catch (e) {}
+    return { ...CUSTOM_DEFAULTS };
+  }
+  let customTheme = loadCustomTheme();
+  function saveCustomTheme() { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customTheme)); }
+
+  function buildCustomPiecePalette(accentHex) {
+    const { h } = hexToHsl(accentHex);
+    const out = [];
+    for (let i = 0; i < 8; i++) out.push(hslToHex(h + i * 45, 68, 64));
+    return out;
+  }
+
+  function computeCustomVars(topHex, midHex, bottomHex, accentHex) {
+    const avg = hexToHsl(midHex);
+    const isDark = avg.l < 45;
+    const accentHsl = hexToHsl(accentHex);
+    const accentDeep = hslToHex(accentHsl.h, accentHsl.s, Math.max(accentHsl.l - 18, 8));
+    const accent2 = hslToHex(accentHsl.h + 40, Math.max(accentHsl.s - 10, 30), Math.min(accentHsl.l + 8, 80));
+    const accent2Deep = hslToHex(accentHsl.h + 40, Math.max(accentHsl.s - 10, 30), Math.max(accentHsl.l - 14, 15));
+    return {
+      '--card-top': topHex, '--card-mid': midHex, '--card-bottom': bottomHex,
+      '--accent': accentHex, '--accent-deep': accentDeep,
+      '--accent2': accent2, '--accent2-deep': accent2Deep,
+      '--screen': hslToHex(avg.h, Math.min(avg.s, 30), isDark ? 14 : 98),
+      '--screen-edge': hslToHex(avg.h, Math.min(avg.s, 30), isDark ? 20 : 92),
+      '--ink': hslToHex(avg.h, Math.min(avg.s + 15, 40), isDark ? 75 : 38),
+      '--ink-bright': hslToHex(avg.h, Math.min(avg.s + 15, 45), isDark ? 92 : 22),
+      '--ink-dim': hslToHex(avg.h, Math.min(avg.s, 30), isDark ? 55 : 65),
+      '--cell-empty': hslToHex(avg.h, Math.min(avg.s, 25), isDark ? 22 : 94),
+      '--cell-border': isDark ? 'rgba(200,190,230,0.2)' : 'rgba(120,100,120,0.18)',
+      '--page-bg': hslToHex(avg.h, Math.min(avg.s, 35), isDark ? 8 : 90),
+      '--overlay-bg': isDark ? 'rgba(20,18,25,0.94)' : 'rgba(255,252,248,0.94)',
+      '--panel-bg': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.6)',
+      '--panel-border': isDark ? 'rgba(200,190,230,0.25)' : 'rgba(165,145,160,0.35)',
+      '--heading-shadow': isDark ? 'rgba(0,0,0,0.4)' : 'rgba(120,90,110,0.25)',
+    };
+  }
+  function applyCustomThemeVars() {
+    const vars = computeCustomVars(customTheme.top, customTheme.mid, customTheme.bottom, customTheme.accent);
+    const style = document.documentElement.style;
+    Object.keys(vars).forEach(k => style.setProperty(k, vars[k]));
+    customTheme.vars = vars;
+    saveCustomTheme();
+  }
+  function clearCustomThemeVars() {
+    const style = document.documentElement.style;
+    CUSTOM_VAR_KEYS.forEach(k => style.removeProperty(k));
+  }
+
+  function themeDefaultPalette(id) {
+    if (id === 'custom') return buildCustomPiecePalette(customTheme.accent);
+    const theme = THEMES.find(t => t.id === id) || THEMES[0];
+    return theme.palette.slice();
+  }
+
   function hexToRgba(hex, alpha) {
     const n = parseInt(hex.slice(1), 16);
     const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -855,19 +1024,35 @@
   }
 
   const PALETTE_KEY = 'blockBlastPalette';
+  const PALETTE_CUSTOMIZED_KEY = 'blockBlastPaletteCustomized';
+  let paletteCustomized = localStorage.getItem(PALETTE_CUSTOMIZED_KEY) === '1';
   function loadHexes() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(PALETTE_KEY) || 'null');
-      if (Array.isArray(raw) && raw.length === DEFAULT_HEXES.length && raw.every(h => /^#[0-9a-fA-F]{6}$/.test(h))) return raw;
-    } catch (e) {}
-    return DEFAULT_HEXES.slice();
+    if (paletteCustomized) {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PALETTE_KEY) || 'null');
+        if (Array.isArray(raw) && raw.length === DEFAULT_HEXES.length && raw.every(h => /^#[0-9a-fA-F]{6}$/.test(h))) return raw;
+      } catch (e) {}
+    }
+    return themeDefaultPalette(currentTheme);
   }
   let currentHexes = loadHexes();
   let PALETTE = buildPalette(currentHexes);
 
-  function applyPalette() {
+  // Pass markCustomized when the player hand-picks a color, so it sticks
+  // across theme switches instead of being overwritten by the theme's default.
+  function applyPalette(markCustomized) {
+    if (markCustomized) {
+      paletteCustomized = true;
+      localStorage.setItem(PALETTE_CUSTOMIZED_KEY, '1');
+    }
     localStorage.setItem(PALETTE_KEY, JSON.stringify(currentHexes));
     PALETTE = buildPalette(currentHexes);
+  }
+
+  function syncPaletteToTheme() {
+    if (paletteCustomized) return;
+    currentHexes = themeDefaultPalette(currentTheme);
+    applyPalette();
   }
 
   const HS_KEY = 'blockBlastHighScores';
@@ -1005,6 +1190,8 @@
   const soundToggle = document.getElementById('soundToggle');
   const hapticsToggle = document.getElementById('hapticsToggle');
   const resetProgressBtn = document.getElementById('resetProgressBtn');
+  const customThemeOverlay = document.getElementById('customThemeOverlay');
+  const customThemeGrid = document.getElementById('customThemeGrid');
 
   let board, cells, tray, score, combo, running, gameOver;
   let undoSnapshot = null;
@@ -1045,27 +1232,19 @@
     stats.lastPlayedDate = today;
   }
 
-  // --- Theme ---
-  const THEME_KEY = 'blockBlastTheme';
-  const THEMES = [
-    { id: 'peach', name: 'Peach', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'] },
-    { id: 'lavender', name: 'Lavender Dream', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'] },
-    { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'] },
-    { id: 'sunset', name: 'Sunset', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'] },
-    { id: 'sunrise', name: 'Sunrise', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'] },
-    { id: 'lemonade', name: 'Pink Lemonade', colors: ['#ff6fa8', '#fff4d6', '#ffe14d'] },
-    { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'] },
-  ];
-  function loadTheme() {
-    const t = localStorage.getItem(THEME_KEY);
-    return THEMES.some(th => th.id === t) ? t : 'peach';
-  }
-  let currentTheme = loadTheme();
   function applyTheme(id) {
     currentTheme = id;
     localStorage.setItem(THEME_KEY, id);
-    if (id === 'peach') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', id);
+    clearCustomThemeVars();
+    if (id === 'custom') {
+      document.documentElement.setAttribute('data-theme', 'custom');
+      applyCustomThemeVars();
+    } else if (id === 'peach') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', id);
+    }
+    syncPaletteToTheme();
     renderThemeGrid();
   }
   function renderThemeGrid() {
@@ -1074,9 +1253,42 @@
       const btn = document.createElement('button');
       btn.className = 'theme-swatch' + (t.id === currentTheme ? ' selected' : '');
       btn.title = t.name;
-      btn.style.background = `linear-gradient(135deg, ${t.colors[0]} 0%, ${t.colors[1]} 50%, ${t.colors[2]} 100%)`;
+      const colors = t.id === 'custom' ? [customTheme.top, customTheme.mid, customTheme.bottom] : t.colors;
+      btn.style.background = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 50%, ${colors[2]} 100%)`;
       btn.addEventListener('click', () => applyTheme(t.id));
       themeGrid.appendChild(btn);
+    });
+  }
+
+  const CUSTOM_FIELDS = [
+    { key: 'top', label: 'TOP' },
+    { key: 'mid', label: 'MIDDLE' },
+    { key: 'bottom', label: 'BOTTOM' },
+    { key: 'accent', label: 'ACCENT' },
+  ];
+  function renderCustomThemeGrid() {
+    customThemeGrid.innerHTML = '';
+    CUSTOM_FIELDS.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'custom-swatch';
+      const swatch = document.createElement('div');
+      swatch.className = 'swatch';
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = customTheme[f.key];
+      input.addEventListener('input', () => {
+        customTheme[f.key] = input.value;
+        applyCustomThemeVars();
+        renderThemeGrid();
+        if (currentTheme === 'custom') syncPaletteToTheme();
+      });
+      swatch.appendChild(input);
+      const label = document.createElement('span');
+      label.className = 'settings-label';
+      label.textContent = f.label;
+      wrap.appendChild(swatch);
+      wrap.appendChild(label);
+      customThemeGrid.appendChild(wrap);
     });
   }
 
@@ -1533,7 +1745,7 @@
       input.value = hex;
       input.addEventListener('input', () => {
         currentHexes[i] = input.value;
-        applyPalette();
+        applyPalette(true);
       });
       wrap.appendChild(input);
       swatchGrid.appendChild(wrap);
@@ -1748,7 +1960,9 @@
     colorsOverlay.classList.add('hidden');
   });
   document.getElementById('resetColorsBtn').addEventListener('click', () => {
-    currentHexes = DEFAULT_HEXES.slice();
+    paletteCustomized = false;
+    localStorage.removeItem(PALETTE_CUSTOMIZED_KEY);
+    currentHexes = themeDefaultPalette(currentTheme);
     applyPalette();
     renderSwatches();
   });
@@ -1772,6 +1986,15 @@
     renderSwatches();
     colorsOverlay.classList.remove('hidden');
   });
+  document.getElementById('editCustomThemeBtn').addEventListener('click', () => {
+    settingsOverlay.classList.add('hidden');
+    applyTheme('custom');
+    renderCustomThemeGrid();
+    customThemeOverlay.classList.remove('hidden');
+  });
+  document.getElementById('closeCustomThemeBtn').addEventListener('click', () => {
+    customThemeOverlay.classList.add('hidden');
+  });
   soundToggle.addEventListener('click', () => muteBtn.click());
   hapticsToggle.addEventListener('click', () => {
     hapticsEnabled = !hapticsEnabled;
@@ -1792,7 +2015,8 @@
       return;
     }
     clearTimeout(resetConfirmTimeout);
-    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY].forEach(k => localStorage.removeItem(k));
+    [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY, THEME_KEY, CUSTOM_KEY]
+      .forEach(k => localStorage.removeItem(k));
     location.reload();
   });
 
@@ -1804,6 +2028,7 @@
       colorsOverlay.classList.add('hidden');
       achievementsOverlay.classList.add('hidden');
       settingsOverlay.classList.add('hidden');
+      customThemeOverlay.classList.add('hidden');
     } else if (e.key === 'm' || e.key === 'M') {
       muteBtn.click();
     } else if ((e.key === 'u' || e.key === 'U') && !undoBtn.disabled) {
