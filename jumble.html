@@ -87,6 +87,18 @@
     --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(150,130,180,0.35);
     --heading-shadow: rgba(110,90,140,0.25);
   }
+  [data-theme="lemonade"] {
+    --card-top: #ff6fa8; --card-mid: #fff4d6; --card-bottom: #ffe14d;
+    --screen: #fffcf2; --screen-edge: #ffe9c2;
+    --ink: #8a4a68; --ink-bright: #5c2a44; --ink-dim: #c78aa8;
+    --accent: #ff4f94; --accent-deep: #e02f74;
+    --accent2: #ffd43b; --accent2-deep: #e6b800;
+    --danger: #ff5566; --danger-deep: #d93a4d;
+    --cell-empty: #fff3e0; --cell-border: rgba(230,100,140,0.2);
+    --page-bg: #fff2c9; --overlay-bg: rgba(255,252,242,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(230,100,150,0.35);
+    --heading-shadow: rgba(180,50,100,0.25);
+  }
   [data-theme="midnight"] {
     --card-top: #2e2a45; --card-mid: #24213a; --card-bottom: #1b1830;
     --screen: #14121f; --screen-edge: #1e1b30;
@@ -577,12 +589,12 @@
   .theme-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 7px;
     justify-content: center;
   }
   .theme-swatch {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     border-radius: 12px;
     border: 2.5px solid transparent;
     cursor: pointer;
@@ -1041,6 +1053,7 @@
     { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'] },
     { id: 'sunset', name: 'Sunset', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'] },
     { id: 'sunrise', name: 'Sunrise', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'] },
+    { id: 'lemonade', name: 'Pink Lemonade', colors: ['#ff6fa8', '#fff4d6', '#ffe14d'] },
     { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'] },
   ];
   function loadTheme() {
