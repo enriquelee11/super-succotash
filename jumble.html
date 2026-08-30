@@ -854,6 +854,7 @@
     background: linear-gradient(135deg, var(--accent2), var(--accent2-deep));
     color: #fff;
   }
+  .size-btn[disabled] { opacity: 0.4; cursor: default; }
 
   .data-textarea {
     width: 100%;
@@ -1001,6 +1002,10 @@
 
         <div id="scoresOverlay" class="overlay hidden">
           <h2 class="display-font">HIGH<br/>SCORES</h2>
+          <div class="size-toggle" id="scoreSizeToggle">
+            <button class="size-btn" data-size="8">8×8</button>
+            <button class="size-btn" data-size="6">6×6</button>
+          </div>
           <ol id="leaderboard" class="leaderboard"></ol>
           <p id="leaderboardEmpty" class="leaderboard-empty hidden">NO SCORES YET — BE THE FIRST!</p>
           <div class="stats-row" id="statsRow">
@@ -1324,21 +1329,27 @@
     applyPalette();
   }
 
-  const HS_KEY = 'blockBlastHighScores';
+  // Separate leaderboard per board size — a Mini 6x6 score isn't comparable
+  // to a Classic 8x8 one. HS_KEY_8 keeps its original name for backward
+  // compatibility with scores saved before board sizes existed.
+  const HS_KEY_8 = 'blockBlastHighScores';
+  const HS_KEY_6 = 'blockBlastHighScoresMini';
   const MAX_SCORES = 10;
   const PERFECT_CLEAR_BONUS = 150;
 
-  function loadScores() {
+  function hsKeyFor(size) { return size === 6 ? HS_KEY_6 : HS_KEY_8; }
+  function loadScores(size) {
     try {
-      const raw = JSON.parse(localStorage.getItem(HS_KEY) || '[]');
+      const raw = JSON.parse(localStorage.getItem(hsKeyFor(size)) || '[]');
       if (Array.isArray(raw)) return raw;
     } catch (e) {}
     return [];
   }
-  function saveScores(list) {
-    localStorage.setItem(HS_KEY, JSON.stringify(list));
+  function saveScores(size, list) {
+    localStorage.setItem(hsKeyFor(size), JSON.stringify(list));
   }
-  let highScores = loadScores();
+  let highScoresBySize = { 8: loadScores(8), 6: loadScores(6) };
+  function scoresFor(size) { return highScoresBySize[size === 6 ? 6 : 8]; }
 
   function parseShape(rows) {
     const matrix = rows.map(r => r.split('').map(c => c === '1'));
@@ -1535,6 +1546,7 @@
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
   const dailyBadge = document.getElementById('dailyBadge');
   const sizeToggle = document.getElementById('sizeToggle');
+  const scoreSizeToggle = document.getElementById('scoreSizeToggle');
   const dataOverlay = document.getElementById('dataOverlay');
   const dataTextarea = document.getElementById('dataTextarea');
 
@@ -1543,6 +1555,7 @@
   let rerollsLeft = 1;
   let usedUndoThisGame = false;
   let dailyChallengeMode = false;
+  let leaderboardViewSize = SIZE;
   let gameStartTime = 0;
   // Adds elapsed time since the game started to the cumulative play-time stat;
   // called whenever a game stops, whether by losing or quitting.
@@ -1558,8 +1571,12 @@
     return hrs + 'h ' + (mins % 60) + 'm';
   }
 
-  function bestScore() {
-    return highScores.length ? highScores[0].score : 0;
+  function bestScore(size = SIZE) {
+    const list = scoresFor(size);
+    return list.length ? list[0].score : 0;
+  }
+  function overallBestScore() {
+    return Math.max(bestScore(8), bestScore(6));
   }
 
   // --- Session stats ---
@@ -1736,13 +1753,17 @@
   });
 
   // --- Board size (takes effect on the next game start) ---
+  // Locked while a game is running: board/cells are already built to the old
+  // SIZE, so switching mid-game would desync bounds-checking from the DOM.
   function updateSizeToggle() {
     sizeToggle.querySelectorAll('.size-btn').forEach(btn => {
       btn.classList.toggle('selected', parseInt(btn.dataset.size, 10) === SIZE);
+      btn.disabled = running;
     });
   }
   sizeToggle.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (running) return;
       SIZE = parseInt(btn.dataset.size, 10);
       localStorage.setItem(BOARD_SIZE_KEY, String(SIZE));
       updateSizeToggle();
@@ -1838,7 +1859,7 @@
     { id: 'perfect', emoji: '💎', title: 'PERFECTIONIST', desc: 'Clear the entire board', check: s => s.perfectClears >= 1 },
     { id: 'century', emoji: '💯', title: 'CENTURY CLUB', desc: 'Clear 100 lines total', check: s => s.totalLinesCleared >= 100 },
     { id: 'streak7', emoji: '📅', title: 'WEEK WARRIOR', desc: 'Play 7 days in a row', check: s => s.streak >= 7 },
-    { id: 'highRoller', emoji: '🏆', title: 'HIGH ROLLER', desc: 'Score 500+ in one game', check: () => bestScore() >= 500 },
+    { id: 'highRoller', emoji: '🏆', title: 'HIGH ROLLER', desc: 'Score 500+ in one game', check: () => overallBestScore() >= 500 },
     { id: 'zenSeeker', emoji: '🧘', title: 'ZEN SEEKER', desc: 'Play a game in Zen Mode', check: s => (s.zenGamesPlayed || 0) >= 1 },
     { id: 'trendSetter', emoji: '🎨', title: 'TREND SETTER', desc: 'Try 5 different themes', check: s => (s.themesUsedCount || 0) >= 5 },
     { id: 'purist', emoji: '💪', title: 'PURIST', desc: 'Finish a game without using Undo', check: s => (s.gamesWithNoUndo || 0) >= 1 },
@@ -2200,7 +2221,8 @@
     setTimeout(() => {
       finalScoreEl.textContent = `SCORE: ${score}  (BEST: ${bestScore()})`;
       overOverlay.classList.remove('hidden');
-      const qualifies = highScores.length < MAX_SCORES || score > highScores[highScores.length - 1].score;
+      const sizeScores = scoresFor(SIZE);
+      const qualifies = sizeScores.length < MAX_SCORES || score > sizeScores[sizeScores.length - 1].score;
       if (qualifies && score > 0) {
         nameEntry.classList.remove('hidden');
         playAgainBtn.classList.add('hidden');
@@ -2215,14 +2237,17 @@
 
   function submitScore() {
     const name = (nameInput.value || 'PLAYER').trim().slice(0, 12).toUpperCase() || 'PLAYER';
-    const wasNewBest = score > bestScore();
-    highScores.push({ name, score });
-    highScores.sort((a, b) => b.score - a.score);
-    highScores = highScores.slice(0, MAX_SCORES);
-    saveScores(highScores);
+    const wasNewBest = score > bestScore(SIZE);
+    const list = scoresFor(SIZE);
+    list.push({ name, score });
+    list.sort((a, b) => b.score - a.score);
+    highScoresBySize[SIZE === 6 ? 6 : 8] = list.slice(0, MAX_SCORES);
+    saveScores(SIZE, highScoresBySize[SIZE === 6 ? 6 : 8]);
     nameEntry.classList.add('hidden');
     playAgainBtn.classList.remove('hidden');
     updateHud();
+    leaderboardViewSize = SIZE;
+    updateScoreSizeToggle();
     renderLeaderboard(score);
     if (wasNewBest) celebrate(overOverlay);
     checkAchievements();
@@ -2230,13 +2255,14 @@
 
   function renderLeaderboard(highlightScore) {
     leaderboardEl.innerHTML = '';
-    if (!highScores.length) {
+    const list = scoresFor(leaderboardViewSize);
+    if (!list.length) {
       leaderboardEmptyEl.classList.remove('hidden');
       return;
     }
     leaderboardEmptyEl.classList.add('hidden');
     let usedHighlight = false;
-    highScores.forEach((entry, i) => {
+    list.forEach((entry, i) => {
       const li = document.createElement('li');
       const isHighlight = !usedHighlight && highlightScore !== undefined && entry.score === highlightScore;
       if (isHighlight) usedHighlight = true;
@@ -2469,18 +2495,28 @@
     achievementsOverlay.classList.add('hidden');
   });
 
-  document.getElementById('scoresBtn').addEventListener('click', () => {
+  function updateScoreSizeToggle() {
+    scoreSizeToggle.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('selected', parseInt(btn.dataset.size, 10) === leaderboardViewSize);
+    });
+  }
+  scoreSizeToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      leaderboardViewSize = parseInt(btn.dataset.size, 10);
+      updateScoreSizeToggle();
+      renderLeaderboard();
+    });
+  });
+  function openScores() {
     colorsOverlay.classList.add('hidden');
+    leaderboardViewSize = SIZE;
+    updateScoreSizeToggle();
     renderLeaderboard();
     renderStats();
     scoresOverlay.classList.remove('hidden');
-  });
-  document.getElementById('startScoresBtn').addEventListener('click', () => {
-    colorsOverlay.classList.add('hidden');
-    renderLeaderboard();
-    renderStats();
-    scoresOverlay.classList.remove('hidden');
-  });
+  }
+  document.getElementById('scoresBtn').addEventListener('click', openScores);
+  document.getElementById('startScoresBtn').addEventListener('click', openScores);
   document.getElementById('closeScoresBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
   });
@@ -2569,7 +2605,7 @@
 
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
-  const SAVE_DATA_KEYS = [HS_KEY, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
+  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
     THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY];
 
   let resetConfirmTimeout = null;
