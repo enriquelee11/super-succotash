@@ -30,7 +30,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Hard Mode (💀, in Settings) disables Undo and Reroll for a stricter, no-safety-net challenge
 - Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
-- How to Play (❓, on the title screen) walks through the rules and every feature above
+- A clean title screen (Start Game, Daily Challenge) with a separate Menu page (☰) for High Scores, Settings, and How to Play (❓) — keeps the main screen from getting crowded
 - Top-10 named high score leaderboard (🏆) with a separate board for each board size, plus session stats (games played, lines cleared, best combo, daily play streak, today's best score, total time played)
 - Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, finishing a game without Undo, completing a Daily Challenge, a 7-day Daily Challenge streak, and scoring 200+ on the Mini board — with a live "X / Y unlocked" count in the Badges screen
 - A live fill meter shows how full the board is, shifting from green to red as things get risky, with a pulsing board outline once it's critically full

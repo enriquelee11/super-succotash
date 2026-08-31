@@ -974,13 +974,19 @@
 
         <div id="startOverlay" class="overlay">
           <h2 class="display-font">JUMBLE</h2>
-          <p>DRAG PIECES ONTO THE GRID. CLEAR A FULL ROW OR COLUMN TO BLAST IT AWAY. GAME OVER WHEN NOTHING FITS.</p>
+          <p>DRAG PIECES ONTO THE GRID. CLEAR A FULL ROW OR COLUMN TO BLAST IT AWAY.</p>
           <button class="action" id="startBtn">START GAME</button>
           <button class="action secondary" id="dailyChallengeBtn">📅 DAILY CHALLENGE</button>
           <p class="daily-preview" id="dailyPreview"></p>
-          <button class="action secondary" id="startScoresBtn">HIGH SCORES</button>
+          <button class="action secondary" id="openMenuBtn">☰ MENU</button>
+        </div>
+
+        <div id="menuOverlay" class="overlay hidden">
+          <h2 class="display-font">MENU</h2>
+          <button class="action secondary" id="startScoresBtn">🏆 HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
+          <button class="action" id="backFromMenuBtn">← BACK</button>
         </div>
 
         <div id="howToPlayOverlay" class="overlay hidden">
@@ -1576,6 +1582,7 @@
   const hardToggle = document.getElementById('hardToggle');
   const quitBtn = document.getElementById('quitBtn');
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
+  const menuOverlay = document.getElementById('menuOverlay');
   const dailyBadge = document.getElementById('dailyBadge');
   const dailyPreviewEl = document.getElementById('dailyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
@@ -2546,6 +2553,14 @@
     trayEl.classList.remove('hidden');
     reset();
   });
+  document.getElementById('openMenuBtn').addEventListener('click', () => {
+    startOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
+  });
+  document.getElementById('backFromMenuBtn').addEventListener('click', () => {
+    menuOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
   playAgainBtn.addEventListener('click', () => {
     ensureAudio();
     dailyChallengeMode = false;
@@ -2586,18 +2601,24 @@
       renderLeaderboard();
     });
   });
+  // Scores/Settings/How-to-Play are reachable both from the in-game toolbar
+  // and from the title screen's Menu page; this remembers which, so closing
+  // one goes back to the Menu page only when that's really where it came from.
+  let returnToMenu = false;
   function openScores() {
     colorsOverlay.classList.add('hidden');
+    menuOverlay.classList.add('hidden');
     leaderboardViewSize = SIZE;
     updateScoreSizeToggle();
     renderLeaderboard();
     renderStats();
     scoresOverlay.classList.remove('hidden');
   }
-  document.getElementById('scoresBtn').addEventListener('click', openScores);
-  document.getElementById('startScoresBtn').addEventListener('click', openScores);
+  document.getElementById('scoresBtn').addEventListener('click', () => { returnToMenu = false; openScores(); });
+  document.getElementById('startScoresBtn').addEventListener('click', () => { returnToMenu = true; openScores(); });
   document.getElementById('closeScoresBtn').addEventListener('click', () => {
     scoresOverlay.classList.add('hidden');
+    if (returnToMenu) menuOverlay.classList.remove('hidden');
   });
   undoBtn.addEventListener('click', performUndo);
   rerollBtn.addEventListener('click', performReroll);
@@ -2639,6 +2660,7 @@
   // --- Settings ---
   function openSettings() {
     scoresOverlay.classList.add('hidden');
+    menuOverlay.classList.add('hidden');
     renderThemeGrid();
     updateSoundToggle();
     updateHapticsToggle();
@@ -2649,10 +2671,11 @@
     settingsOverlay.classList.remove('hidden');
   }
   function updateSoundToggle() { soundToggle.classList.toggle('on', !muted); }
-  document.getElementById('settingsBtn').addEventListener('click', openSettings);
-  document.getElementById('startSettingsBtn').addEventListener('click', openSettings);
+  document.getElementById('settingsBtn').addEventListener('click', () => { returnToMenu = false; openSettings(); });
+  document.getElementById('startSettingsBtn').addEventListener('click', () => { returnToMenu = true; openSettings(); });
   document.getElementById('closeSettingsBtn').addEventListener('click', () => {
     settingsOverlay.classList.add('hidden');
+    if (returnToMenu) menuOverlay.classList.remove('hidden');
   });
   document.getElementById('settingsColorsBtn').addEventListener('click', () => {
     settingsOverlay.classList.add('hidden');
@@ -2669,10 +2692,12 @@
     customThemeOverlay.classList.add('hidden');
   });
   document.getElementById('howToPlayBtn').addEventListener('click', () => {
+    menuOverlay.classList.add('hidden');
     howToPlayOverlay.classList.remove('hidden');
   });
   document.getElementById('closeHowToPlayBtn').addEventListener('click', () => {
     howToPlayOverlay.classList.add('hidden');
+    menuOverlay.classList.remove('hidden');
   });
   soundToggle.addEventListener('click', () => muteBtn.click());
   hapticsToggle.addEventListener('click', () => {
