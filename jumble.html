@@ -1019,6 +1019,7 @@
   <div class="cabinet">
     <div class="marquee display-font">JUMBLE</div>
     <div class="daily-badge hidden" id="dailyBadge">📅 DAILY CHALLENGE</div>
+    <div class="daily-badge hidden" id="modeBadge"></div>
     <div class="hud">
       <span>SCORE<b id="score">0</b></span>
       <span>BEST<b id="best">0</b></span>
@@ -1031,6 +1032,7 @@
       <button class="hud-btn" id="muteBtn" title="Mute">🔊</button>
       <button class="hud-btn" id="scoresBtn" title="High Scores">🏆</button>
       <button class="hud-btn" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="hud-btn" id="pauseBtn" title="Pause" disabled>⏸️</button>
       <button class="hud-btn" id="quitBtn" title="Quit to Home" disabled>🏠</button>
     </div>
     <div class="fill-meter" title="Board fill">
@@ -1106,6 +1108,8 @@
             <div><b id="statDaily">0</b><span>📅 DAILY BEST</span></div>
             <div><b id="statDailyStreak">0</b><span>📅 DAILY STREAK</span></div>
             <div><b id="statSprint">0</b><span>⏱️ SPRINT BEST</span></div>
+            <div><b id="statTimeAttack">0</b><span>⏰ TIME ATTACK BEST</span></div>
+            <div><b id="statSurvival">0</b><span>🌊 LONGEST SURVIVAL</span></div>
           </div>
           <div class="colors-actions">
             <button class="action secondary" id="achievementsBtn">🏅 BADGES</button>
@@ -1160,6 +1164,14 @@
             <button class="toggle-btn" id="sprintToggle" title="Score as high as you can in 30 placements"></button>
           </div>
           <div class="settings-row">
+            <span>⏰ TIME ATTACK</span>
+            <button class="toggle-btn" id="timeAttackToggle" title="Score as high as you can in 2 minutes"></button>
+          </div>
+          <div class="settings-row">
+            <span>🌊 SURVIVAL MODE</span>
+            <button class="toggle-btn" id="survivalToggle" title="The board fills in a little more every few placements — last as long as you can"></button>
+          </div>
+          <div class="settings-row">
             <span>🔲 SHAPE MARKS</span>
             <button class="toggle-btn" id="cbToggle" title="Colorblind-friendly shape markers on pieces"></button>
           </div>
@@ -1197,6 +1209,11 @@
             <button class="action" id="importDataBtn">📥 RESTORE FROM CODE</button>
           </div>
           <button class="action secondary" id="closeDataBtn">CLOSE</button>
+        </div>
+
+        <div id="pauseOverlay" class="overlay hidden">
+          <h2 class="display-font">PAUSED</h2>
+          <button class="action" id="resumeBtn">▶ RESUME</button>
         </div>
       </div>
     </div>
@@ -1656,6 +1673,8 @@
   const statDailyEl = document.getElementById('statDaily');
   const statDailyStreakEl = document.getElementById('statDailyStreak');
   const statSprintEl = document.getElementById('statSprint');
+  const statTimeAttackEl = document.getElementById('statTimeAttack');
+  const statSurvivalEl = document.getElementById('statSurvival');
   const achProgressEl = document.getElementById('achProgress');
   const streakHudEl = document.getElementById('streakHud');
   const toastEl = document.getElementById('toast');
@@ -1674,10 +1693,15 @@
   const cbToggle = document.getElementById('cbToggle');
   const hardToggle = document.getElementById('hardToggle');
   const sprintToggle = document.getElementById('sprintToggle');
+  const timeAttackToggle = document.getElementById('timeAttackToggle');
+  const survivalToggle = document.getElementById('survivalToggle');
   const quitBtn = document.getElementById('quitBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseOverlay = document.getElementById('pauseOverlay');
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
   const menuOverlay = document.getElementById('menuOverlay');
   const dailyBadge = document.getElementById('dailyBadge');
+  const modeBadge = document.getElementById('modeBadge');
   const dailyPreviewEl = document.getElementById('dailyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
   const scoreSizeToggle = document.getElementById('scoreSizeToggle');
@@ -1744,6 +1768,7 @@
       dailyBest: 0, dailyBestDate: null, dailyChallengesCompleted: 0, bestMiniScore: 0,
       dailyStreak: 0, lastDailyDate: null,
       luckyPiecesPlaced: 0, bestSprintScore: 0, sprintsCompleted: 0,
+      bestTimeAttackScore: 0, timeAttacksCompleted: 0, longestSurvival: 0,
       scoreHistory8: [], scoreHistory6: [],
     };
   }
@@ -1789,6 +1814,8 @@
     statDailyEl.textContent = dailyBest();
     statDailyStreakEl.textContent = stats.dailyStreak || 0;
     statSprintEl.textContent = stats.bestSprintScore || 0;
+    statTimeAttackEl.textContent = stats.bestTimeAttackScore || 0;
+    statSurvivalEl.textContent = stats.longestSurvival || 0;
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
@@ -1930,6 +1957,96 @@
     updateSprintToggle();
   });
 
+  // --- Time Attack: score as high as possible before a countdown runs out ---
+  const TIME_ATTACK_KEY = 'blockBlastTimeAttack';
+  const TIME_ATTACK_DURATION = 120; // seconds
+  let timeAttackMode = localStorage.getItem(TIME_ATTACK_KEY) === '1';
+  let timeAttackEndsAt = 0;
+  function updateTimeAttackToggle() { timeAttackToggle.classList.toggle('on', timeAttackMode); }
+  timeAttackToggle.addEventListener('click', () => {
+    timeAttackMode = !timeAttackMode;
+    localStorage.setItem(TIME_ATTACK_KEY, timeAttackMode ? '1' : '0');
+    updateTimeAttackToggle();
+  });
+
+  // --- Survival Mode: the board rises with extra filled cells over time ---
+  const SURVIVAL_KEY = 'blockBlastSurvivalMode';
+  const TIDE_INTERVAL = 5; // placements between rises
+  let survivalMode = localStorage.getItem(SURVIVAL_KEY) === '1';
+  function updateSurvivalToggle() { survivalToggle.classList.toggle('on', survivalMode); }
+  survivalToggle.addEventListener('click', () => {
+    survivalMode = !survivalMode;
+    localStorage.setItem(SURVIVAL_KEY, survivalMode ? '1' : '0');
+    updateSurvivalToggle();
+  });
+  function riseTide() {
+    const cellsToAdd = Math.max(1, Math.round(SIZE * 0.25));
+    let added = 0, attempts = 0;
+    while (added < cellsToAdd && attempts < 100) {
+      attempts++;
+      const r = Math.floor(Math.random() * SIZE);
+      const c = Math.floor(Math.random() * SIZE);
+      if (!board[r][c]) {
+        board[r][c] = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        added++;
+      }
+    }
+    renderBoard();
+    showToast('🌊 THE TIDE RISES');
+  }
+
+  // --- Pause (Time Attack only — freezes the countdown) ---
+  let paused = false;
+  let pausedRemainingMs = 0;
+  function updatePauseButton() { pauseBtn.disabled = !running || !timeAttackMode; }
+  function pauseGame() {
+    if (!timeAttackMode || !running || paused) return;
+    paused = true;
+    pausedRemainingMs = timeAttackEndsAt - Date.now();
+    stopGameTick();
+    pauseOverlay.classList.remove('hidden');
+  }
+  function resumeGame() {
+    if (!paused) return;
+    paused = false;
+    timeAttackEndsAt = Date.now() + pausedRemainingMs;
+    pauseOverlay.classList.add('hidden');
+    startGameTick();
+  }
+
+  // --- Live mode status ticker (Sprint/Time Attack/Survival HUD badge) ---
+  let gameTickInterval = null;
+  function formatClock(totalSec) {
+    const mm = Math.floor(totalSec / 60);
+    const ss = String(totalSec % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+  function updateModeBadge() {
+    const parts = [];
+    if (sprintMode) parts.push(`⏱️ SPRINT ${placementsThisGame}/${SPRINT_LIMIT}`);
+    if (timeAttackMode) {
+      const remaining = Math.max(0, Math.ceil((timeAttackEndsAt - Date.now()) / 1000));
+      parts.push(`⏰ ${formatClock(remaining)}`);
+    }
+    if (survivalMode) parts.push(`🌊 SURVIVAL ${placementsThisGame}`);
+    modeBadge.textContent = parts.join(' · ');
+    modeBadge.classList.toggle('hidden', parts.length === 0);
+  }
+  function startGameTick() {
+    stopGameTick();
+    gameTickInterval = setInterval(() => {
+      if (!running || paused) return;
+      updateModeBadge();
+      if (timeAttackMode && Date.now() >= timeAttackEndsAt) {
+        stopGameTick();
+        endGame();
+      }
+    }, 250);
+  }
+  function stopGameTick() {
+    if (gameTickInterval) { clearInterval(gameTickInterval); gameTickInterval = null; }
+  }
+
   // --- Board size (takes effect on the next game start) ---
   // Locked while a game is running: board/cells are already built to the old
   // SIZE, so switching mid-game would desync bounds-checking from the DOM.
@@ -2047,6 +2164,8 @@
     { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', points: 25, check: s => (s.bestMiniScore || 0) >= 200 },
     { id: 'luckyCollector', emoji: '🍀', title: 'LUCKY COLLECTOR', desc: 'Place 10 Lucky Pieces', points: 20, check: s => (s.luckyPiecesPlaced || 0) >= 10 },
     { id: 'sprinter', emoji: '⏱️', title: 'SPRINTER', desc: 'Finish a Sprint run', points: 20, check: s => (s.sprintsCompleted || 0) >= 1 },
+    { id: 'clockBeater', emoji: '⏰', title: 'AGAINST THE CLOCK', desc: 'Finish a Time Attack run', points: 20, check: s => (s.timeAttacksCompleted || 0) >= 1 },
+    { id: 'tideSurvivor', emoji: '🌊', title: 'TIDE SURVIVOR', desc: 'Survive 50 placements in Survival Mode', points: 30, check: s => (s.longestSurvival || 0) >= 50 },
   ];
   const RANKS = [
     { title: 'ROOKIE', threshold: 0 },
@@ -2138,7 +2257,7 @@
   }
 
   function performUndo() {
-    if (!undoSnapshot || !running || hardMode) return;
+    if (!undoSnapshot || !running || hardMode || paused) return;
     board = undoSnapshot.board.map(r => r.slice());
     tray = undoSnapshot.tray.slice();
     score = undoSnapshot.score;
@@ -2161,7 +2280,7 @@
   }
 
   function performReroll() {
-    if (rerollsLeft <= 0 || !running || hardMode) return;
+    if (rerollsLeft <= 0 || !running || hardMode || paused) return;
     rerollsLeft--;
     tray = randomTray();
     // A fresh tray invalidates any pending undo (its snapshot references the old pieces).
@@ -2205,6 +2324,9 @@
     rerollsLeft = (dailyChallengeMode && dailyModifier && dailyModifier.id === 'noReroll') ? 0 : 1;
     usedUndoThisGame = false;
     placementsThisGame = 0;
+    paused = false;
+    pauseOverlay.classList.add('hidden');
+    timeAttackEndsAt = timeAttackMode ? Date.now() + TIME_ATTACK_DURATION * 1000 : 0;
     gameStartTime = Date.now();
     dailyBadge.classList.toggle('hidden', !dailyChallengeMode);
     if (dailyChallengeMode && dailyModifier) {
@@ -2214,6 +2336,9 @@
     updateUndoButton();
     updateRerollButton();
     updateQuitButton();
+    updatePauseButton();
+    updateModeBadge();
+    startGameTick();
     renderBoard();
     renderTray();
     stats.gamesPlayed++;
@@ -2397,9 +2522,13 @@
   }
 
   function afterMove() {
+    updateModeBadge();
     if (sprintMode && placementsThisGame >= SPRINT_LIMIT) {
       endGame();
       return;
+    }
+    if (survivalMode && placementsThisGame > 0 && placementsThisGame % TIDE_INTERVAL === 0) {
+      riseTide();
     }
     if (tray.every(p => p === null)) {
       tray = randomTray();
@@ -2442,11 +2571,19 @@
     if (sprintMode) {
       if (score > (stats.bestSprintScore || 0)) stats.bestSprintScore = score;
       if (score > 0) stats.sprintsCompleted = (stats.sprintsCompleted || 0) + 1;
+    } else if (timeAttackMode) {
+      if (score > (stats.bestTimeAttackScore || 0)) stats.bestTimeAttackScore = score;
+      if (score > 0) stats.timeAttacksCompleted = (stats.timeAttacksCompleted || 0) + 1;
     } else if (score > 0) {
-      // Sprint runs are a different scale and excluded from this history.
+      // Sprint and Time Attack are a different scale and excluded from this history.
       const histKey = 'scoreHistory' + (SIZE === 6 ? 6 : 8);
       stats[histKey] = (stats[histKey] || []).concat(score).slice(-10);
     }
+    if (survivalMode && placementsThisGame > (stats.longestSurvival || 0)) {
+      stats.longestSurvival = placementsThisGame;
+    }
+    stopGameTick();
+    updatePauseButton();
     accruePlayTime();
     saveStats();
     renderStats();
@@ -2458,12 +2595,15 @@
     setTimeout(() => {
       finalScoreEl.textContent = sprintMode
         ? `SPRINT SCORE: ${score}  (BEST: ${stats.bestSprintScore || 0})`
+        : timeAttackMode
+        ? `TIME ATTACK SCORE: ${score}  (BEST: ${stats.bestTimeAttackScore || 0})`
         : `SCORE: ${score}  (BEST: ${bestScore()})`;
       overOverlay.classList.remove('hidden');
       const sizeScores = scoresFor(SIZE);
-      // Sprint runs (fixed placement count) aren't comparable to open-ended
-      // play, so they never enter the regular leaderboard.
-      const qualifies = !sprintMode && (sizeScores.length < MAX_SCORES || score > sizeScores[sizeScores.length - 1].score);
+      // Sprint and Time Attack (fixed-length runs) aren't comparable to
+      // open-ended play, so they never enter the regular leaderboard.
+      const qualifies = !sprintMode && !timeAttackMode &&
+        (sizeScores.length < MAX_SCORES || score > sizeScores[sizeScores.length - 1].score);
       if (qualifies && score > 0) {
         nameEntry.classList.remove('hidden');
         playAgainBtn.classList.add('hidden');
@@ -2569,7 +2709,7 @@
 
   function attachDrag(pieceEl, slotEl, slotIndex, piece, cellPx) {
     pieceEl.addEventListener('pointerdown', (e) => {
-      if (!running || tray[slotIndex] !== piece) return;
+      if (!running || paused || tray[slotIndex] !== piece) return;
       e.preventDefault();
       ensureAudio();
       const boardRect = boardEl.getBoundingClientRect();
@@ -2817,15 +2957,23 @@
     running = false;
     undoSnapshot = null;
     boardWrap.classList.remove('danger-pulse');
+    stopGameTick();
+    paused = false;
+    pauseOverlay.classList.add('hidden');
+    modeBadge.classList.add('hidden');
     accruePlayTime();
     saveStats();
     renderStats();
     updateQuitButton();
     updateUndoButton();
     updateRerollButton();
+    updatePauseButton();
     trayEl.classList.add('hidden');
     startOverlay.classList.remove('hidden');
   });
+
+  pauseBtn.addEventListener('click', pauseGame);
+  document.getElementById('resumeBtn').addEventListener('click', resumeGame);
 
   document.getElementById('closeColorsBtn').addEventListener('click', () => {
     colorsOverlay.classList.add('hidden');
@@ -2848,6 +2996,8 @@
     updateZenToggle();
     updateHardToggle();
     updateSprintToggle();
+    updateTimeAttackToggle();
+    updateSurvivalToggle();
     updateCbToggle();
     updateSizeToggle();
     settingsOverlay.classList.remove('hidden');
@@ -2892,7 +3042,7 @@
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
   const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
-    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY];
+    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, TIME_ATTACK_KEY, SURVIVAL_KEY];
 
   let resetConfirmTimeout = null;
   resetProgressBtn.addEventListener('click', () => {
@@ -2965,12 +3115,15 @@
       howToPlayOverlay.classList.add('hidden');
       dataOverlay.classList.add('hidden');
       quitBtn.classList.remove('confirm');
+      if (paused) resumeGame();
     } else if (e.key === 'm' || e.key === 'M') {
       muteBtn.click();
     } else if ((e.key === 'u' || e.key === 'U') && !undoBtn.disabled) {
       performUndo();
     } else if ((e.key === 'r' || e.key === 'R') && !rerollBtn.disabled) {
       performReroll();
+    } else if (e.key === 'p' || e.key === 'P') {
+      if (paused) resumeGame(); else pauseGame();
     }
   });
 

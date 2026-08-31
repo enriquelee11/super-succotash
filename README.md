@@ -29,12 +29,14 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Zen Mode (🧘, in Settings) removes the fail state — a hand with nowhere to go quietly reshuffles instead of ending the game
 - Hard Mode (💀, in Settings) disables Undo and Reroll for a stricter, no-safety-net challenge
 - Sprint Mode (⏱️, in Settings) caps a run at 30 placements — score as high as you can before time's up. Tracks its own best score, separate from the regular leaderboard
+- Time Attack (⏰, in Settings) gives you a 2-minute countdown to score as high as possible, with a pause button (⏸️, or the P key) that freezes the clock mid-run. Tracks its own best score, separate from the regular leaderboard
+- Survival Mode "Rising Tide" (🌊, in Settings) fills a few random cells with obstacles every 5 placements — see how long you can last before the board closes in. Tracks your longest survival streak
 - Lucky Pieces (✨) occasionally show up gold-glowing in the tray and score double when placed
 - Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
 - A clean title screen (Start Game, Daily Challenge) with a separate Menu page (☰) for High Scores, Settings, and How to Play (❓) — keeps the main screen from getting crowded
 - Top-10 named high score leaderboard (🏆) with a separate board for each board size, plus session stats (games played, lines cleared, best combo, daily play streak, today's best score, total time played)
-- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, finishing a game without Undo, completing a Daily Challenge, a 7-day Daily Challenge streak, scoring 200+ on the Mini board, collecting Lucky Pieces, and finishing a Sprint — each worth points toward an overall rank (Rookie through Legend), shown with a live "X / Y unlocked" count in the Badges screen
+- Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, finishing a game without Undo, completing a Daily Challenge, a 7-day Daily Challenge streak, scoring 200+ on the Mini board, collecting Lucky Pieces, finishing a Sprint, beating a Time Attack clock, and surviving 50 placements in Survival Mode — each worth points toward an overall rank (Rookie through Legend), shown with a live "X / Y unlocked" count in the Badges screen
 - A small sparkline of your last 10 scores (per board size) in the High Scores screen
 - A live fill meter shows how full the board is, shifting from green to red as things get risky, with a pulsing board outline once it's critically full
 - Daily Challenge (📅, on the title screen) is a numbered puzzle (like #142) with the same seeded piece sequence for everyone that day, plus a rotating daily twist — Classic, No Reroll, Double Bonus, Head Start (a pre-filled board), or Combo Frenzy — previewed on the title screen before you start. Tracks its own best score and a daily completion streak
@@ -43,7 +45,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Backup / Restore (💾, in Settings) exports all your progress as a copyable text code, and can restore it back in on any device that code is pasted into
 - Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score or unlock a badge
-- Keyboard shortcuts: Esc closes menus, M mutes, U undoes, R rerolls
+- Keyboard shortcuts: Esc closes menus (and resumes if paused), M mutes, U undoes, R rerolls, P pauses/resumes during Time Attack
 - Share Score copies a shareable result to your clipboard from the game-over screen
 - Home button on the game-over screen (or the toolbar Quit button, mid-game) to return to the title without restarting
 - Warm pastel visual theme by default, with chunky, blocky display type, 15 alternate preset themes (including an Accessible theme built on the colorblind-safe Okabe-Ito palette), and a build-your-own custom theme
