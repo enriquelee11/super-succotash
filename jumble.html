@@ -539,7 +539,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /* "safe" keeps content top-aligned (reachable by scroll) once it overflows —
+       plain "center" clips the top, unreachable, when content is taller than the box. */
+    justify-content: safe center;
     gap: 10px;
     background: var(--overlay-bg);
     backdrop-filter: blur(3px);
@@ -910,6 +912,8 @@
 
   .size-toggle {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 4px;
     background: rgba(165,145,160,0.15);
     border-radius: 999px;
@@ -925,6 +929,8 @@
     background: transparent;
     color: var(--ink-dim);
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .size-btn.selected {
     background: linear-gradient(135deg, var(--accent2), var(--accent2-deep));
@@ -1088,6 +1094,12 @@
 
         <div id="scoresOverlay" class="overlay hidden">
           <h2 class="display-font">HIGH<br/>SCORES</h2>
+          <div class="size-toggle" id="modeViewToggle">
+            <button class="size-btn selected" data-mode="classic">CLASSIC</button>
+            <button class="size-btn" data-mode="sprint">SPRINT</button>
+            <button class="size-btn" data-mode="timeAttack">TIMED</button>
+            <button class="size-btn" data-mode="survival">TIDE</button>
+          </div>
           <div class="size-toggle" id="scoreSizeToggle">
             <button class="size-btn" data-size="8">8×8</button>
             <button class="size-btn" data-size="6">6×6</button>
@@ -1461,27 +1473,51 @@
     applyPalette();
   }
 
+  const STATS_KEY = 'blockBlastStats';
+
   // Separate leaderboard per board size — a Mini 6x6 score isn't comparable
-  // to a Classic 8x8 one. HS_KEY_8 keeps its original name for backward
-  // compatibility with scores saved before board sizes existed.
+  // to a Classic 8x8 one — and per special game mode, since a Sprint,
+  // Time Attack, or Survival run isn't comparable to open-ended play either.
+  // HS_KEY_8 keeps its original name for backward compatibility with scores
+  // saved before board sizes existed.
   const HS_KEY_8 = 'blockBlastHighScores';
   const HS_KEY_6 = 'blockBlastHighScoresMini';
+  const HS_KEY_SPRINT = 'blockBlastSprintHighScores';
+  const HS_KEY_TIME_ATTACK = 'blockBlastTimeAttackHighScores';
+  const HS_KEY_SURVIVAL = 'blockBlastSurvivalHighScores';
+  const HS_KEYS = { 8: HS_KEY_8, 6: HS_KEY_6, sprint: HS_KEY_SPRINT, timeAttack: HS_KEY_TIME_ATTACK, survival: HS_KEY_SURVIVAL };
   const MAX_SCORES = 10;
   const PERFECT_CLEAR_BONUS = 150;
 
-  function hsKeyFor(size) { return size === 6 ? HS_KEY_6 : HS_KEY_8; }
-  function loadScores(size) {
+  function loadScores(board) {
     try {
-      const raw = JSON.parse(localStorage.getItem(hsKeyFor(size)) || '[]');
+      const raw = JSON.parse(localStorage.getItem(HS_KEYS[board]) || '[]');
       if (Array.isArray(raw)) return raw;
     } catch (e) {}
     return [];
   }
-  function saveScores(size, list) {
-    localStorage.setItem(hsKeyFor(size), JSON.stringify(list));
+  function saveScores(board, list) {
+    localStorage.setItem(HS_KEYS[board], JSON.stringify(list));
   }
-  let highScoresBySize = { 8: loadScores(8), 6: loadScores(6) };
-  function scoresFor(size) { return highScoresBySize[size === 6 ? 6 : 8]; }
+  // One-time migration: earlier versions tracked a Sprint/Time Attack/Survival
+  // best as a single stat number rather than a named leaderboard. Seed that
+  // old best in as a first entry so upgrading doesn't erase it.
+  function seedFromLegacyStat(board, legacyValue) {
+    const list = loadScores(board);
+    if (list.length === 0 && legacyValue > 0) {
+      list.push({ name: 'YOU', score: legacyValue });
+      saveScores(board, list);
+    }
+    return list;
+  }
+  let highScoresByBoard = {
+    8: loadScores(8),
+    6: loadScores(6),
+    sprint: seedFromLegacyStat('sprint', (loadStats().bestSprintScore || 0)),
+    timeAttack: seedFromLegacyStat('timeAttack', (loadStats().bestTimeAttackScore || 0)),
+    survival: seedFromLegacyStat('survival', (loadStats().longestSurvival || 0)),
+  };
+  function scoresFor(board) { return highScoresByBoard[board] || []; }
 
   function parseShape(rows) {
     const matrix = rows.map(r => r.split('').map(c => c === '1'));
@@ -1726,6 +1762,7 @@
   const dailyPreviewEl = document.getElementById('dailyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
   const scoreSizeToggle = document.getElementById('scoreSizeToggle');
+  const modeViewToggle = document.getElementById('modeViewToggle');
   const dataOverlay = document.getElementById('dataOverlay');
   const dataTextarea = document.getElementById('dataTextarea');
 
@@ -1752,6 +1789,7 @@
     }
   }
   let leaderboardViewSize = SIZE;
+  let leaderboardViewMode = 'classic'; // 'classic' | 'sprint' | 'timeAttack' | 'survival'
   let gameStartTime = 0;
   // Adds elapsed time since the game started to the cumulative play-time stat;
   // called whenever a game stops, whether by losing or quitting.
@@ -1776,7 +1814,6 @@
   }
 
   // --- Session stats ---
-  const STATS_KEY = 'blockBlastStats';
   function loadStats() {
     try {
       const raw = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
@@ -1834,9 +1871,9 @@
     statTimePlayedEl.textContent = formatPlayTime(stats.totalPlayTimeSec || 0);
     statDailyEl.textContent = dailyBest();
     statDailyStreakEl.textContent = stats.dailyStreak || 0;
-    statSprintEl.textContent = stats.bestSprintScore || 0;
-    statTimeAttackEl.textContent = stats.bestTimeAttackScore || 0;
-    statSurvivalEl.textContent = stats.longestSurvival || 0;
+    statSprintEl.textContent = bestScore('sprint');
+    statTimeAttackEl.textContent = bestScore('timeAttack');
+    statSurvivalEl.textContent = bestScore('survival');
   }
 
   // A "day" is counted once per calendar date (UTC), the first time a game
@@ -1971,6 +2008,10 @@
   const SPRINT_LIMIT = 30;
   let sprintMode = localStorage.getItem(SPRINT_KEY) === '1';
   let placementsThisGame = 0;
+  // Which leaderboard (and value) the pending name-entry submission targets —
+  // captured at game-over time so a later Settings change can't shift it.
+  let pendingBoard = 8;
+  let pendingRankValue = 0;
   function updateSprintToggle() { sprintToggle.classList.toggle('on', sprintMode); }
   sprintToggle.addEventListener('click', () => {
     sprintMode = !sprintMode;
@@ -2032,6 +2073,13 @@
     localStorage.setItem(PRACTICE_KEY, practiceMode ? '1' : '0');
     updatePracticeToggle();
   });
+
+  // Which leaderboard the run in progress (or about to start) belongs to.
+  // Sprint/Time Attack/Survival runs each get their own board; otherwise
+  // it's the Classic leaderboard for whichever board size is active.
+  function activeBoardKey() {
+    return sprintMode ? 'sprint' : timeAttackMode ? 'timeAttack' : survivalMode ? 'survival' : SIZE;
+  }
   function riseTide() {
     const cellsToAdd = Math.max(1, Math.round(SIZE * 0.25));
     let added = 0, attempts = 0;
@@ -2429,7 +2477,10 @@
 
   function updateHud() {
     scoreEl.textContent = score;
-    bestEl.textContent = bestScore();
+    // Survival's leaderboard ranks by placements survived, a different unit
+    // than the live point score shown here, so it keeps the Classic best.
+    const board = activeBoardKey();
+    bestEl.textContent = board === 'survival' ? bestScore() : bestScore(board);
     comboEl.textContent = 'x' + Math.max(1, combo);
     comboWrap.style.opacity = combo > 1 ? '1' : '0';
   }
@@ -2635,7 +2686,7 @@
     updateUndoButton();
     updateRerollButton();
     updateQuitButton();
-    let sprintIsNewBest = false, timeAttackIsNewBest = false, survivalIsNewBest = false;
+    const activeBoard = activeBoardKey();
     if (!practiceMode) {
       updateTodayBest(score);
       if (!usedUndoThisGame && score > 0) stats.gamesWithNoUndo = (stats.gamesWithNoUndo || 0) + 1;
@@ -2648,22 +2699,16 @@
         }
       }
       if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
-      if (sprintMode) {
-        sprintIsNewBest = score > 0 && score > (stats.bestSprintScore || 0);
-        if (sprintIsNewBest) stats.bestSprintScore = score;
+      if (activeBoard === 'sprint') {
         if (score > 0) stats.sprintsCompleted = (stats.sprintsCompleted || 0) + 1;
-      } else if (timeAttackMode) {
-        timeAttackIsNewBest = score > 0 && score > (stats.bestTimeAttackScore || 0);
-        if (timeAttackIsNewBest) stats.bestTimeAttackScore = score;
+      } else if (activeBoard === 'timeAttack') {
         if (score > 0) stats.timeAttacksCompleted = (stats.timeAttacksCompleted || 0) + 1;
+      } else if (activeBoard === 'survival') {
+        if (placementsThisGame > (stats.longestSurvival || 0)) stats.longestSurvival = placementsThisGame;
       } else if (score > 0) {
-        // Sprint and Time Attack are a different scale and excluded from this history.
+        // Sprint, Time Attack, and Survival are a different scale and excluded from this history.
         const histKey = 'scoreHistory' + (SIZE === 6 ? 6 : 8);
         stats[histKey] = (stats[histKey] || []).concat(score).slice(-10);
-      }
-      if (survivalMode && placementsThisGame > 0 && placementsThisGame > (stats.longestSurvival || 0)) {
-        stats.longestSurvival = placementsThisGame;
-        survivalIsNewBest = true;
       }
     }
     stopGameTick();
@@ -2676,24 +2721,24 @@
     vibrate(200);
     boardWrap.classList.add('shake-die');
     setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
-    if (sprintIsNewBest) { showToast('🎉 NEW SPRINT BEST!'); celebrate(boardWrap); }
-    else if (timeAttackIsNewBest) { showToast('🎉 NEW TIME ATTACK BEST!'); celebrate(boardWrap); }
-    else if (survivalIsNewBest) { showToast('🎉 NEW SURVIVAL BEST!'); celebrate(boardWrap); }
     setTimeout(() => {
       const practicePrefix = practiceMode ? '🧪 PRACTICE (NOT SAVED) — ' : '';
-      finalScoreEl.textContent = practicePrefix + (sprintMode
-        ? `SPRINT SCORE: ${score}  (BEST: ${stats.bestSprintScore || 0})${sprintIsNewBest ? ' 🎉' : ''}`
-        : timeAttackMode
-        ? `TIME ATTACK SCORE: ${score}  (BEST: ${stats.bestTimeAttackScore || 0})${timeAttackIsNewBest ? ' 🎉' : ''}`
+      finalScoreEl.textContent = practicePrefix + (activeBoard === 'sprint'
+        ? `SPRINT SCORE: ${score}  (BEST: ${bestScore('sprint')})`
+        : activeBoard === 'timeAttack'
+        ? `TIME ATTACK SCORE: ${score}  (BEST: ${bestScore('timeAttack')})`
+        : activeBoard === 'survival'
+        ? `SURVIVED ${placementsThisGame} PLACEMENTS  (BEST: ${bestScore('survival')})`
         : `SCORE: ${score}  (BEST: ${bestScore()})`);
       overOverlay.classList.remove('hidden');
-      const sizeScores = scoresFor(SIZE);
-      // Sprint and Time Attack (fixed-length runs) aren't comparable to
-      // open-ended play, and Practice runs never post at all, so none of
-      // these enter the regular leaderboard.
-      const qualifies = !practiceMode && !sprintMode && !timeAttackMode &&
-        (sizeScores.length < MAX_SCORES || score > sizeScores[sizeScores.length - 1].score);
-      if (qualifies && score > 0) {
+      pendingBoard = activeBoard;
+      pendingRankValue = activeBoard === 'survival' ? placementsThisGame : score;
+      const boardScores = scoresFor(activeBoard);
+      // Practice runs never post at all; every other board (Classic per
+      // size, Sprint, Time Attack, Survival) keeps its own top-10 list.
+      const qualifies = !practiceMode && pendingRankValue > 0 &&
+        (boardScores.length < MAX_SCORES || pendingRankValue > boardScores[boardScores.length - 1].score);
+      if (qualifies) {
         nameEntry.classList.remove('hidden');
         playAgainBtn.classList.add('hidden');
         nameInput.value = '';
@@ -2707,25 +2752,38 @@
 
   function submitScore() {
     const name = (nameInput.value || 'PLAYER').trim().slice(0, 12).toUpperCase() || 'PLAYER';
-    const wasNewBest = score > bestScore(SIZE);
-    const list = scoresFor(SIZE);
-    list.push({ name, score });
+    const board = pendingBoard;
+    const value = pendingRankValue;
+    const wasNewBest = value > bestScore(board);
+    const list = scoresFor(board);
+    list.push({ name, score: value });
     list.sort((a, b) => b.score - a.score);
-    highScoresBySize[SIZE === 6 ? 6 : 8] = list.slice(0, MAX_SCORES);
-    saveScores(SIZE, highScoresBySize[SIZE === 6 ? 6 : 8]);
+    highScoresByBoard[board] = list.slice(0, MAX_SCORES);
+    saveScores(board, highScoresByBoard[board]);
     nameEntry.classList.add('hidden');
     playAgainBtn.classList.remove('hidden');
     updateHud();
-    leaderboardViewSize = SIZE;
+    if (board === 8 || board === 6) {
+      leaderboardViewMode = 'classic';
+      leaderboardViewSize = board;
+    } else {
+      leaderboardViewMode = board;
+    }
+    updateModeViewToggle();
     updateScoreSizeToggle();
-    renderLeaderboard(score);
+    renderLeaderboard(value);
     if (wasNewBest) celebrate(overOverlay);
     checkAchievements();
   }
 
+  function currentLeaderboardBoard() {
+    return leaderboardViewMode === 'classic' ? leaderboardViewSize : leaderboardViewMode;
+  }
   function renderLeaderboard(highlightScore) {
     leaderboardEl.innerHTML = '';
-    const list = scoresFor(leaderboardViewSize);
+    const board = currentLeaderboardBoard();
+    const list = scoresFor(board);
+    const suffix = board === 'survival' ? ' pl' : '';
     renderSparkline();
     if (!list.length) {
       leaderboardEmptyEl.classList.remove('hidden');
@@ -2738,16 +2796,18 @@
       const isHighlight = !usedHighlight && highlightScore !== undefined && entry.score === highlightScore;
       if (isHighlight) usedHighlight = true;
       li.className = isHighlight ? 'new-entry' : '';
-      li.innerHTML = `<span class="rank">${i + 1}.</span><span class="name">${escapeHtml(entry.name)}</span><span class="pts">${entry.score}</span>`;
+      li.innerHTML = `<span class="rank">${i + 1}.</span><span class="name">${escapeHtml(entry.name)}</span><span class="pts">${entry.score}${suffix}</span>`;
       leaderboardEl.appendChild(li);
     });
   }
 
-  function scoreHistoryFor(size) {
-    return stats['scoreHistory' + (size === 6 ? 6 : 8)] || [];
+  function scoreHistoryFor(board) {
+    if (board === 6) return stats.scoreHistory6 || [];
+    if (board === 8) return stats.scoreHistory8 || [];
+    return []; // Sprint/Time Attack/Survival scores aren't tracked in this history.
   }
   function renderSparkline() {
-    const history = scoreHistoryFor(leaderboardViewSize);
+    const history = scoreHistoryFor(currentLeaderboardBoard());
     sparklineEl.innerHTML = '';
     if (!history.length) {
       sparklineBlock.classList.add('hidden');
@@ -3000,6 +3060,7 @@
   });
 
   function updateScoreSizeToggle() {
+    scoreSizeToggle.classList.toggle('hidden', leaderboardViewMode !== 'classic');
     scoreSizeToggle.querySelectorAll('.size-btn').forEach(btn => {
       btn.classList.toggle('selected', parseInt(btn.dataset.size, 10) === leaderboardViewSize);
     });
@@ -3007,6 +3068,19 @@
   scoreSizeToggle.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       leaderboardViewSize = parseInt(btn.dataset.size, 10);
+      updateScoreSizeToggle();
+      renderLeaderboard();
+    });
+  });
+  function updateModeViewToggle() {
+    modeViewToggle.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.mode === leaderboardViewMode);
+    });
+  }
+  modeViewToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      leaderboardViewMode = btn.dataset.mode;
+      updateModeViewToggle();
       updateScoreSizeToggle();
       renderLeaderboard();
     });
@@ -3019,6 +3093,8 @@
     colorsOverlay.classList.add('hidden');
     menuOverlay.classList.add('hidden');
     leaderboardViewSize = SIZE;
+    leaderboardViewMode = 'classic';
+    updateModeViewToggle();
     updateScoreSizeToggle();
     renderLeaderboard();
     renderStats();
@@ -3132,7 +3208,8 @@
 
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
-  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
+  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, STATS_KEY, ACH_KEY,
+    PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
     THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, TIME_ATTACK_KEY,
     TIME_ATTACK_DURATION_KEY, SURVIVAL_KEY, PRACTICE_KEY];
 
