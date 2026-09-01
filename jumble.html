@@ -1120,6 +1120,11 @@
         <div id="achievementsOverlay" class="overlay hidden">
           <h2 class="display-font">BADGES</h2>
           <p id="achProgress" class="score-line">0 / 0 UNLOCKED</p>
+          <div class="size-toggle" id="achFilterToggle">
+            <button class="size-btn selected" data-filter="all">ALL</button>
+            <button class="size-btn" data-filter="unlocked">DONE</button>
+            <button class="size-btn" data-filter="locked">TODO</button>
+          </div>
           <ul class="achievements-list" id="achievementsList"></ul>
           <button class="action" id="closeAchievementsBtn">CLOSE</button>
         </div>
@@ -1165,11 +1170,23 @@
           </div>
           <div class="settings-row">
             <span>⏰ TIME ATTACK</span>
-            <button class="toggle-btn" id="timeAttackToggle" title="Score as high as you can in 2 minutes"></button>
+            <button class="toggle-btn" id="timeAttackToggle" title="Score as high as you can before time runs out"></button>
+          </div>
+          <div class="settings-row hidden" id="timeAttackDurationRow">
+            <span>TIMER</span>
+            <div class="size-toggle" id="timeAttackDurationToggle">
+              <button class="size-btn" data-duration="60" title="1 minute">1M</button>
+              <button class="size-btn" data-duration="120" title="2 minutes">2M</button>
+              <button class="size-btn" data-duration="180" title="3 minutes">3M</button>
+            </div>
           </div>
           <div class="settings-row">
             <span>🌊 SURVIVAL MODE</span>
             <button class="toggle-btn" id="survivalToggle" title="The board fills in a little more every few placements — last as long as you can"></button>
+          </div>
+          <div class="settings-row">
+            <span>🧪 PRACTICE MODE</span>
+            <button class="toggle-btn" id="practiceToggle" title="Play without saving your score, stats, or badge progress"></button>
           </div>
           <div class="settings-row">
             <span>🔲 SHAPE MARKS</span>
@@ -1682,6 +1699,7 @@
   const shareBtn = document.getElementById('shareBtn');
   const achievementsOverlay = document.getElementById('achievementsOverlay');
   const achievementsList = document.getElementById('achievementsList');
+  const achFilterToggle = document.getElementById('achFilterToggle');
   const settingsOverlay = document.getElementById('settingsOverlay');
   const themeGrid = document.getElementById('themeGrid');
   const soundToggle = document.getElementById('soundToggle');
@@ -1694,7 +1712,10 @@
   const hardToggle = document.getElementById('hardToggle');
   const sprintToggle = document.getElementById('sprintToggle');
   const timeAttackToggle = document.getElementById('timeAttackToggle');
+  const timeAttackDurationRow = document.getElementById('timeAttackDurationRow');
+  const timeAttackDurationToggle = document.getElementById('timeAttackDurationToggle');
   const survivalToggle = document.getElementById('survivalToggle');
+  const practiceToggle = document.getElementById('practiceToggle');
   const quitBtn = document.getElementById('quitBtn');
   const pauseBtn = document.getElementById('pauseBtn');
   const pauseOverlay = document.getElementById('pauseOverlay');
@@ -1959,14 +1980,36 @@
 
   // --- Time Attack: score as high as possible before a countdown runs out ---
   const TIME_ATTACK_KEY = 'blockBlastTimeAttack';
-  const TIME_ATTACK_DURATION = 120; // seconds
+  const TIME_ATTACK_DURATION_KEY = 'blockBlastTimeAttackDuration';
+  const TIME_ATTACK_DURATIONS = [60, 120, 180]; // seconds
+  function loadTimeAttackDuration() {
+    const n = parseInt(localStorage.getItem(TIME_ATTACK_DURATION_KEY), 10);
+    return TIME_ATTACK_DURATIONS.includes(n) ? n : 120;
+  }
   let timeAttackMode = localStorage.getItem(TIME_ATTACK_KEY) === '1';
+  let timeAttackDuration = loadTimeAttackDuration();
   let timeAttackEndsAt = 0;
   function updateTimeAttackToggle() { timeAttackToggle.classList.toggle('on', timeAttackMode); }
+  function updateTimeAttackDurationToggle() {
+    timeAttackDurationRow.classList.toggle('hidden', !timeAttackMode);
+    timeAttackDurationToggle.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('selected', parseInt(btn.dataset.duration, 10) === timeAttackDuration);
+      btn.disabled = running;
+    });
+  }
   timeAttackToggle.addEventListener('click', () => {
     timeAttackMode = !timeAttackMode;
     localStorage.setItem(TIME_ATTACK_KEY, timeAttackMode ? '1' : '0');
     updateTimeAttackToggle();
+    updateTimeAttackDurationToggle();
+  });
+  timeAttackDurationToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (running) return;
+      timeAttackDuration = parseInt(btn.dataset.duration, 10);
+      localStorage.setItem(TIME_ATTACK_DURATION_KEY, String(timeAttackDuration));
+      updateTimeAttackDurationToggle();
+    });
   });
 
   // --- Survival Mode: the board rises with extra filled cells over time ---
@@ -1978,6 +2021,16 @@
     survivalMode = !survivalMode;
     localStorage.setItem(SURVIVAL_KEY, survivalMode ? '1' : '0');
     updateSurvivalToggle();
+  });
+
+  // --- Practice Mode: play without saving anything from the run ---
+  const PRACTICE_KEY = 'blockBlastPracticeMode';
+  let practiceMode = localStorage.getItem(PRACTICE_KEY) === '1';
+  function updatePracticeToggle() { practiceToggle.classList.toggle('on', practiceMode); }
+  practiceToggle.addEventListener('click', () => {
+    practiceMode = !practiceMode;
+    localStorage.setItem(PRACTICE_KEY, practiceMode ? '1' : '0');
+    updatePracticeToggle();
   });
   function riseTide() {
     const cellsToAdd = Math.max(1, Math.round(SIZE * 0.25));
@@ -2193,6 +2246,7 @@
   }
   let unlockedAchievements = loadUnlocked();
   function checkAchievements(silent) {
+    const prevRank = currentRank();
     ACHIEVEMENTS.forEach(a => {
       if (unlockedAchievements.includes(a.id)) return;
       if (!a.check(stats)) return;
@@ -2203,13 +2257,35 @@
         celebrate(boardWrap);
       }
     });
+    if (!silent) {
+      const newRank = currentRank();
+      if (newRank.title !== prevRank.title) {
+        setTimeout(() => {
+          showToast(`⭐ RANK UP: ${newRank.title}!`);
+          celebrate(boardWrap);
+        }, 1700);
+      }
+    }
   }
+  let achFilter = 'all';
+  achFilterToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      achFilter = btn.dataset.filter;
+      achFilterToggle.querySelectorAll('.size-btn').forEach(b => b.classList.toggle('selected', b === btn));
+      renderAchievements();
+    });
+  });
   function renderAchievements() {
     const rank = currentRank();
     achProgressEl.textContent =
       `${unlockedAchievements.length} / ${ACHIEVEMENTS.length} UNLOCKED · ${totalAchievementPoints()} PTS · ${rank.title}`;
     achievementsList.innerHTML = '';
-    ACHIEVEMENTS.forEach(a => {
+    ACHIEVEMENTS.filter(a => {
+      const unlocked = unlockedAchievements.includes(a.id);
+      if (achFilter === 'unlocked') return unlocked;
+      if (achFilter === 'locked') return !unlocked;
+      return true;
+    }).forEach(a => {
       const unlocked = unlockedAchievements.includes(a.id);
       const li = document.createElement('li');
       li.className = unlocked ? 'unlocked' : '';
@@ -2326,7 +2402,7 @@
     placementsThisGame = 0;
     paused = false;
     pauseOverlay.classList.add('hidden');
-    timeAttackEndsAt = timeAttackMode ? Date.now() + TIME_ATTACK_DURATION * 1000 : 0;
+    timeAttackEndsAt = timeAttackMode ? Date.now() + timeAttackDuration * 1000 : 0;
     gameStartTime = Date.now();
     dailyBadge.classList.toggle('hidden', !dailyChallengeMode);
     if (dailyChallengeMode && dailyModifier) {
@@ -2341,10 +2417,12 @@
     startGameTick();
     renderBoard();
     renderTray();
-    stats.gamesPlayed++;
-    if (zenMode) stats.zenGamesPlayed = (stats.zenGamesPlayed || 0) + 1;
-    updateStreak();
-    saveStats();
+    if (!practiceMode) {
+      stats.gamesPlayed++;
+      if (zenMode) stats.zenGamesPlayed = (stats.zenGamesPlayed || 0) + 1;
+      updateStreak();
+      saveStats();
+    }
     renderStats();
     checkAchievements();
   }
@@ -2557,52 +2635,63 @@
     updateUndoButton();
     updateRerollButton();
     updateQuitButton();
-    updateTodayBest(score);
-    if (!usedUndoThisGame && score > 0) stats.gamesWithNoUndo = (stats.gamesWithNoUndo || 0) + 1;
-    if (hardMode && score > 0) stats.hardGamesCompleted = (stats.hardGamesCompleted || 0) + 1;
-    if (dailyChallengeMode) {
-      updateDailyBest(score);
-      if (score > 0) {
-        stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
-        updateDailyStreak();
+    let sprintIsNewBest = false, timeAttackIsNewBest = false, survivalIsNewBest = false;
+    if (!practiceMode) {
+      updateTodayBest(score);
+      if (!usedUndoThisGame && score > 0) stats.gamesWithNoUndo = (stats.gamesWithNoUndo || 0) + 1;
+      if (hardMode && score > 0) stats.hardGamesCompleted = (stats.hardGamesCompleted || 0) + 1;
+      if (dailyChallengeMode) {
+        updateDailyBest(score);
+        if (score > 0) {
+          stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
+          updateDailyStreak();
+        }
       }
-    }
-    if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
-    if (sprintMode) {
-      if (score > (stats.bestSprintScore || 0)) stats.bestSprintScore = score;
-      if (score > 0) stats.sprintsCompleted = (stats.sprintsCompleted || 0) + 1;
-    } else if (timeAttackMode) {
-      if (score > (stats.bestTimeAttackScore || 0)) stats.bestTimeAttackScore = score;
-      if (score > 0) stats.timeAttacksCompleted = (stats.timeAttacksCompleted || 0) + 1;
-    } else if (score > 0) {
-      // Sprint and Time Attack are a different scale and excluded from this history.
-      const histKey = 'scoreHistory' + (SIZE === 6 ? 6 : 8);
-      stats[histKey] = (stats[histKey] || []).concat(score).slice(-10);
-    }
-    if (survivalMode && placementsThisGame > (stats.longestSurvival || 0)) {
-      stats.longestSurvival = placementsThisGame;
+      if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
+      if (sprintMode) {
+        sprintIsNewBest = score > 0 && score > (stats.bestSprintScore || 0);
+        if (sprintIsNewBest) stats.bestSprintScore = score;
+        if (score > 0) stats.sprintsCompleted = (stats.sprintsCompleted || 0) + 1;
+      } else if (timeAttackMode) {
+        timeAttackIsNewBest = score > 0 && score > (stats.bestTimeAttackScore || 0);
+        if (timeAttackIsNewBest) stats.bestTimeAttackScore = score;
+        if (score > 0) stats.timeAttacksCompleted = (stats.timeAttacksCompleted || 0) + 1;
+      } else if (score > 0) {
+        // Sprint and Time Attack are a different scale and excluded from this history.
+        const histKey = 'scoreHistory' + (SIZE === 6 ? 6 : 8);
+        stats[histKey] = (stats[histKey] || []).concat(score).slice(-10);
+      }
+      if (survivalMode && placementsThisGame > 0 && placementsThisGame > (stats.longestSurvival || 0)) {
+        stats.longestSurvival = placementsThisGame;
+        survivalIsNewBest = true;
+      }
     }
     stopGameTick();
     updatePauseButton();
     accruePlayTime();
     saveStats();
     renderStats();
-    checkAchievements();
+    if (!practiceMode) checkAchievements();
     beep(400, 80, 0.5, 'sawtooth', 0.15);
     vibrate(200);
     boardWrap.classList.add('shake-die');
     setTimeout(() => boardWrap.classList.remove('shake-die'), 400);
+    if (sprintIsNewBest) { showToast('🎉 NEW SPRINT BEST!'); celebrate(boardWrap); }
+    else if (timeAttackIsNewBest) { showToast('🎉 NEW TIME ATTACK BEST!'); celebrate(boardWrap); }
+    else if (survivalIsNewBest) { showToast('🎉 NEW SURVIVAL BEST!'); celebrate(boardWrap); }
     setTimeout(() => {
-      finalScoreEl.textContent = sprintMode
-        ? `SPRINT SCORE: ${score}  (BEST: ${stats.bestSprintScore || 0})`
+      const practicePrefix = practiceMode ? '🧪 PRACTICE (NOT SAVED) — ' : '';
+      finalScoreEl.textContent = practicePrefix + (sprintMode
+        ? `SPRINT SCORE: ${score}  (BEST: ${stats.bestSprintScore || 0})${sprintIsNewBest ? ' 🎉' : ''}`
         : timeAttackMode
-        ? `TIME ATTACK SCORE: ${score}  (BEST: ${stats.bestTimeAttackScore || 0})`
-        : `SCORE: ${score}  (BEST: ${bestScore()})`;
+        ? `TIME ATTACK SCORE: ${score}  (BEST: ${stats.bestTimeAttackScore || 0})${timeAttackIsNewBest ? ' 🎉' : ''}`
+        : `SCORE: ${score}  (BEST: ${bestScore()})`);
       overOverlay.classList.remove('hidden');
       const sizeScores = scoresFor(SIZE);
       // Sprint and Time Attack (fixed-length runs) aren't comparable to
-      // open-ended play, so they never enter the regular leaderboard.
-      const qualifies = !sprintMode && !timeAttackMode &&
+      // open-ended play, and Practice runs never post at all, so none of
+      // these enter the regular leaderboard.
+      const qualifies = !practiceMode && !sprintMode && !timeAttackMode &&
         (sizeScores.length < MAX_SCORES || score > sizeScores[sizeScores.length - 1].score);
       if (qualifies && score > 0) {
         nameEntry.classList.remove('hidden');
@@ -2997,7 +3086,9 @@
     updateHardToggle();
     updateSprintToggle();
     updateTimeAttackToggle();
+    updateTimeAttackDurationToggle();
     updateSurvivalToggle();
+    updatePracticeToggle();
     updateCbToggle();
     updateSizeToggle();
     settingsOverlay.classList.remove('hidden');
@@ -3042,7 +3133,8 @@
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
   const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, STATS_KEY, ACH_KEY, PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
-    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, TIME_ATTACK_KEY, SURVIVAL_KEY];
+    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, TIME_ATTACK_KEY,
+    TIME_ATTACK_DURATION_KEY, SURVIVAL_KEY, PRACTICE_KEY];
 
   let resetConfirmTimeout = null;
   resetProgressBtn.addEventListener('click', () => {
