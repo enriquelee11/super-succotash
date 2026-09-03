@@ -226,6 +226,66 @@
     --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(140,120,60,0.35);
     --heading-shadow: rgba(60,50,20,0.25);
   }
+  [data-theme="coral"] {
+    --card-top: #ff6f61; --card-mid: #2ec4b6; --card-bottom: #ffd166;
+    --screen: #fbfffd; --screen-edge: #dff6f0;
+    --ink: #2a5c58; --ink-bright: #163a37; --ink-dim: #7fada8;
+    --accent: #ff6f61; --accent-deep: #e0483a;
+    --accent2: #2ec4b6; --accent2-deep: #1f9c90;
+    --danger: #ff5566; --danger-deep: #d93a4d;
+    --cell-empty: #eafaf7; --cell-border: rgba(30,150,140,0.18);
+    --page-bg: #d0f0ea; --overlay-bg: rgba(255,251,245,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(46,196,182,0.35);
+    --heading-shadow: rgba(20,90,80,0.25);
+  }
+  [data-theme="rosegold"] {
+    --card-top: #f7d9d0; --card-mid: #e8b4a0; --card-bottom: #d4a574;
+    --screen: #fffaf7; --screen-edge: #f5e5da;
+    --ink: #7a5548; --ink-bright: #4a3226; --ink-dim: #b59080;
+    --accent: #c98a6b; --accent-deep: #a56d50;
+    --accent2: #d4af37; --accent2-deep: #b0902c;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #faf0ea; --cell-border: rgba(180,120,90,0.18);
+    --page-bg: #f0d9c9; --overlay-bg: rgba(255,250,246,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(200,140,110,0.35);
+    --heading-shadow: rgba(120,80,60,0.25);
+  }
+  [data-theme="aurora"] {
+    --card-top: #0a3d3a; --card-mid: #1a5c4a; --card-bottom: #4a2c6d;
+    --screen: #04121a; --screen-edge: #0a2030;
+    --ink: #8ae0c9; --ink-bright: #d0fff0; --ink-dim: #5a8f80;
+    --accent: #3ddc97; --accent-deep: #24b578;
+    --accent2: #7c5cf0; --accent2-deep: #5c3bd6;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #0d2a28; --cell-border: rgba(61,220,151,0.2);
+    --page-bg: #041815; --overlay-bg: rgba(6,20,26,0.94);
+    --panel-bg: rgba(255,255,255,0.08); --panel-border: rgba(100,220,190,0.25);
+    --heading-shadow: rgba(0,0,0,0.5);
+  }
+  [data-theme="blossom"] {
+    --card-top: #ffd9e8; --card-mid: #ffb7ce; --card-bottom: #fff0f5;
+    --screen: #fffbfc; --screen-edge: #ffe9f0;
+    --ink: #8a5468; --ink-bright: #5c2f42; --ink-dim: #c294a8;
+    --accent: #ff8fab; --accent-deep: #e0688c;
+    --accent2: #8fc4b0; --accent2-deep: #6ba892;
+    --danger: #ff5566; --danger-deep: #d93a4d;
+    --cell-empty: #fff0f5; --cell-border: rgba(220,140,170,0.18);
+    --page-bg: #ffe3ec; --overlay-bg: rgba(255,252,253,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(230,150,180,0.35);
+    --heading-shadow: rgba(150,70,100,0.25);
+  }
+  [data-theme="espresso"] {
+    --card-top: #c9a074; --card-mid: #8b5e3c; --card-bottom: #4a2c17;
+    --screen: #fbf6ef; --screen-edge: #ecdcc5;
+    --ink: #5c3d28; --ink-bright: #3a2415; --ink-dim: #a5876f;
+    --accent: #8b5e3c; --accent-deep: #6b4527;
+    --accent2: #d4a574; --accent2-deep: #b0824f;
+    --danger: #ff6f79; --danger-deep: #e3505a;
+    --cell-empty: #f2e6d8; --cell-border: rgba(110,70,40,0.2);
+    --page-bg: #e8d4bc; --overlay-bg: rgba(250,244,235,0.94);
+    --panel-bg: rgba(255,255,255,0.6); --panel-border: rgba(140,100,60,0.35);
+    --heading-shadow: rgba(60,35,15,0.25);
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0;
@@ -1099,6 +1159,7 @@
             <button class="size-btn" data-mode="sprint">SPRINT</button>
             <button class="size-btn" data-mode="timeAttack">TIMED</button>
             <button class="size-btn" data-mode="survival">TIDE</button>
+            <button class="size-btn" data-mode="daily">DAILY</button>
           </div>
           <div class="size-toggle" id="scoreSizeToggle">
             <button class="size-btn" data-size="8">8×8</button>
@@ -1178,7 +1239,15 @@
           </div>
           <div class="settings-row">
             <span>⏱️ SPRINT MODE</span>
-            <button class="toggle-btn" id="sprintToggle" title="Score as high as you can in 30 placements"></button>
+            <button class="toggle-btn" id="sprintToggle" title="Score as high as you can in a fixed number of placements"></button>
+          </div>
+          <div class="settings-row hidden" id="sprintLimitRow">
+            <span>PLACEMENTS</span>
+            <div class="size-toggle" id="sprintLimitToggle">
+              <button class="size-btn" data-limit="20">20</button>
+              <button class="size-btn" data-limit="30">30</button>
+              <button class="size-btn" data-limit="40">40</button>
+            </div>
           </div>
           <div class="settings-row">
             <span>⏰ TIME ATTACK</span>
@@ -1357,6 +1426,16 @@
       // The Okabe-Ito palette: designed to stay distinguishable for every
       // common form of color vision deficiency, not just look nice.
       palette: ['#0072b2', '#e69f00', '#009e73', '#f0e442', '#56b4e9', '#d55e00', '#cc79a7', '#3d3d3d'] },
+    { id: 'coral', name: 'Coral Reef', colors: ['#ff6f61', '#2ec4b6', '#ffd166'],
+      palette: ['#ff6f61', '#2ec4b6', '#ffd166', '#4ecdc4', '#ff9f6b', '#f4d35e', '#1a936f', '#ee6c4d'] },
+    { id: 'rosegold', name: 'Rose Gold', colors: ['#f7d9d0', '#e8b4a0', '#d4a574'],
+      palette: ['#c98a6b', '#d4af37', '#e8b4a0', '#b76e79', '#f0c987', '#dda15e', '#a56d50', '#e7bc91'] },
+    { id: 'aurora', name: 'Aurora', colors: ['#0a3d3a', '#1a5c4a', '#4a2c6d'],
+      palette: ['#3ddc97', '#7c5cf0', '#5cc8ff', '#ffd166', '#24b578', '#a78bfa', '#2dd4bf', '#f472b6'] },
+    { id: 'blossom', name: 'Cherry Blossom', colors: ['#ffd9e8', '#ffb7ce', '#fff0f5'],
+      palette: ['#ff8fab', '#8fc4b0', '#ffc2d1', '#f7cad0', '#6ba892', '#ffafcc', '#d4a5c4', '#a0d8b3'] },
+    { id: 'espresso', name: 'Espresso', colors: ['#c9a074', '#8b5e3c', '#4a2c17'],
+      palette: ['#8b5e3c', '#d4a574', '#c9932f', '#a5673a', '#6b4527', '#e0b878', '#b5784a', '#8f6a4a'] },
   ];
   function loadTheme() {
     const t = localStorage.getItem(THEME_KEY);
@@ -1485,9 +1564,11 @@
   const HS_KEY_SPRINT = 'blockBlastSprintHighScores';
   const HS_KEY_TIME_ATTACK = 'blockBlastTimeAttackHighScores';
   const HS_KEY_SURVIVAL = 'blockBlastSurvivalHighScores';
-  const HS_KEYS = { 8: HS_KEY_8, 6: HS_KEY_6, sprint: HS_KEY_SPRINT, timeAttack: HS_KEY_TIME_ATTACK, survival: HS_KEY_SURVIVAL };
+  const HS_KEY_DAILY = 'blockBlastDailyHighScores';
+  const HS_KEYS = { 8: HS_KEY_8, 6: HS_KEY_6, sprint: HS_KEY_SPRINT, timeAttack: HS_KEY_TIME_ATTACK, survival: HS_KEY_SURVIVAL, daily: HS_KEY_DAILY };
   const MAX_SCORES = 10;
   const PERFECT_CLEAR_BONUS = 150;
+  const LAST_NAME_KEY = 'blockBlastLastName';
 
   function loadScores(board) {
     try {
@@ -1516,8 +1597,21 @@
     sprint: seedFromLegacyStat('sprint', (loadStats().bestSprintScore || 0)),
     timeAttack: seedFromLegacyStat('timeAttack', (loadStats().bestTimeAttackScore || 0)),
     survival: seedFromLegacyStat('survival', (loadStats().longestSurvival || 0)),
+    daily: seedFromLegacyStat('daily', (loadStats().dailyBest || 0)),
   };
   function scoresFor(board) { return highScoresByBoard[board] || []; }
+  // Auto-submits a Daily Challenge run into its all-time leaderboard without
+  // an interactive name prompt (the run's own qualify/name-entry flow, if
+  // any, is already busy targeting whichever other board is active).
+  function submitToBoardSilently(board, value) {
+    const list = scoresFor(board);
+    if (!(value > 0 && (list.length < MAX_SCORES || value > list[list.length - 1].score))) return;
+    const name = localStorage.getItem(LAST_NAME_KEY) || 'YOU';
+    list.push({ name, score: value });
+    list.sort((a, b) => b.score - a.score);
+    highScoresByBoard[board] = list.slice(0, MAX_SCORES);
+    saveScores(board, highScoresByBoard[board]);
+  }
 
   function parseShape(rows) {
     const matrix = rows.map(r => r.split('').map(c => c === '1'));
@@ -1747,6 +1841,8 @@
   const cbToggle = document.getElementById('cbToggle');
   const hardToggle = document.getElementById('hardToggle');
   const sprintToggle = document.getElementById('sprintToggle');
+  const sprintLimitRow = document.getElementById('sprintLimitRow');
+  const sprintLimitToggle = document.getElementById('sprintLimitToggle');
   const timeAttackToggle = document.getElementById('timeAttackToggle');
   const timeAttackDurationRow = document.getElementById('timeAttackDurationRow');
   const timeAttackDurationToggle = document.getElementById('timeAttackDurationToggle');
@@ -1826,7 +1922,7 @@
       dailyBest: 0, dailyBestDate: null, dailyChallengesCompleted: 0, bestMiniScore: 0,
       dailyStreak: 0, lastDailyDate: null,
       luckyPiecesPlaced: 0, bestSprintScore: 0, sprintsCompleted: 0,
-      bestTimeAttackScore: 0, timeAttacksCompleted: 0, longestSurvival: 0,
+      bestTimeAttackScore: 0, timeAttacksCompleted: 0, longestSurvival: 0, survivalsCompleted: 0,
       scoreHistory8: [], scoreHistory6: [],
     };
   }
@@ -2005,18 +2101,40 @@
 
   // --- Sprint Mode: score as high as possible in a fixed number of placements ---
   const SPRINT_KEY = 'blockBlastSprintMode';
-  const SPRINT_LIMIT = 30;
+  const SPRINT_LIMIT_KEY = 'blockBlastSprintLimit';
+  const SPRINT_LIMITS = [20, 30, 40]; // placements
+  function loadSprintLimit() {
+    const n = parseInt(localStorage.getItem(SPRINT_LIMIT_KEY), 10);
+    return SPRINT_LIMITS.includes(n) ? n : 30;
+  }
   let sprintMode = localStorage.getItem(SPRINT_KEY) === '1';
+  let sprintLimit = loadSprintLimit();
   let placementsThisGame = 0;
   // Which leaderboard (and value) the pending name-entry submission targets —
   // captured at game-over time so a later Settings change can't shift it.
   let pendingBoard = 8;
   let pendingRankValue = 0;
   function updateSprintToggle() { sprintToggle.classList.toggle('on', sprintMode); }
+  function updateSprintLimitToggle() {
+    sprintLimitRow.classList.toggle('hidden', !sprintMode);
+    sprintLimitToggle.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('selected', parseInt(btn.dataset.limit, 10) === sprintLimit);
+      btn.disabled = running;
+    });
+  }
   sprintToggle.addEventListener('click', () => {
     sprintMode = !sprintMode;
     localStorage.setItem(SPRINT_KEY, sprintMode ? '1' : '0');
     updateSprintToggle();
+    updateSprintLimitToggle();
+  });
+  sprintLimitToggle.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (running) return;
+      sprintLimit = parseInt(btn.dataset.limit, 10);
+      localStorage.setItem(SPRINT_LIMIT_KEY, String(sprintLimit));
+      updateSprintLimitToggle();
+    });
   });
 
   // --- Time Attack: score as high as possible before a countdown runs out ---
@@ -2124,7 +2242,7 @@
   }
   function updateModeBadge() {
     const parts = [];
-    if (sprintMode) parts.push(`⏱️ SPRINT ${placementsThisGame}/${SPRINT_LIMIT}`);
+    if (sprintMode) parts.push(`⏱️ SPRINT ${placementsThisGame}/${sprintLimit}`);
     if (timeAttackMode) {
       const remaining = Math.max(0, Math.ceil((timeAttackEndsAt - Date.now()) / 1000));
       parts.push(`⏰ ${formatClock(remaining)}`);
@@ -2267,6 +2385,11 @@
     { id: 'sprinter', emoji: '⏱️', title: 'SPRINTER', desc: 'Finish a Sprint run', points: 20, check: s => (s.sprintsCompleted || 0) >= 1 },
     { id: 'clockBeater', emoji: '⏰', title: 'AGAINST THE CLOCK', desc: 'Finish a Time Attack run', points: 20, check: s => (s.timeAttacksCompleted || 0) >= 1 },
     { id: 'tideSurvivor', emoji: '🌊', title: 'TIDE SURVIVOR', desc: 'Survive 50 placements in Survival Mode', points: 30, check: s => (s.longestSurvival || 0) >= 50 },
+    { id: 'allRounder', emoji: '🎯', title: 'ALL-ROUNDER', desc: 'Finish a Sprint, a Time Attack, and a Survival run', points: 30,
+      check: s => (s.sprintsCompleted || 0) >= 1 && (s.timeAttacksCompleted || 0) >= 1 && (s.survivalsCompleted || 0) >= 1 },
+    { id: 'marathoner', emoji: '⏳', title: 'MARATHONER', desc: 'Play for a total of an hour', points: 25, check: s => (s.totalPlayTimeSec || 0) >= 3600 },
+    { id: 'completionist', emoji: '👑', title: 'COMPLETIONIST', desc: 'Unlock every other badge', points: 50,
+      check: () => unlockedAchievements.length >= ACHIEVEMENTS.length - 1 },
   ];
   const RANKS = [
     { title: 'ROOKIE', threshold: 0 },
@@ -2652,7 +2775,7 @@
 
   function afterMove() {
     updateModeBadge();
-    if (sprintMode && placementsThisGame >= SPRINT_LIMIT) {
+    if (sprintMode && placementsThisGame >= sprintLimit) {
       endGame();
       return;
     }
@@ -2696,6 +2819,7 @@
         if (score > 0) {
           stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
           updateDailyStreak();
+          submitToBoardSilently('daily', score);
         }
       }
       if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
@@ -2705,6 +2829,7 @@
         if (score > 0) stats.timeAttacksCompleted = (stats.timeAttacksCompleted || 0) + 1;
       } else if (activeBoard === 'survival') {
         if (placementsThisGame > (stats.longestSurvival || 0)) stats.longestSurvival = placementsThisGame;
+        if (score > 0) stats.survivalsCompleted = (stats.survivalsCompleted || 0) + 1;
       } else if (score > 0) {
         // Sprint, Time Attack, and Survival are a different scale and excluded from this history.
         const histKey = 'scoreHistory' + (SIZE === 6 ? 6 : 8);
@@ -2752,6 +2877,7 @@
 
   function submitScore() {
     const name = (nameInput.value || 'PLAYER').trim().slice(0, 12).toUpperCase() || 'PLAYER';
+    localStorage.setItem(LAST_NAME_KEY, name);
     const board = pendingBoard;
     const value = pendingRankValue;
     const wasNewBest = value > bestScore(board);
@@ -3161,6 +3287,7 @@
     updateZenToggle();
     updateHardToggle();
     updateSprintToggle();
+    updateSprintLimitToggle();
     updateTimeAttackToggle();
     updateTimeAttackDurationToggle();
     updateSurvivalToggle();
@@ -3208,10 +3335,11 @@
 
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
-  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, STATS_KEY, ACH_KEY,
+  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, HS_KEY_DAILY,
+    LAST_NAME_KEY, STATS_KEY, ACH_KEY,
     PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
-    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, TIME_ATTACK_KEY,
-    TIME_ATTACK_DURATION_KEY, SURVIVAL_KEY, PRACTICE_KEY];
+    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, SPRINT_LIMIT_KEY,
+    TIME_ATTACK_KEY, TIME_ATTACK_DURATION_KEY, SURVIVAL_KEY, PRACTICE_KEY];
 
   let resetConfirmTimeout = null;
   resetProgressBtn.addEventListener('click', () => {
