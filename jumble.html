@@ -15,6 +15,12 @@
         var style = document.documentElement.style;
         Object.keys(raw.vars).forEach(function (k) { style.setProperty(k, raw.vars[k]); });
       }
+    } else {
+      var gen = JSON.parse(localStorage.getItem('blockBlastGenThemeVars') || 'null');
+      if (gen && gen.id === t && gen.vars) {
+        var style2 = document.documentElement.style;
+        Object.keys(gen.vars).forEach(function (k) { style2.setProperty(k, gen.vars[k]); });
+      }
     }
   } catch (e) {}
 })();
@@ -641,6 +647,18 @@
     justify-content: flex-start;
     padding-top: 18px;
   }
+  #themesOverlay {
+    justify-content: flex-start;
+    padding-top: 18px;
+  }
+  .theme-description {
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 36px;
+    max-width: 280px;
+  }
+  .theme-description b { color: var(--ink-bright); }
   .howto-list {
     margin: 0;
     padding: 0 4px 0 18px;
@@ -874,12 +892,12 @@
     display: flex;
     gap: 10px;
   }
-  #dataOverlay .colors-actions {
+  #dataOverlay .colors-actions, #themesOverlay .colors-actions {
     flex-direction: column;
     align-items: center;
     width: 100%;
   }
-  #dataOverlay .colors-actions button.action {
+  #dataOverlay .colors-actions button.action, #themesOverlay .colors-actions button.action {
     width: 100%;
     max-width: 260px;
   }
@@ -1214,9 +1232,7 @@
         <div id="settingsOverlay" class="overlay hidden">
           <h2 class="display-font">SETTINGS</h2>
           <div class="settings-section">
-            <span class="settings-label">THEME</span>
-            <div class="theme-grid" id="themeGrid"></div>
-            <button class="action secondary" id="editCustomThemeBtn">🖌️ EDIT CUSTOM THEME</button>
+            <button class="action secondary" id="openThemesBtn">🎨 THEMES</button>
           </div>
           <div class="settings-section">
             <button class="action secondary" id="settingsColorsBtn">🎨 CUSTOMIZE PIECE COLORS</button>
@@ -1287,6 +1303,16 @@
             <button class="action danger-action" id="resetProgressBtn">RESET ALL PROGRESS</button>
           </div>
           <button class="action" id="closeSettingsBtn">DONE</button>
+        </div>
+
+        <div id="themesOverlay" class="overlay hidden">
+          <h2 class="display-font">THEMES</h2>
+          <div class="theme-grid" id="themeGrid"></div>
+          <p class="theme-description" id="themeDescription">Tap a theme to see what it's called.</p>
+          <div class="colors-actions">
+            <button class="action secondary" id="editCustomThemeBtn">🖌️ EDIT CUSTOM THEME</button>
+            <button class="action" id="closeThemesBtn">DONE</button>
+          </div>
         </div>
 
         <div id="customThemeOverlay" class="overlay hidden">
@@ -1391,51 +1417,93 @@
   // manually customized piece colors (in which case that choice is kept).
   const THEME_KEY = 'blockBlastTheme';
   const THEMES = [
-    { id: 'peach', name: 'Peach', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'],
+    { id: 'peach', name: 'Peach', desc: 'A warm, cozy pastel default.', colors: ['#ffe8cf', '#ffd9c2', '#fbc9b9'],
       palette: ['#ff8fa3', '#7fdcb0', '#8fcbef', '#ffd66b', '#c9b6f2', '#ffb37a', '#7fd9d4', '#f4a6c9'] },
-    { id: 'lavender', name: 'Lavender Dream', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'],
+    { id: 'lavender', name: 'Lavender Dream', desc: 'Dreamy soft purples and blues.', colors: ['#ece4fb', '#ddd0f7', '#cbb8f0'],
       palette: ['#9c7fe0', '#7fb8e0', '#c9a8f0', '#7fd9d4', '#f2a6d0', '#b39ddb', '#8fcbef', '#e0c3fc'] },
-    { id: 'mint', name: 'Minty Fresh', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'],
+    { id: 'mint', name: 'Minty Fresh', desc: 'Crisp, cool minty green.', colors: ['#d9f5e6', '#c3edd8', '#aee0cc'],
       palette: ['#4fb98a', '#7fd9d4', '#a8e0c3', '#ffd66b', '#8fcbef', '#6fc9a0', '#c9e8a0', '#5ecfc0'] },
-    { id: 'sunset', name: 'Sunset', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'],
+    { id: 'sunset', name: 'Sunset', desc: 'Warm pink-to-gold evening sky.', colors: ['#ff7eb3', '#ff9d4d', '#ffd166'],
       palette: ['#ff5c8a', '#ff9d4d', '#ffd166', '#ff7eb3', '#ffb347', '#ff8a65', '#ffcc80', '#ff6f91'] },
-    { id: 'sunrise', name: 'Sunrise', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'],
+    { id: 'sunrise', name: 'Sunrise', desc: 'Soft blue-to-gold morning light.', colors: ['#a9c8f2', '#f2b4d0', '#ffdd8a'],
       palette: ['#7fa8e8', '#f28ec0', '#ffdd8a', '#a9c8f2', '#f2b4d0', '#8fcbef', '#ffcf9c', '#d7a8e0'] },
-    { id: 'lemonade', name: 'Pink Lemonade', colors: ['#ff6fa8', '#fff4d6', '#ffe14d'],
+    { id: 'lemonade', name: 'Pink Lemonade', desc: 'Bright pink and sunny yellow.', colors: ['#ff6fa8', '#fff4d6', '#ffe14d'],
       palette: ['#ff4f94', '#ffd43b', '#ff85b3', '#ffe066', '#ff6fa8', '#fff066', '#ff99c8', '#ffdd55'] },
-    { id: 'beach', name: 'Beach', colors: ['#9fd8f0', '#4fa8c9', '#e8d4a0'],
+    { id: 'beach', name: 'Beach', desc: 'Ocean blue meets sandy tan.', colors: ['#9fd8f0', '#4fa8c9', '#e8d4a0'],
       palette: ['#4a90c2', '#2ec4b6', '#e8d4a0', '#ff9f6b', '#ffd6a5', '#8ecae6', '#c9a66b', '#f4e04d'] },
-    { id: 'bubblegum', name: 'Bubblegum', colors: ['#ff9ed8', '#b39ddb', '#7fc8f8'],
+    { id: 'bubblegum', name: 'Bubblegum', desc: 'Playful pink and lavender pop.', colors: ['#ff9ed8', '#b39ddb', '#7fc8f8'],
       palette: ['#ff5cb8', '#6ab8f0', '#b39ddb', '#ffe066', '#7fe0c0', '#ff8fc0', '#8ab8ff', '#c9a8f0'] },
-    { id: 'forest', name: 'Forest', colors: ['#a8c98a', '#5c8a5c', '#3d5c3a'],
+    { id: 'forest', name: 'Forest', desc: 'Deep greens and earthy browns.', colors: ['#a8c98a', '#5c8a5c', '#3d5c3a'],
       palette: ['#6b8f4e', '#a8763f', '#ffd166', '#8fae6e', '#d9a441', '#5c8a5c', '#c97b4a', '#7fae9c'] },
-    { id: 'autumn', name: 'Autumn', colors: ['#ffb347', '#e2703a', '#8b3a2a'],
+    { id: 'autumn', name: 'Autumn', desc: 'Rustic orange and burnt sienna.', colors: ['#ffb347', '#e2703a', '#8b3a2a'],
       palette: ['#d9542a', '#c9932f', '#8b3a2a', '#ffb347', '#a85c2e', '#e2703a', '#7a8f3f', '#c2452e'] },
-    { id: 'frost', name: 'Frost', colors: ['#e8f4fb', '#a8d8ea', '#5b9bd5'],
+    { id: 'frost', name: 'Frost', desc: 'Icy blues with a crisp chill.', colors: ['#e8f4fb', '#a8d8ea', '#5b9bd5'],
       palette: ['#2f7ab5', '#4a9fd8', '#1f9c8f', '#5b9bd5', '#7a5fc7', '#3fb8c9', '#0f5a8a', '#8a6fd1'] },
     { id: 'custom', name: 'Custom' },
-    { id: 'galaxy', name: 'Galaxy', colors: ['#1a1240', '#5b2c82', '#e0559e'],
+    { id: 'galaxy', name: 'Galaxy', desc: 'Deep space purples and pink nebulae.', colors: ['#1a1240', '#5b2c82', '#e0559e'],
       palette: ['#e0559e', '#6a3bd6', '#5cc8ff', '#ffd166', '#8f7fe0', '#ff8fc0', '#4fd6c8', '#c9a8f0'] },
-    { id: 'cyberpunk', name: 'Cyberpunk', colors: ['#1e1b3a', '#24123f', '#170b2e'],
+    { id: 'cyberpunk', name: 'Cyberpunk', desc: 'Neon pink and electric cyan.', colors: ['#1e1b3a', '#24123f', '#170b2e'],
       palette: ['#ff2e88', '#00e5ff', '#ffee00', '#7c4dff', '#00ff9c', '#ff6ec7', '#448aff', '#ff9100'] },
-    { id: 'volcano', name: 'Volcano', colors: ['#4a1a1a', '#8a2e1a', '#ff6b1a'],
+    { id: 'volcano', name: 'Volcano', desc: 'Molten reds and glowing orange.', colors: ['#4a1a1a', '#8a2e1a', '#ff6b1a'],
       palette: ['#ff6b1a', '#ff2e2e', '#ffcc00', '#ff9142', '#c71f1f', '#ff8f3f', '#e0501a', '#ffdd66'] },
-    { id: 'midnight', name: 'Midnight', colors: ['#2e2a45', '#24213a', '#1b1830'],
+    { id: 'midnight', name: 'Midnight', desc: 'Deep indigo after dark.', colors: ['#2e2a45', '#24213a', '#1b1830'],
       palette: ['#8f7fe0', '#5cc8d9', '#ff8fa3', '#7fdcb0', '#ffd66b', '#c9a8f0', '#5aa9e6', '#f4a6c9'] },
-    { id: 'accessible', name: 'Accessible', colors: ['#56b4e9', '#f0e442', '#e69f00'],
+    { id: 'accessible', name: 'Accessible', desc: 'Colorblind-safe Okabe-Ito palette.', colors: ['#56b4e9', '#f0e442', '#e69f00'],
       // The Okabe-Ito palette: designed to stay distinguishable for every
       // common form of color vision deficiency, not just look nice.
       palette: ['#0072b2', '#e69f00', '#009e73', '#f0e442', '#56b4e9', '#d55e00', '#cc79a7', '#3d3d3d'] },
-    { id: 'coral', name: 'Coral Reef', colors: ['#ff6f61', '#2ec4b6', '#ffd166'],
+    { id: 'coral', name: 'Coral Reef', desc: 'Bright reef teal and coral pink.', colors: ['#ff6f61', '#2ec4b6', '#ffd166'],
       palette: ['#ff6f61', '#2ec4b6', '#ffd166', '#4ecdc4', '#ff9f6b', '#f4d35e', '#1a936f', '#ee6c4d'] },
-    { id: 'rosegold', name: 'Rose Gold', colors: ['#f7d9d0', '#e8b4a0', '#d4a574'],
+    { id: 'rosegold', name: 'Rose Gold', desc: 'Elegant blush pink and gold.', colors: ['#f7d9d0', '#e8b4a0', '#d4a574'],
       palette: ['#c98a6b', '#d4af37', '#e8b4a0', '#b76e79', '#f0c987', '#dda15e', '#a56d50', '#e7bc91'] },
-    { id: 'aurora', name: 'Aurora', colors: ['#0a3d3a', '#1a5c4a', '#4a2c6d'],
+    { id: 'aurora', name: 'Aurora', desc: 'Northern-lights green and violet.', colors: ['#0a3d3a', '#1a5c4a', '#4a2c6d'],
       palette: ['#3ddc97', '#7c5cf0', '#5cc8ff', '#ffd166', '#24b578', '#a78bfa', '#2dd4bf', '#f472b6'] },
-    { id: 'blossom', name: 'Cherry Blossom', colors: ['#ffd9e8', '#ffb7ce', '#fff0f5'],
+    { id: 'blossom', name: 'Cherry Blossom', desc: 'Soft cherry-blossom pink.', colors: ['#ffd9e8', '#ffb7ce', '#fff0f5'],
       palette: ['#ff8fab', '#8fc4b0', '#ffc2d1', '#f7cad0', '#6ba892', '#ffafcc', '#d4a5c4', '#a0d8b3'] },
-    { id: 'espresso', name: 'Espresso', colors: ['#c9a074', '#8b5e3c', '#4a2c17'],
+    { id: 'espresso', name: 'Espresso', desc: 'Cozy warm coffee brown.', colors: ['#c9a074', '#8b5e3c', '#4a2c17'],
       palette: ['#8b5e3c', '#d4a574', '#c9932f', '#a5673a', '#6b4527', '#e0b878', '#b5784a', '#8f6a4a'] },
+    // --- Generated themes: just 4 base colors, the rest of the UI is derived
+    // via the same HSL math the Custom theme uses (see computeCustomVars).
+    { id: 'sakura', name: 'Sakura Night', desc: 'Dark cherry blossoms under a violet sky.', generated: true,
+      colors: ['#2a1a3a', '#4a2a5a', '#1a0f2a'], accent: '#ff6fa8' },
+    { id: 'citrus', name: 'Citrus Splash', desc: 'Zesty yellow, orange, and lime.', generated: true,
+      colors: ['#fff066', '#ffb347', '#a8e063'], accent: '#ff9f1c' },
+    { id: 'deepsea', name: 'Deep Sea', desc: 'A dark navy and teal abyss.', generated: true,
+      colors: ['#0a1a2e', '#16324f', '#0d1b2a'], accent: '#00b4d8' },
+    { id: 'dune', name: 'Desert Dune', desc: 'Warm sand and sun-baked terracotta.', generated: true,
+      colors: ['#edc9a0', '#d4a373', '#a9744f'], accent: '#e07a5f' },
+    { id: 'mintchoc', name: 'Mint Chocolate', desc: 'Dark cocoa with a cool mint bite.', generated: true,
+      colors: ['#3c2a21', '#5c4033', '#2b1d14'], accent: '#4fd1a5' },
+    { id: 'grapesoda', name: 'Grape Soda', desc: 'Fizzy purple and violet fun.', generated: true,
+      colors: ['#caa6f0', '#9b6bd6', '#6a3fa0'], accent: '#c86bd6' },
+    { id: 'goldenhour', name: 'Golden Hour', desc: 'Warm amber sunset glow.', generated: true,
+      colors: ['#ffe29f', '#ffa751', '#c9622a'], accent: '#ffb703' },
+    { id: 'arctic', name: 'Arctic Ice', desc: 'Pale blue and white, ice-cold.', generated: true,
+      colors: ['#f0f8ff', '#cce7f0', '#a3d5e0'], accent: '#48cae4' },
+    { id: 'emerald', name: 'Emerald City', desc: 'Rich jewel-toned green and gold.', generated: true,
+      colors: ['#0b3d2e', '#1a5c3a', '#0a2a1c'], accent: '#2ecc71' },
+    { id: 'cottoncandy', name: 'Cotton Candy', desc: 'A pastel pink and blue swirl.', generated: true,
+      colors: ['#ffd6ec', '#d6c9ff', '#c9f0ff'], accent: '#ff8fc7' },
+    { id: 'copper', name: 'Copper Penny', desc: 'Warm metallic copper and bronze.', generated: true,
+      colors: ['#e8a87c', '#c47c4d', '#8a4b28'], accent: '#d4713b' },
+    { id: 'moonlight', name: 'Moonlight', desc: 'Silvery blue, quiet and cool.', generated: true,
+      colors: ['#1c2541', '#3a4a6b', '#0d1321'], accent: '#5bc0eb' },
+    { id: 'tropical', name: 'Tropical Punch', desc: 'Vibrant pink, orange, and yellow.', generated: true,
+      colors: ['#ff5e78', '#ffa955', '#ffd93d'], accent: '#ff4d6d' },
+    { id: 'slatestorm', name: 'Slate Storm', desc: 'Cool stormy gray-blue.', generated: true,
+      colors: ['#3d4a5c', '#2c3644', '#1a2029'], accent: '#6ab0de' },
+    { id: 'honeydew', name: 'Honeydew', desc: 'Soft green-and-yellow melon.', generated: true,
+      colors: ['#e8f5c8', '#c8e6a0', '#a3d16f'], accent: '#8bc34a' },
+    { id: 'blackberry', name: 'Blackberry', desc: 'Deep purple-black berry tones.', generated: true,
+      colors: ['#3a1a4a', '#5c2a6b', '#1f0d2b'], accent: '#a84fc9' },
+    { id: 'peacock', name: 'Peacock', desc: 'Iridescent teal, blue, and green.', generated: true,
+      colors: ['#0f5c5c', '#1a7a7a', '#0a3d3d'], accent: '#00c9a7' },
+    { id: 'terracotta', name: 'Terracotta', desc: 'Earthy clay orange.', generated: true,
+      colors: ['#e2725b', '#c1440e', '#8a3324'], accent: '#e07856' },
+    { id: 'icylavender', name: 'Icy Lavender', desc: 'Soft, cool lavender and blue.', generated: true,
+      colors: ['#e6e6fa', '#c3b1e1', '#9d8ec9'], accent: '#9370db' },
+    { id: 'wildfire', name: 'Wildfire', desc: 'Intense red and orange embers.', generated: true,
+      colors: ['#3a0d0d', '#7a1c1c', '#1a0505'], accent: '#ff4500' },
   ];
   function loadTheme() {
     const t = localStorage.getItem(THEME_KEY);
@@ -1506,6 +1574,7 @@
   function themeDefaultPalette(id) {
     if (id === 'custom') return buildCustomPiecePalette(customTheme.accent);
     const theme = THEMES.find(t => t.id === id) || THEMES[0];
+    if (theme.generated) return buildCustomPiecePalette(theme.accent);
     return theme.palette.slice();
   }
 
@@ -1832,6 +1901,8 @@
   const achFilterToggle = document.getElementById('achFilterToggle');
   const settingsOverlay = document.getElementById('settingsOverlay');
   const themeGrid = document.getElementById('themeGrid');
+  const themesOverlay = document.getElementById('themesOverlay');
+  const themeDescriptionEl = document.getElementById('themeDescription');
   const soundToggle = document.getElementById('soundToggle');
   const hapticsToggle = document.getElementById('hapticsToggle');
   const resetProgressBtn = document.getElementById('resetProgressBtn');
@@ -2005,13 +2076,24 @@
     saveStats();
   }
 
+  const GEN_THEME_VARS_KEY = 'blockBlastGenThemeVars';
   function applyTheme(id) {
     currentTheme = id;
     localStorage.setItem(THEME_KEY, id);
     clearCustomThemeVars();
+    const theme = THEMES.find(t => t.id === id);
     if (id === 'custom') {
       document.documentElement.setAttribute('data-theme', 'custom');
       applyCustomThemeVars();
+    } else if (theme && theme.generated) {
+      // Generated themes have no static [data-theme] CSS block — their look is
+      // computed once from 4 base colors (same math the Custom theme uses) and
+      // applied as inline vars, cached so a reload can replay it before paint.
+      document.documentElement.setAttribute('data-theme', id);
+      const vars = computeCustomVars(theme.colors[0], theme.colors[1], theme.colors[2], theme.accent);
+      const style = document.documentElement.style;
+      Object.keys(vars).forEach(k => style.setProperty(k, vars[k]));
+      localStorage.setItem(GEN_THEME_VARS_KEY, JSON.stringify({ id, vars }));
     } else if (id === 'peach') {
       document.documentElement.removeAttribute('data-theme');
     } else {
@@ -2019,8 +2101,14 @@
     }
     syncPaletteToTheme();
     renderThemeGrid();
+    updateThemeDescription(id);
     markThemeTried(id);
     checkAchievements();
+  }
+  function updateThemeDescription(id) {
+    const theme = THEMES.find(t => t.id === id) || THEMES[0];
+    const desc = theme.id === 'custom' ? 'Your own hand-picked colors.' : (theme.desc || '');
+    themeDescriptionEl.innerHTML = `<b>${theme.name}</b> — ${desc}`;
   }
   function renderThemeGrid() {
     themeGrid.innerHTML = '';
@@ -3308,8 +3396,15 @@
     renderSwatches();
     colorsOverlay.classList.remove('hidden');
   });
+  document.getElementById('openThemesBtn').addEventListener('click', () => {
+    renderThemeGrid();
+    updateThemeDescription(currentTheme);
+    themesOverlay.classList.remove('hidden');
+  });
+  document.getElementById('closeThemesBtn').addEventListener('click', () => {
+    themesOverlay.classList.add('hidden');
+  });
   document.getElementById('editCustomThemeBtn').addEventListener('click', () => {
-    settingsOverlay.classList.add('hidden');
     applyTheme('custom');
     renderCustomThemeGrid();
     customThemeOverlay.classList.remove('hidden');
@@ -3338,7 +3433,7 @@
   const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, HS_KEY_DAILY,
     LAST_NAME_KEY, STATS_KEY, ACH_KEY,
     PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
-    THEME_KEY, CUSTOM_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, SPRINT_LIMIT_KEY,
+    THEME_KEY, CUSTOM_KEY, GEN_THEME_VARS_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, SPRINT_LIMIT_KEY,
     TIME_ATTACK_KEY, TIME_ATTACK_DURATION_KEY, SURVIVAL_KEY, PRACTICE_KEY];
 
   let resetConfirmTimeout = null;
