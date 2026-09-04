@@ -23,7 +23,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Clearing the entire board earns a Perfect Clear bonus — dealing quietly favors hands that can finish one off once the board is already close to empty
 - Undo (↩️) reverts your last placement, as long as it didn't clear a line
 - Reroll (🔀) swaps your current three pieces for new ones — one free use per game
-- Settings menu (⚙️) with sound/haptics toggles, a two-tap "reset all progress" option, and a dedicated Themes page (🎨, its own screen off Settings) with 40 selectable color themes — tap one to preview its name and a one-line description, right below the grid — plus a fully custom theme you build from 4 picked colors
+- Settings menu (⚙️) with sound/haptics toggles, a two-tap "reset all progress" option, and a dedicated Themes page (🎨, its own screen off Settings) with 90 selectable color themes — tap one to preview its name and a one-line description, right below the grid — plus a fully custom theme you build from 4 picked colors
 - Piece colors automatically match whichever theme is active — pick a theme and the blocks follow, unless you've manually customized them
 - Customizable block colors (🎨), with a reset-to-theme-defaults option
 - Zen Mode (🧘, in Settings) removes the fail state — a hand with nowhere to go quietly reshuffles instead of ending the game
@@ -50,6 +50,6 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Keyboard shortcuts: Esc closes menus (and resumes if paused), M mutes, U undoes, R rerolls, P pauses/resumes during Time Attack
 - Share Score copies a shareable result to your clipboard from the game-over screen
 - Home button on the game-over screen (or the toolbar Quit button, mid-game) to return to the title without restarting
-- Warm pastel visual theme by default, with chunky, blocky display type, 39 alternate preset themes (including an Accessible theme built on the colorblind-safe Okabe-Ito palette), and a build-your-own custom theme
+- Warm pastel visual theme by default, with chunky, blocky display type, 89 alternate preset themes (including an Accessible theme built on the colorblind-safe Okabe-Ito palette), and a build-your-own custom theme
 - All game data (high scores, stats, preferences) saved locally per-browser (`localStorage`) — nothing leaves your device
 - Fully responsive, single-file, no external dependencies beyond Google Fonts
