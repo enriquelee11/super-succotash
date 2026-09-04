@@ -3099,15 +3099,53 @@
       pieceEl.classList.add('dragging-source');
 
       const lift = e.pointerType === 'touch' ? 78 : 22;
-      dragState = { piece, slotIndex, ghost, boardRect, boardCell, lift, pieceEl, target: null, previewCells: [], lineCells: [] };
+      dragState = { piece, slotIndex, ghost, boardRect, boardCell, lift, pieceEl, pointerId: e.pointerId, target: null, previewCells: [], lineCells: [] };
       pendingPointer = { x: e.clientX, y: e.clientY };
       updateGhostPosition(pendingPointer.x, pendingPointer.y);
 
+      // Pointer capture keeps events routed here even if an interrupted
+      // gesture (a system popup, an app switch mid-touch) would otherwise
+      // drop them — and 'lostpointercapture' is a signal, on its own, that
+      // such an interruption happened, so the ghost doesn't get orphaned.
+      if (pieceEl.setPointerCapture) {
+        try { pieceEl.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      pieceEl.addEventListener('lostpointercapture', onLostPointerCapture);
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
     });
   }
+
+  // Cleans up a drag in progress without committing a placement — used both
+  // for a normal cancel and as the shared teardown onPointerUp commits from.
+  function cancelDrag() {
+    if (!dragState) return;
+    const { ghost, pieceEl, previewCells, lineCells, pointerId } = dragState;
+    dragState = null; // guards against reentrancy from releasePointerCapture below
+    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+    pendingPointer = null;
+    previewCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-ok', 'preview-bad'));
+    lineCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-line'));
+    ghost.remove();
+    pieceEl.classList.remove('dragging-source');
+    pieceEl.removeEventListener('lostpointercapture', onLostPointerCapture);
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointercancel', onPointerUp);
+    if (pointerId != null && pieceEl.releasePointerCapture) {
+      try { pieceEl.releasePointerCapture(pointerId); } catch (err) {}
+    }
+  }
+  function onLostPointerCapture() { cancelDrag(); }
+  // Extra safety nets: if focus leaves the page, or any other interaction
+  // starts, while a drag never got a matching pointerup, don't leave its
+  // ghost stuck on screen forever — the next real input self-heals it.
+  window.addEventListener('blur', cancelDrag);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelDrag(); });
+  // A genuinely continuing drag never re-fires pointerdown for the same
+  // contact, so seeing one here always means a previous drag is stale.
+  document.addEventListener('pointerdown', () => { if (dragState) cancelDrag(); }, true);
 
   function scheduleGhostUpdate() {
     if (rafId != null) return;
@@ -3200,17 +3238,8 @@
 
   function onPointerUp(e) {
     if (!dragState) return;
-    const { piece, slotIndex, ghost, pieceEl, target, previewCells, lineCells } = dragState;
-    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
-    pendingPointer = null;
-    previewCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-ok', 'preview-bad'));
-    lineCells.forEach(([r, c]) => cells[r][c].classList.remove('preview-line'));
-    ghost.remove();
-    pieceEl.classList.remove('dragging-source');
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', onPointerUp);
-    window.removeEventListener('pointercancel', onPointerUp);
-    dragState = null;
+    const { piece, slotIndex, target } = dragState;
+    cancelDrag();
     if (target && target.valid) {
       commitPlacement(target.rowStart, target.colStart, piece, slotIndex);
     }
