@@ -1283,7 +1283,7 @@
           </div>
           <div class="settings-row">
             <span>🧪 PRACTICE MODE</span>
-            <button class="toggle-btn" id="practiceToggle" title="Play without saving your score, stats, or badge progress"></button>
+            <button class="toggle-btn" id="practiceToggle" title="Play forever — a stuck hand reshuffles instead of ending — without saving your score, stats, or badge progress"></button>
           </div>
           <div class="settings-row">
             <span>🔲 SHAPE MARKS</span>
@@ -2876,12 +2876,15 @@
     }
     const anyFits = tray.some(p => p && canPlaceAnywhere(p));
     if (!anyFits) {
-      if (zenMode) {
+      // Zen Mode reshuffles to remove the fail state; Practice Mode reshuffles
+      // too, since nothing about a practice run is saved anyway — may as well
+      // let it run forever instead of ending on a stuck hand.
+      if (zenMode || practiceMode) {
         tray = randomTray();
         renderTray();
         const stillFits = tray.some(p => p && canPlaceAnywhere(p));
         if (stillFits) {
-          showToast('🧘 ZEN RESHUFFLE');
+          showToast(zenMode ? '🧘 ZEN RESHUFFLE' : '♾️ PRACTICE RESHUFFLE');
           return;
         }
       }

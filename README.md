@@ -31,7 +31,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Sprint Mode (⏱️, in Settings) caps a run at a placement limit — 20, 30, or 40, your pick — score as high as you can before time's up. Has its own named leaderboard, separate from Classic play
 - Time Attack (⏰, in Settings) gives you a countdown — 1, 2, or 3 minutes, your pick — to score as high as possible, with a pause button (⏸️, or the P key) that freezes the clock mid-run. Has its own named leaderboard
 - Survival Mode "Rising Tide" (🌊, in Settings) fills a few random cells with obstacles every 5 placements — see how long you can last before the board closes in. Has its own named leaderboard, ranked by placements survived
-- Practice Mode (🧪, in Settings) plays a run without saving anything — no leaderboard entry, no stats, no badge progress. Good for messing around risk-free
+- Practice Mode (🧪, in Settings) lets you play forever — a stuck hand reshuffles instead of ending the game, like Zen Mode — without saving anything: no leaderboard entry, no stats, no badge progress. Good for messing around risk-free
 - Lucky Pieces (✨) occasionally show up gold-glowing in the tray and score double when placed
 - Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
