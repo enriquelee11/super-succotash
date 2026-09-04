@@ -1439,7 +1439,6 @@
       palette: ['#d9542a', '#c9932f', '#8b3a2a', '#ffb347', '#a85c2e', '#e2703a', '#7a8f3f', '#c2452e'] },
     { id: 'frost', name: 'Frost', desc: 'Icy blues with a crisp chill.', colors: ['#e8f4fb', '#a8d8ea', '#5b9bd5'],
       palette: ['#2f7ab5', '#4a9fd8', '#1f9c8f', '#5b9bd5', '#7a5fc7', '#3fb8c9', '#0f5a8a', '#8a6fd1'] },
-    { id: 'custom', name: 'Custom' },
     { id: 'galaxy', name: 'Galaxy', desc: 'Deep space purples and pink nebulae.', colors: ['#1a1240', '#5b2c82', '#e0559e'],
       palette: ['#e0559e', '#6a3bd6', '#5cc8ff', '#ffd166', '#8f7fe0', '#ff8fc0', '#4fd6c8', '#c9a8f0'] },
     { id: 'cyberpunk', name: 'Cyberpunk', desc: 'Neon pink and electric cyan.', colors: ['#1e1b3a', '#24123f', '#170b2e'],
@@ -1472,8 +1471,9 @@
       colors: ['#0a1a2e', '#16324f', '#0d1b2a'], accent: '#00b4d8' },
     { id: 'dune', name: 'Desert Dune', desc: 'Warm sand and sun-baked terracotta.', generated: true,
       colors: ['#edc9a0', '#d4a373', '#a9744f'], accent: '#e07a5f' },
-    { id: 'mintchoc', name: 'Mint Chocolate', desc: 'Dark cocoa with a cool mint bite.', generated: true,
-      colors: ['#3c2a21', '#5c4033', '#2b1d14'], accent: '#4fd1a5' },
+    { id: 'mintchoc', name: 'Mint Chocolate', desc: 'Light mint green with rich chocolate brown.', generated: true,
+      colors: ['#e8f5e0', '#c8e6b8', '#a8d896'], accent: '#6b4226', accent2: '#a0724a',
+      palette: ['#6b4226', '#8b5e3c', '#4a2c17', '#a0724a', '#7a4a28', '#5c3a1e', '#9c7052', '#3d2415'] },
     { id: 'grapesoda', name: 'Grape Soda', desc: 'Fizzy purple and violet fun.', generated: true,
       colors: ['#caa6f0', '#9b6bd6', '#6a3fa0'], accent: '#c86bd6' },
     { id: 'goldenhour', name: 'Golden Hour', desc: 'Warm amber sunset glow.', generated: true,
@@ -1504,6 +1504,7 @@
       colors: ['#e6e6fa', '#c3b1e1', '#9d8ec9'], accent: '#9370db' },
     { id: 'wildfire', name: 'Wildfire', desc: 'Intense red and orange embers.', generated: true,
       colors: ['#3a0d0d', '#7a1c1c', '#1a0505'], accent: '#ff4500' },
+    { id: 'custom', name: 'Custom' },
   ];
   function loadTheme() {
     const t = localStorage.getItem(THEME_KEY);
@@ -1574,8 +1575,11 @@
   function themeDefaultPalette(id) {
     if (id === 'custom') return buildCustomPiecePalette(customTheme.accent);
     const theme = THEMES.find(t => t.id === id) || THEMES[0];
-    if (theme.generated) return buildCustomPiecePalette(theme.accent);
-    return theme.palette.slice();
+    // A generated theme normally derives its 8 piece colors by hue-rotating
+    // the accent, but can still hand-pick a curated palette (e.g. to keep
+    // every piece a shade of the same color) by giving one explicitly.
+    if (theme.palette) return theme.palette.slice();
+    return buildCustomPiecePalette(theme.accent);
   }
 
   function hexToRgba(hex, alpha) {
@@ -2091,6 +2095,14 @@
       // applied as inline vars, cached so a reload can replay it before paint.
       document.documentElement.setAttribute('data-theme', id);
       const vars = computeCustomVars(theme.colors[0], theme.colors[1], theme.colors[2], theme.accent);
+      // The secondary accent (used by the title marquee and secondary
+      // buttons) normally auto-shifts hue for variety, but a theme can pin
+      // it to a specific color instead, to stay within its own palette.
+      if (theme.accent2) {
+        const a2 = hexToHsl(theme.accent2);
+        vars['--accent2'] = theme.accent2;
+        vars['--accent2-deep'] = hslToHex(a2.h, a2.s, Math.max(a2.l - 18, 8));
+      }
       const style = document.documentElement.style;
       Object.keys(vars).forEach(k => style.setProperty(k, vars[k]));
       localStorage.setItem(GEN_THEME_VARS_KEY, JSON.stringify({ id, vars }));
@@ -2213,6 +2225,7 @@
   sprintToggle.addEventListener('click', () => {
     sprintMode = !sprintMode;
     localStorage.setItem(SPRINT_KEY, sprintMode ? '1' : '0');
+    if (sprintMode) turnOffOtherSpecialModes('sprint');
     updateSprintToggle();
     updateSprintLimitToggle();
   });
@@ -2247,6 +2260,7 @@
   timeAttackToggle.addEventListener('click', () => {
     timeAttackMode = !timeAttackMode;
     localStorage.setItem(TIME_ATTACK_KEY, timeAttackMode ? '1' : '0');
+    if (timeAttackMode) turnOffOtherSpecialModes('timeAttack');
     updateTimeAttackToggle();
     updateTimeAttackDurationToggle();
   });
@@ -2267,8 +2281,32 @@
   survivalToggle.addEventListener('click', () => {
     survivalMode = !survivalMode;
     localStorage.setItem(SURVIVAL_KEY, survivalMode ? '1' : '0');
+    if (survivalMode) turnOffOtherSpecialModes('survival');
     updateSurvivalToggle();
   });
+
+  // Sprint, Time Attack, and Survival are mutually exclusive — each is a
+  // fixed-format "special run" with its own leaderboard, so a game can only
+  // target one of them at a time. Turning one on turns the other two off.
+  function turnOffOtherSpecialModes(keep) {
+    if (keep !== 'sprint' && sprintMode) {
+      sprintMode = false;
+      localStorage.setItem(SPRINT_KEY, '0');
+      updateSprintToggle();
+      updateSprintLimitToggle();
+    }
+    if (keep !== 'timeAttack' && timeAttackMode) {
+      timeAttackMode = false;
+      localStorage.setItem(TIME_ATTACK_KEY, '0');
+      updateTimeAttackToggle();
+      updateTimeAttackDurationToggle();
+    }
+    if (keep !== 'survival' && survivalMode) {
+      survivalMode = false;
+      localStorage.setItem(SURVIVAL_KEY, '0');
+      updateSurvivalToggle();
+    }
+  }
 
   // --- Practice Mode: play without saving anything from the run ---
   const PRACTICE_KEY = 'blockBlastPracticeMode';
@@ -2947,6 +2985,7 @@
         ? `SURVIVED ${placementsThisGame} PLACEMENTS  (BEST: ${bestScore('survival')})`
         : `SCORE: ${score}  (BEST: ${bestScore()})`);
       overOverlay.classList.remove('hidden');
+      trayEl.classList.add('hidden');
       pendingBoard = activeBoard;
       pendingRankValue = activeBoard === 'survival' ? placementsThisGame : score;
       const boardScores = scoresFor(activeBoard);
