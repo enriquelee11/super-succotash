@@ -861,6 +861,18 @@
     font-size: 10px;
     color: var(--ink-dim);
   }
+  .badge-progress {
+    margin-top: 3px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(120,100,120,0.18);
+    overflow: hidden;
+  }
+  .badge-progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent2-deep));
+  }
 
   .swatch-grid {
     display: grid;
@@ -2603,27 +2615,42 @@
   // --- Achievements ---
   const ACHIEVEMENTS = [
     { id: 'firstClear', emoji: '🎉', title: 'FIRST BLOOD', desc: 'Clear your first line', points: 10, check: s => s.totalLinesCleared >= 1 },
-    { id: 'combo5', emoji: '🔥', title: 'COMBO KING', desc: 'Reach a x5 combo', points: 20, check: s => s.bestCombo >= 5 },
+    { id: 'combo5', emoji: '🔥', title: 'COMBO KING', desc: 'Reach a x5 combo', points: 20, check: s => s.bestCombo >= 5,
+      progress: s => ({ current: s.bestCombo || 0, target: 5 }) },
     { id: 'perfect', emoji: '💎', title: 'PERFECTIONIST', desc: 'Clear the entire board', points: 25, check: s => s.perfectClears >= 1 },
-    { id: 'century', emoji: '💯', title: 'CENTURY CLUB', desc: 'Clear 100 lines total', points: 30, check: s => s.totalLinesCleared >= 100 },
-    { id: 'streak7', emoji: '📅', title: 'WEEK WARRIOR', desc: 'Play 7 days in a row', points: 25, check: s => s.streak >= 7 },
-    { id: 'highRoller', emoji: '🏆', title: 'HIGH ROLLER', desc: 'Score 500+ in one game', points: 25, check: () => overallBestScore() >= 500 },
+    { id: 'century', emoji: '💯', title: 'CENTURY CLUB', desc: 'Clear 100 lines total', points: 30, check: s => s.totalLinesCleared >= 100,
+      progress: s => ({ current: s.totalLinesCleared || 0, target: 100 }) },
+    { id: 'streak7', emoji: '📅', title: 'WEEK WARRIOR', desc: 'Play 7 days in a row', points: 25, check: s => s.streak >= 7,
+      progress: s => ({ current: s.streak || 0, target: 7 }) },
+    { id: 'highRoller', emoji: '🏆', title: 'HIGH ROLLER', desc: 'Score 500+ in one game', points: 25, check: () => overallBestScore() >= 500,
+      progress: () => ({ current: overallBestScore(), target: 500 }) },
     { id: 'zenSeeker', emoji: '🧘', title: 'ZEN SEEKER', desc: 'Play a game in Zen Mode', points: 10, check: s => (s.zenGamesPlayed || 0) >= 1 },
-    { id: 'trendSetter', emoji: '🎨', title: 'TREND SETTER', desc: 'Try 5 different themes', points: 15, check: s => (s.themesUsedCount || 0) >= 5 },
+    { id: 'trendSetter', emoji: '🎨', title: 'TREND SETTER', desc: 'Try 5 different themes', points: 15, check: s => (s.themesUsedCount || 0) >= 5,
+      progress: s => ({ current: s.themesUsedCount || 0, target: 5 }) },
     { id: 'purist', emoji: '💪', title: 'PURIST', desc: 'Finish a game without using Undo', points: 20, check: s => (s.gamesWithNoUndo || 0) >= 1 },
     { id: 'daredevil', emoji: '💀', title: 'DAREDEVIL', desc: 'Finish a game in Hard Mode', points: 25, check: s => (s.hardGamesCompleted || 0) >= 1 },
     { id: 'dailyChampion', emoji: '📅', title: 'DAILY CHAMPION', desc: 'Complete a Daily Challenge', points: 15, check: s => (s.dailyChallengesCompleted || 0) >= 1 },
-    { id: 'dailyStreak7', emoji: '🗓️', title: 'WEEK OF CHALLENGES', desc: 'Complete 7 Daily Challenges in a row', points: 35, check: s => (s.dailyStreak || 0) >= 7 },
-    { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', points: 25, check: s => (s.bestMiniScore || 0) >= 200 },
-    { id: 'luckyCollector', emoji: '🍀', title: 'LUCKY COLLECTOR', desc: 'Place 10 Lucky Pieces', points: 20, check: s => (s.luckyPiecesPlaced || 0) >= 10 },
+    { id: 'dailyStreak7', emoji: '🗓️', title: 'WEEK OF CHALLENGES', desc: 'Complete 7 Daily Challenges in a row', points: 35, check: s => (s.dailyStreak || 0) >= 7,
+      progress: s => ({ current: s.dailyStreak || 0, target: 7 }) },
+    { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', points: 25, check: s => (s.bestMiniScore || 0) >= 200,
+      progress: s => ({ current: s.bestMiniScore || 0, target: 200 }) },
+    { id: 'luckyCollector', emoji: '🍀', title: 'LUCKY COLLECTOR', desc: 'Place 10 Lucky Pieces', points: 20, check: s => (s.luckyPiecesPlaced || 0) >= 10,
+      progress: s => ({ current: s.luckyPiecesPlaced || 0, target: 10 }) },
     { id: 'sprinter', emoji: '⏱️', title: 'SPRINTER', desc: 'Finish a Sprint run', points: 20, check: s => (s.sprintsCompleted || 0) >= 1 },
     { id: 'clockBeater', emoji: '⏰', title: 'AGAINST THE CLOCK', desc: 'Finish a Time Attack run', points: 20, check: s => (s.timeAttacksCompleted || 0) >= 1 },
-    { id: 'tideSurvivor', emoji: '🌊', title: 'TIDE SURVIVOR', desc: 'Survive 50 placements in Survival Mode', points: 30, check: s => (s.longestSurvival || 0) >= 50 },
+    { id: 'tideSurvivor', emoji: '🌊', title: 'TIDE SURVIVOR', desc: 'Survive 50 placements in Survival Mode', points: 30, check: s => (s.longestSurvival || 0) >= 50,
+      progress: s => ({ current: s.longestSurvival || 0, target: 50 }) },
     { id: 'allRounder', emoji: '🎯', title: 'ALL-ROUNDER', desc: 'Finish a Sprint, a Time Attack, and a Survival run', points: 30,
-      check: s => (s.sprintsCompleted || 0) >= 1 && (s.timeAttacksCompleted || 0) >= 1 && (s.survivalsCompleted || 0) >= 1 },
-    { id: 'marathoner', emoji: '⏳', title: 'MARATHONER', desc: 'Play for a total of an hour', points: 25, check: s => (s.totalPlayTimeSec || 0) >= 3600 },
+      check: s => (s.sprintsCompleted || 0) >= 1 && (s.timeAttacksCompleted || 0) >= 1 && (s.survivalsCompleted || 0) >= 1,
+      progress: s => ({
+        current: [s.sprintsCompleted, s.timeAttacksCompleted, s.survivalsCompleted].filter(n => (n || 0) >= 1).length,
+        target: 3,
+      }) },
+    { id: 'marathoner', emoji: '⏳', title: 'MARATHONER', desc: 'Play for a total of an hour', points: 25, check: s => (s.totalPlayTimeSec || 0) >= 3600,
+      progress: s => ({ current: Math.min(Math.floor((s.totalPlayTimeSec || 0) / 60), 60), target: 60 }) },
     { id: 'completionist', emoji: '👑', title: 'COMPLETIONIST', desc: 'Unlock every other badge', points: 50,
-      check: () => unlockedAchievements.length >= ACHIEVEMENTS.length - 1 },
+      check: () => unlockedAchievements.length >= ACHIEVEMENTS.length - 1,
+      progress: () => ({ current: unlockedAchievements.length, target: ACHIEVEMENTS.length - 1 }) },
   ];
   const RANKS = [
     { title: 'ROOKIE', threshold: 0 },
@@ -2694,7 +2721,20 @@
       const unlocked = unlockedAchievements.includes(a.id);
       const li = document.createElement('li');
       li.className = unlocked ? 'unlocked' : '';
-      li.innerHTML = `<span class="badge-emoji">${a.emoji}</span><span class="badge-text"><span class="badge-title">${a.title}</span><span class="badge-desc">${unlocked ? a.desc : '???'}</span></span><span class="badge-points">${a.points}</span>`;
+      let descHtml;
+      if (unlocked) {
+        descHtml = `<span class="badge-desc">${a.desc}</span>`;
+      } else if (a.progress) {
+        // Locked badges keep their description a mystery, but a numeric
+        // target (already hinted at by most titles) shows how close you are.
+        const { current, target } = a.progress(stats);
+        const pct = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+        descHtml = `<span class="badge-desc">${Math.min(current, target)} / ${target}</span>` +
+          `<div class="badge-progress"><div class="badge-progress-bar" style="width:${pct}%"></div></div>`;
+      } else {
+        descHtml = `<span class="badge-desc">???</span>`;
+      }
+      li.innerHTML = `<span class="badge-emoji">${a.emoji}</span><span class="badge-text"><span class="badge-title">${a.title}</span>${descHtml}</span><span class="badge-points">${a.points}</span>`;
       achievementsList.appendChild(li);
     });
   }
