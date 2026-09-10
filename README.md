@@ -45,7 +45,7 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Board Size (Settings) switches between Classic 8×8 and a faster Mini 6×6 board — locked while a game is in progress, and each size keeps its own leaderboard and "BEST" score
 - A bigger celebration — toast + confetti — every 5 combo tier (x5, x10, x15…)
 - Backup / Restore (💾, in Settings) exports all your progress as a copyable text code, and can restore it back in on any device that code is pasted into
-- Sound effects and haptic feedback on mobile, with a mute toggle (🔊/🔇)
+- Sound effects (placements, line clears, Perfect Clears, combos, a distinct sparkly chime for Lucky Pieces, Undo, Reroll, a shuffle whoosh for Zen/Practice reshuffles, a rumble when Survival's tide rises, a two-note chime for badge unlocks, a bigger fanfare for rank-ups, a rising sweep for a new #1 score, and game over) and haptic feedback on mobile, with a mute toggle (🔊/🔇)
 - A little confetti celebration when you set a new #1 high score or unlock a badge
 - Keyboard shortcuts: Esc closes menus (and resumes if paused), M mutes, U undoes, R rerolls, P pauses/resumes during Time Attack
 - Share Score copies a shareable result to your clipboard from the game-over screen

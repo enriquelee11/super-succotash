@@ -2458,6 +2458,8 @@
     }
     renderBoard();
     showToast('🌊 THE TIDE RISES');
+    beep(140, 260, 0.3, 'sawtooth', 0.09);
+    vibrate([20, 30, 20]);
   }
 
   // --- Pause (Time Attack only — freezes the countdown) ---
@@ -2700,6 +2702,8 @@
       if (!silent) {
         showToast(`${a.emoji} BADGE: ${a.title}`);
         celebrate(boardWrap);
+        beep(523, 523, 0.1, 'triangle', 0.1);
+        setTimeout(() => beep(784, 784, 0.2, 'triangle', 0.12), 100);
       }
     });
     if (!silent) {
@@ -2708,6 +2712,9 @@
         setTimeout(() => {
           showToast(`⭐ RANK UP: ${newRank.title}!`);
           celebrate(boardWrap);
+          beep(523, 523, 0.1, 'triangle', 0.12);
+          setTimeout(() => beep(659, 659, 0.1, 'triangle', 0.12), 110);
+          setTimeout(() => beep(784, 784, 0.28, 'triangle', 0.14), 220);
         }, 1700);
       }
     }
@@ -2803,6 +2810,8 @@
     renderTray();
     updateHud();
     updateUndoButton();
+    beep(500, 320, 0.12, 'square', 0.08);
+    vibrate(15);
   }
 
   function updateQuitButton() {
@@ -2822,6 +2831,9 @@
     updateUndoButton();
     updateRerollButton();
     renderTray();
+    beep(400, 550, 0.08, 'triangle', 0.07);
+    setTimeout(() => beep(550, 700, 0.08, 'triangle', 0.07), 70);
+    vibrate(15);
     const anyFits = tray.some(p => canPlaceAnywhere(p));
     if (!anyFits) endGame();
   }
@@ -2992,10 +3004,12 @@
       showToast(`✨ LUCKY PIECE! +${luckyBonus}`);
       celebrate(boardWrap);
       checkAchievements();
+      beep(700, 1500, 0.18, 'sine', 0.1);
+    } else {
+      beep(300, 260, 0.04, 'square', 0.05);
     }
     tray[slotIndex] = null;
     renderBoard();
-    beep(300, 260, 0.04, 'square', 0.05);
     vibrate(10);
 
     const fullRows = [];
@@ -3084,6 +3098,7 @@
         const stillFits = tray.some(p => p && canPlaceAnywhere(p));
         if (stillFits) {
           showToast(zenMode ? '🧘 ZEN RESHUFFLE' : '♾️ PRACTICE RESHUFFLE');
+          beep(350, 550, 0.2, 'sine', 0.08);
           return;
         }
       }
@@ -3189,7 +3204,10 @@
     updateModeViewToggle();
     updateScoreSizeToggle();
     renderLeaderboard(value);
-    if (wasNewBest) celebrate(overOverlay);
+    if (wasNewBest) {
+      celebrate(overOverlay);
+      beep(600, 1800, 0.4, 'sine', 0.15);
+    }
     checkAchievements();
   }
 
