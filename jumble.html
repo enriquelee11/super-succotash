@@ -2478,6 +2478,11 @@
     pauseOverlay.classList.add('hidden');
     startGameTick();
   }
+  // Auto-pause a Time Attack run if you switch away — the clock shouldn't
+  // burn down while the tab isn't even visible. (No-ops for every other
+  // mode via pauseGame's own guards.)
+  window.addEventListener('blur', pauseGame);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
   // --- Live mode status ticker (Sprint/Time Attack/Survival HUD badge) ---
   let gameTickInterval = null;
@@ -2648,6 +2653,14 @@
       }) },
     { id: 'marathoner', emoji: '⏳', title: 'MARATHONER', desc: 'Play for a total of an hour', points: 25, check: s => (s.totalPlayTimeSec || 0) >= 3600,
       progress: s => ({ current: Math.min(Math.floor((s.totalPlayTimeSec || 0) / 60), 60), target: 60 }) },
+    { id: 'comboLegend', emoji: '🌟', title: 'COMBO LEGEND', desc: 'Reach a x10 combo', points: 30, check: s => (s.bestCombo || 0) >= 10,
+      progress: s => ({ current: s.bestCombo || 0, target: 10 }) },
+    { id: 'flawlessFive', emoji: '✨', title: 'FLAWLESS FIVE', desc: 'Achieve 5 Perfect Clears total', points: 35, check: s => (s.perfectClears || 0) >= 5,
+      progress: s => ({ current: s.perfectClears || 0, target: 5 }) },
+    { id: 'dedicated', emoji: '🔥', title: 'DEDICATED', desc: 'Play 14 days in a row', points: 35, check: s => (s.streak || 0) >= 14,
+      progress: s => ({ current: s.streak || 0, target: 14 }) },
+    { id: 'dailyLegend', emoji: '🏅', title: 'DAILY LEGEND', desc: 'Complete 30 Daily Challenges in a row', points: 50, check: s => (s.dailyStreak || 0) >= 30,
+      progress: s => ({ current: s.dailyStreak || 0, target: 30 }) },
     { id: 'completionist', emoji: '👑', title: 'COMPLETIONIST', desc: 'Unlock every other badge', points: 50,
       check: () => unlockedAchievements.length >= ACHIEVEMENTS.length - 1,
       progress: () => ({ current: unlockedAchievements.length, target: ACHIEVEMENTS.length - 1 }) },
