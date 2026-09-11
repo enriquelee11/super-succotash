@@ -1152,6 +1152,7 @@
         <div id="menuOverlay" class="overlay hidden">
           <h2 class="display-font">MENU</h2>
           <button class="action secondary" id="weeklyChallengeBtn">📆 WEEKLY CHALLENGE</button>
+          <p class="daily-preview" id="weeklyPreview"></p>
           <button class="action secondary" id="startScoresBtn">🏆 HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
@@ -1818,6 +1819,9 @@
     return { matrix, rows: matrix.length, cols: matrix[0].length };
   }
   const SHAPES = SHAPE_DEFS.map(parseShape);
+  // Weekly Challenge's Heavy Hand curse deals only from this subset — no
+  // easy singles, dominoes, or triples, so every piece takes real board space.
+  const HEAVY_SHAPES = SHAPES.filter(s => s.matrix.flat().filter(Boolean).length >= 4);
 
   // --- Seeded RNG (Daily Challenge dealing) ---
   // A deterministic PRNG so a Daily Challenge run deals the exact same
@@ -1874,9 +1878,41 @@
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
     return h;
   }
+  // On top of the permanent no-Undo/no-Reroll rule, every week also draws one
+  // curse (deterministic from the week number, so it's the same for everyone)
+  // to keep Weekly from just being "Classic but stricter."
+  const WEEKLY_CURSES = [
+    { id: 'ironTide', emoji: '🌊', name: 'Iron Tide', desc: 'A cell locks in permanently every few placements — the board slowly closes in.' },
+    { id: 'heavyHand', emoji: '🧱', name: 'Heavy Hand', desc: 'Only medium and large pieces are dealt — no easy singles, dominoes, or triples.' },
+    { id: 'blackout', emoji: '🕶️', name: 'Blackout', desc: 'No line-clear preview while dragging — you have to plan from memory.' },
+    { id: 'frozenStart', emoji: '🧊', name: 'Frozen Start', desc: 'The board starts already 15% filled.' },
+  ];
+  function weeksCurse() {
+    return WEEKLY_CURSES[Math.abs(seedFromWeek()) % WEEKLY_CURSES.length];
+  }
+  const WEEKLY_TIDE_INTERVAL = 6;
+  let weeklyCurse = null;
+  function weeklyTide() {
+    const cellsToAdd = Math.max(1, Math.round(SIZE * 0.12));
+    let added = 0, attempts = 0;
+    while (added < cellsToAdd && attempts < 100) {
+      attempts++;
+      const r = Math.floor(currentRng() * SIZE);
+      const c = Math.floor(currentRng() * SIZE);
+      if (!board[r][c]) {
+        board[r][c] = PALETTE[Math.floor(currentRng() * PALETTE.length)];
+        added++;
+      }
+    }
+    renderBoard();
+    showToast('🌊 IRON TIDE RISES');
+    beep(140, 260, 0.3, 'sawtooth', 0.09);
+    vibrate([20, 30, 20]);
+  }
 
   function randomPiece() {
-    const shape = SHAPES[Math.floor(currentRng() * SHAPES.length)];
+    const pool = (weeklyChallengeMode && weeklyCurse && weeklyCurse.id === 'heavyHand') ? HEAVY_SHAPES : SHAPES;
+    const shape = pool[Math.floor(currentRng() * pool.length)];
     const color = PALETTE[Math.floor(currentRng() * PALETTE.length)];
     return { matrix: shape.matrix, rows: shape.rows, cols: shape.cols, color };
   }
@@ -2077,6 +2113,7 @@
   const weeklyBadge = document.getElementById('weeklyBadge');
   const modeBadge = document.getElementById('modeBadge');
   const dailyPreviewEl = document.getElementById('dailyPreview');
+  const weeklyPreviewEl = document.getElementById('weeklyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
   const scoreSizeToggle = document.getElementById('scoreSizeToggle');
   const modeViewToggle = document.getElementById('modeViewToggle');
@@ -2916,6 +2953,7 @@
     buildBoardDom();
     board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
     if (dailyChallengeMode && dailyModifier && dailyModifier.id === 'headStart') applyHeadStart();
+    if (weeklyChallengeMode && weeklyCurse && weeklyCurse.id === 'frozenStart') applyHeadStart();
     tray = randomTray();
     score = 0;
     combo = 0;
@@ -2934,8 +2972,8 @@
       dailyBadge.textContent = `📅 #${dailyChallengeNumber()} — ${dailyModifier.emoji} ${dailyModifier.name.toUpperCase()}`;
     }
     weeklyBadge.classList.toggle('hidden', !weeklyChallengeMode);
-    if (weeklyChallengeMode) {
-      weeklyBadge.textContent = `📆 WEEKLY #${weeklyChallengeNumber()} — 💀 NO UNDO/REROLL`;
+    if (weeklyChallengeMode && weeklyCurse) {
+      weeklyBadge.textContent = `📆 WEEKLY #${weeklyChallengeNumber()} — 💀 NO UNDO/REROLL · ${weeklyCurse.emoji} ${weeklyCurse.name.toUpperCase()}`;
     }
     updateHud();
     updateUndoButton();
@@ -3065,7 +3103,8 @@
       checkAchievements();
       beep(700, 1500, 0.18, 'sine', 0.1);
     } else {
-      beep(300, 260, 0.04, 'square', 0.05);
+      const dropPitch = Math.max(160, 300 - cellsPlaced * 12);
+      beep(dropPitch, dropPitch - 70, 0.07, 'square', 0.07);
     }
     tray[slotIndex] = null;
     renderBoard();
@@ -3142,9 +3181,14 @@
     if (survivalMode && placementsThisGame > 0 && placementsThisGame % TIDE_INTERVAL === 0) {
       riseTide();
     }
+    if (weeklyChallengeMode && weeklyCurse && weeklyCurse.id === 'ironTide' &&
+        placementsThisGame > 0 && placementsThisGame % WEEKLY_TIDE_INTERVAL === 0) {
+      weeklyTide();
+    }
     if (tray.every(p => p === null)) {
       tray = randomTray();
       renderTray();
+      beep(450, 620, 0.1, 'sine', 0.06);
     }
     const anyFits = tray.some(p => p && canPlaceAnywhere(p));
     if (!anyFits) {
@@ -3363,6 +3407,7 @@
       if (!running || paused || tray[slotIndex] !== piece) return;
       e.preventDefault();
       ensureAudio();
+      beep(500, 640, 0.05, 'sine', 0.04);
       const boardRect = boardEl.getBoundingClientRect();
       const boardCell = boardRect.width / SIZE;
       const ghost = document.createElement('div');
@@ -3513,8 +3558,9 @@
         newCells.push([br, bc]);
       }
     }
+    const blackedOut = weeklyChallengeMode && weeklyCurse && weeklyCurse.id === 'blackout';
     setPreviewCells(newCells, valid);
-    setLineCells(valid ? findProspectiveLineCells(rowStart, colStart, piece) : []);
+    setLineCells(valid && !blackedOut ? findProspectiveLineCells(rowStart, colStart, piece) : []);
   }
 
   function onPointerMove(e) {
@@ -3530,6 +3576,8 @@
     cancelDrag();
     if (target && target.valid) {
       commitPlacement(target.rowStart, target.colStart, piece, slotIndex);
+    } else if (target) {
+      beep(220, 140, 0.09, 'square', 0.05);
     }
   }
 
@@ -3539,6 +3587,7 @@
     dailyChallengeMode = false;
     dailyModifier = null;
     weeklyChallengeMode = false;
+    weeklyCurse = null;
     currentRng = Math.random;
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -3550,6 +3599,7 @@
     dailyChallengeMode = true;
     dailyModifier = todaysModifier();
     weeklyChallengeMode = false;
+    weeklyCurse = null;
     currentRng = mulberry32(seedFromDate());
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -3561,6 +3611,7 @@
     dailyChallengeMode = false;
     dailyModifier = null;
     weeklyChallengeMode = true;
+    weeklyCurse = weeksCurse();
     currentRng = mulberry32(seedFromWeek());
     menuOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -3580,6 +3631,7 @@
     dailyChallengeMode = false;
     dailyModifier = null;
     weeklyChallengeMode = false;
+    weeklyCurse = null;
     currentRng = Math.random;
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
@@ -3675,6 +3727,7 @@
     dailyModifier = null;
     dailyBadge.classList.add('hidden');
     weeklyChallengeMode = false;
+    weeklyCurse = null;
     weeklyBadge.classList.add('hidden');
     currentRng = Math.random;
     accruePlayTime();
@@ -3864,6 +3917,8 @@
   checkAchievements(true);
   const todaysMod = todaysModifier();
   dailyPreviewEl.textContent = `#${dailyChallengeNumber()} · ${todaysMod.emoji} ${todaysMod.name.toUpperCase()} · ${todaysMod.desc}`;
+  const thisWeeksCurse = weeksCurse();
+  weeklyPreviewEl.textContent = `#${weeklyChallengeNumber()} · 💀 NO UNDO/REROLL + ${thisWeeksCurse.emoji} ${thisWeeksCurse.name.toUpperCase()} · ${thisWeeksCurse.desc}`;
 })();
 </script>
 </body>
