@@ -1115,6 +1115,7 @@
   <div class="cabinet">
     <div class="marquee display-font">JUMBLE</div>
     <div class="daily-badge hidden" id="dailyBadge">📅 DAILY CHALLENGE</div>
+    <div class="daily-badge hidden" id="weeklyBadge">📆 WEEKLY CHALLENGE</div>
     <div class="daily-badge hidden" id="modeBadge"></div>
     <div class="hud">
       <span>SCORE<b id="score">0</b></span>
@@ -1150,6 +1151,7 @@
 
         <div id="menuOverlay" class="overlay hidden">
           <h2 class="display-font">MENU</h2>
+          <button class="action secondary" id="weeklyChallengeBtn">📆 WEEKLY CHALLENGE</button>
           <button class="action secondary" id="startScoresBtn">🏆 HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
@@ -1190,6 +1192,7 @@
             <button class="size-btn" data-mode="timeAttack">TIMED</button>
             <button class="size-btn" data-mode="survival">TIDE</button>
             <button class="size-btn" data-mode="daily">DAILY</button>
+            <button class="size-btn" data-mode="weekly">WEEKLY</button>
           </div>
           <div class="size-toggle" id="scoreSizeToggle">
             <button class="size-btn" data-size="8">8×8</button>
@@ -1213,6 +1216,8 @@
             <div><b id="statSprint">0</b><span>⏱️ SPRINT BEST</span></div>
             <div><b id="statTimeAttack">0</b><span>⏰ TIME ATTACK BEST</span></div>
             <div><b id="statSurvival">0</b><span>🌊 LONGEST SURVIVAL</span></div>
+            <div><b id="statWeekly">0</b><span>📆 WEEKLY BEST</span></div>
+            <div><b id="statWeeklyStreak">0</b><span>📆 WEEKLY STREAK</span></div>
           </div>
           <div class="colors-actions">
             <button class="action secondary" id="achievementsBtn">🏅 BADGES</button>
@@ -1758,7 +1763,8 @@
   const HS_KEY_TIME_ATTACK = 'blockBlastTimeAttackHighScores';
   const HS_KEY_SURVIVAL = 'blockBlastSurvivalHighScores';
   const HS_KEY_DAILY = 'blockBlastDailyHighScores';
-  const HS_KEYS = { 8: HS_KEY_8, 6: HS_KEY_6, sprint: HS_KEY_SPRINT, timeAttack: HS_KEY_TIME_ATTACK, survival: HS_KEY_SURVIVAL, daily: HS_KEY_DAILY };
+  const HS_KEY_WEEKLY = 'blockBlastWeeklyHighScores';
+  const HS_KEYS = { 8: HS_KEY_8, 6: HS_KEY_6, sprint: HS_KEY_SPRINT, timeAttack: HS_KEY_TIME_ATTACK, survival: HS_KEY_SURVIVAL, daily: HS_KEY_DAILY, weekly: HS_KEY_WEEKLY };
   const MAX_SCORES = 10;
   const PERFECT_CLEAR_BONUS = 150;
   const LAST_NAME_KEY = 'blockBlastLastName';
@@ -1791,6 +1797,7 @@
     timeAttack: seedFromLegacyStat('timeAttack', (loadStats().bestTimeAttackScore || 0)),
     survival: seedFromLegacyStat('survival', (loadStats().longestSurvival || 0)),
     daily: seedFromLegacyStat('daily', (loadStats().dailyBest || 0)),
+    weekly: seedFromLegacyStat('weekly', (loadStats().weeklyBest || 0)),
   };
   function scoresFor(board) { return highScoresByBoard[board] || []; }
   // Auto-submits a Daily Challenge run into its all-time leaderboard without
@@ -1850,6 +1857,22 @@
   ];
   function todaysModifier() {
     return DAILY_MODIFIERS[Math.abs(seedFromDate()) % DAILY_MODIFIERS.length];
+  }
+
+  // --- Weekly Challenge: a tougher, once-a-week seeded puzzle — same board
+  // for everyone all week, Hard Mode rules baked in (no Undo, no Reroll)
+  // as its defining twist instead of a rotating modifier.
+  const WEEKLY_EPOCH_UTC = Date.UTC(2025, 0, 1);
+  function weeklyChallengeNumber() {
+    const now = new Date();
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    return Math.floor((todayUTC - WEEKLY_EPOCH_UTC) / (7 * 86400000)) + 1;
+  }
+  function seedFromWeek() {
+    const s = 'week' + weeklyChallengeNumber();
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return h;
   }
 
   function randomPiece() {
@@ -2012,6 +2035,8 @@
   const statTimePlayedEl = document.getElementById('statTimePlayed');
   const statDailyEl = document.getElementById('statDaily');
   const statDailyStreakEl = document.getElementById('statDailyStreak');
+  const statWeeklyEl = document.getElementById('statWeekly');
+  const statWeeklyStreakEl = document.getElementById('statWeeklyStreak');
   const statSprintEl = document.getElementById('statSprint');
   const statTimeAttackEl = document.getElementById('statTimeAttack');
   const statSurvivalEl = document.getElementById('statSurvival');
@@ -2049,6 +2074,7 @@
   const howToPlayOverlay = document.getElementById('howToPlayOverlay');
   const menuOverlay = document.getElementById('menuOverlay');
   const dailyBadge = document.getElementById('dailyBadge');
+  const weeklyBadge = document.getElementById('weeklyBadge');
   const modeBadge = document.getElementById('modeBadge');
   const dailyPreviewEl = document.getElementById('dailyPreview');
   const sizeToggle = document.getElementById('sizeToggle');
@@ -2063,6 +2089,7 @@
   let usedUndoThisGame = false;
   let dailyChallengeMode = false;
   let dailyModifier = null;
+  let weeklyChallengeMode = false;
 
   // Fills a seeded fraction of the board before dealing starts (Head Start
   // modifier) — uses the same daily RNG, so it's identical for everyone.
@@ -2116,6 +2143,8 @@
       hardGamesCompleted: 0, totalPlayTimeSec: 0,
       dailyBest: 0, dailyBestDate: null, dailyChallengesCompleted: 0, bestMiniScore: 0,
       dailyStreak: 0, lastDailyDate: null,
+      weeklyBest: 0, weeklyBestWeek: null, weeklyChallengesCompleted: 0,
+      weeklyStreak: 0, lastWeeklyWeek: null,
       luckyPiecesPlaced: 0, bestSprintScore: 0, sprintsCompleted: 0,
       bestTimeAttackScore: 0, timeAttacksCompleted: 0, longestSurvival: 0, survivalsCompleted: 0,
       scoreHistory8: [], scoreHistory6: [],
@@ -2162,6 +2191,8 @@
     statTimePlayedEl.textContent = formatPlayTime(stats.totalPlayTimeSec || 0);
     statDailyEl.textContent = dailyBest();
     statDailyStreakEl.textContent = stats.dailyStreak || 0;
+    statWeeklyEl.textContent = weeklyBest();
+    statWeeklyStreakEl.textContent = stats.weeklyStreak || 0;
     statSprintEl.textContent = bestScore('sprint');
     statTimeAttackEl.textContent = bestScore('timeAttack');
     statSurvivalEl.textContent = bestScore('survival');
@@ -2185,6 +2216,25 @@
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     stats.dailyStreak = stats.lastDailyDate === yesterday ? (stats.dailyStreak || 0) + 1 : 1;
     stats.lastDailyDate = today;
+  }
+
+  // Same pattern as Daily's best/streak, keyed by week number instead of date.
+  function weeklyBest() {
+    return stats.weeklyBestWeek === weeklyChallengeNumber() ? (stats.weeklyBest || 0) : 0;
+  }
+  function updateWeeklyBest(finalScore) {
+    const wk = weeklyChallengeNumber();
+    if (stats.weeklyBestWeek !== wk) {
+      stats.weeklyBestWeek = wk;
+      stats.weeklyBest = 0;
+    }
+    if (finalScore > stats.weeklyBest) stats.weeklyBest = finalScore;
+  }
+  function updateWeeklyStreak() {
+    const wk = weeklyChallengeNumber();
+    if (stats.lastWeeklyWeek === wk) return;
+    stats.weeklyStreak = stats.lastWeeklyWeek === wk - 1 ? (stats.weeklyStreak || 0) + 1 : 1;
+    stats.lastWeeklyWeek = wk;
   }
 
   const TRIED_THEMES_KEY = 'blockBlastTriedThemes';
@@ -2639,6 +2689,9 @@
     { id: 'dailyChampion', emoji: '📅', title: 'DAILY CHAMPION', desc: 'Complete a Daily Challenge', points: 15, check: s => (s.dailyChallengesCompleted || 0) >= 1 },
     { id: 'dailyStreak7', emoji: '🗓️', title: 'WEEK OF CHALLENGES', desc: 'Complete 7 Daily Challenges in a row', points: 35, check: s => (s.dailyStreak || 0) >= 7,
       progress: s => ({ current: s.dailyStreak || 0, target: 7 }) },
+    { id: 'weeklyWarrior', emoji: '📆', title: 'WEEKLY WARRIOR', desc: 'Complete a Weekly Challenge', points: 25, check: s => (s.weeklyChallengesCompleted || 0) >= 1 },
+    { id: 'weeklyLegend', emoji: '🏵️', title: 'WEEKLY LEGEND', desc: 'Complete 4 Weekly Challenges in a row', points: 45, check: s => (s.weeklyStreak || 0) >= 4,
+      progress: s => ({ current: s.weeklyStreak || 0, target: 4 }) },
     { id: 'miniMaster', emoji: '🔷', title: 'MINI MASTER', desc: 'Score 200+ on the 6×6 board', points: 25, check: s => (s.bestMiniScore || 0) >= 200,
       progress: s => ({ current: s.bestMiniScore || 0, target: 200 }) },
     { id: 'luckyCollector', emoji: '🍀', title: 'LUCKY COLLECTOR', desc: 'Place 10 Lucky Pieces', points: 20, check: s => (s.luckyPiecesPlaced || 0) >= 10,
@@ -2770,6 +2823,8 @@
   function shareScore() {
     const text = (dailyChallengeMode && dailyModifier)
       ? `Jumble Daily Challenge #${dailyChallengeNumber()} (${dailyModifier.emoji} ${dailyModifier.name}): scored ${score}! 🧱 Best combo: x${combo || 1}. Can you beat me?`
+      : weeklyChallengeMode
+      ? `Jumble Weekly Challenge #${weeklyChallengeNumber()}: scored ${score}! 🧱 Best combo: x${combo || 1}. Can you beat me?`
       : `I scored ${score} in Jumble! 🧱 Best combo: x${combo || 1}. Can you beat me?`;
     const done = () => {
       const original = shareBtn.textContent;
@@ -2794,11 +2849,11 @@
   }
 
   function updateUndoButton() {
-    undoBtn.disabled = !undoSnapshot || hardMode;
+    undoBtn.disabled = !undoSnapshot || hardMode || weeklyChallengeMode;
   }
 
   function performUndo() {
-    if (!undoSnapshot || !running || hardMode || paused) return;
+    if (!undoSnapshot || !running || hardMode || weeklyChallengeMode || paused) return;
     board = undoSnapshot.board.map(r => r.slice());
     tray = undoSnapshot.tray.slice();
     score = undoSnapshot.score;
@@ -2819,11 +2874,11 @@
   }
 
   function updateRerollButton() {
-    rerollBtn.disabled = rerollsLeft <= 0 || !running || hardMode;
+    rerollBtn.disabled = rerollsLeft <= 0 || !running || hardMode || weeklyChallengeMode;
   }
 
   function performReroll() {
-    if (rerollsLeft <= 0 || !running || hardMode || paused) return;
+    if (rerollsLeft <= 0 || !running || hardMode || weeklyChallengeMode || paused) return;
     rerollsLeft--;
     tray = randomTray();
     // A fresh tray invalidates any pending undo (its snapshot references the old pieces).
@@ -2867,7 +2922,7 @@
     running = true;
     gameOver = false;
     undoSnapshot = null;
-    rerollsLeft = (dailyChallengeMode && dailyModifier && dailyModifier.id === 'noReroll') ? 0 : 1;
+    rerollsLeft = (weeklyChallengeMode || (dailyChallengeMode && dailyModifier && dailyModifier.id === 'noReroll')) ? 0 : 1;
     usedUndoThisGame = false;
     placementsThisGame = 0;
     paused = false;
@@ -2877,6 +2932,10 @@
     dailyBadge.classList.toggle('hidden', !dailyChallengeMode);
     if (dailyChallengeMode && dailyModifier) {
       dailyBadge.textContent = `📅 #${dailyChallengeNumber()} — ${dailyModifier.emoji} ${dailyModifier.name.toUpperCase()}`;
+    }
+    weeklyBadge.classList.toggle('hidden', !weeklyChallengeMode);
+    if (weeklyChallengeMode) {
+      weeklyBadge.textContent = `📆 WEEKLY #${weeklyChallengeNumber()} — 💀 NO UNDO/REROLL`;
     }
     updateHud();
     updateUndoButton();
@@ -3125,6 +3184,14 @@
           stats.dailyChallengesCompleted = (stats.dailyChallengesCompleted || 0) + 1;
           updateDailyStreak();
           submitToBoardSilently('daily', score);
+        }
+      }
+      if (weeklyChallengeMode) {
+        updateWeeklyBest(score);
+        if (score > 0) {
+          stats.weeklyChallengesCompleted = (stats.weeklyChallengesCompleted || 0) + 1;
+          updateWeeklyStreak();
+          submitToBoardSilently('weekly', score);
         }
       }
       if (SIZE === 6 && score > (stats.bestMiniScore || 0)) stats.bestMiniScore = score;
@@ -3471,6 +3538,7 @@
     ensureAudio();
     dailyChallengeMode = false;
     dailyModifier = null;
+    weeklyChallengeMode = false;
     currentRng = Math.random;
     startOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
@@ -3481,8 +3549,20 @@
     ensureAudio();
     dailyChallengeMode = true;
     dailyModifier = todaysModifier();
+    weeklyChallengeMode = false;
     currentRng = mulberry32(seedFromDate());
     startOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    trayEl.classList.remove('hidden');
+    reset();
+  });
+  document.getElementById('weeklyChallengeBtn').addEventListener('click', () => {
+    ensureAudio();
+    dailyChallengeMode = false;
+    dailyModifier = null;
+    weeklyChallengeMode = true;
+    currentRng = mulberry32(seedFromWeek());
+    menuOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
     reset();
@@ -3499,6 +3579,7 @@
     ensureAudio();
     dailyChallengeMode = false;
     dailyModifier = null;
+    weeklyChallengeMode = false;
     currentRng = Math.random;
     overOverlay.classList.add('hidden');
     trayEl.classList.remove('hidden');
@@ -3590,6 +3671,12 @@
     paused = false;
     pauseOverlay.classList.add('hidden');
     modeBadge.classList.add('hidden');
+    dailyChallengeMode = false;
+    dailyModifier = null;
+    dailyBadge.classList.add('hidden');
+    weeklyChallengeMode = false;
+    weeklyBadge.classList.add('hidden');
+    currentRng = Math.random;
     accruePlayTime();
     saveStats();
     renderStats();
@@ -3680,7 +3767,7 @@
 
   // All persisted keys — shared by Reset Progress (clears them) and
   // Backup/Restore (exports/imports them as one bundle).
-  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, HS_KEY_DAILY,
+  const SAVE_DATA_KEYS = [HS_KEY_8, HS_KEY_6, HS_KEY_SPRINT, HS_KEY_TIME_ATTACK, HS_KEY_SURVIVAL, HS_KEY_DAILY, HS_KEY_WEEKLY,
     LAST_NAME_KEY, STATS_KEY, ACH_KEY,
     PALETTE_KEY, PALETTE_CUSTOMIZED_KEY, MUTE_KEY, HAPTICS_KEY,
     THEME_KEY, CUSTOM_KEY, GEN_THEME_VARS_KEY, ZEN_KEY, CB_KEY, TRIED_THEMES_KEY, HARD_KEY, BOARD_SIZE_KEY, SPRINT_KEY, SPRINT_LIMIT_KEY,
