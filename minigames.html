@@ -129,6 +129,20 @@
   .overlay-msg.hidden { display: none; }
   .overlay-msg h3 { margin: 0; font-size: 22px; color: var(--ink-bright); }
   .overlay-msg p { margin: 0; font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+  .btn.selected {
+    background: linear-gradient(160deg, var(--accent), var(--accent-deep));
+    color: #fff; box-shadow: 0 4px 0 var(--accent-deep);
+  }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn:disabled:active { transform: none; }
+
+  .confetti-piece {
+    position: fixed; top: -12px; width: 8px; height: 14px; border-radius: 2px;
+    pointer-events: none; z-index: 999; animation: confettiFall 1200ms ease-in forwards;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(110vh) rotate(600deg); opacity: 0.15; }
+  }
 
   /* --- Snake --- */
   #snakeWrap { position: relative; }
@@ -228,7 +242,7 @@
     <div class="game-header">
       <button class="btn secondary" style="flex:none; padding:8px 12px;" data-back>← BACK</button>
       <h2 class="display-font">🐍 Snake</h2>
-      <span style="width:56px;"></span>
+      <button class="btn secondary" id="snakePauseBtn" style="flex:none; padding:8px 12px;" title="Pause (Space)">⏸</button>
     </div>
     <div class="hud">
       <div class="stat"><b id="snakeScore">0</b><span>SCORE</span></div>
@@ -237,6 +251,11 @@
     <div class="game-panel">
       <div id="snakeWrap">
         <canvas id="snakeCanvas" width="320" height="320"></canvas>
+        <div class="overlay-msg hidden" id="snakePauseOverlay">
+          <h3>⏸ PAUSED</h3>
+          <p>Space, or tap resume, to keep going</p>
+          <button class="btn" id="snakeResumeBtn" style="flex:none; padding:10px 22px;">RESUME</button>
+        </div>
         <div class="overlay-msg hidden" id="snakeOverlay">
           <h3 id="snakeOverlayTitle">GAME OVER</h3>
           <p id="snakeOverlaySub">Tap play again to retry</p>
@@ -263,6 +282,10 @@
       <div class="stat"><b id="memMoves">0</b><span>MOVES</span></div>
       <div class="stat"><b id="memTime">0:00</b><span>TIME</span></div>
       <div class="stat"><b id="memBest">—</b><span>BEST MOVES</span></div>
+    </div>
+    <div class="btn-row" style="margin-top:0; margin-bottom:12px;">
+      <button class="btn secondary" id="memEasyBtn" style="padding:8px 10px; font-size:12px;">EASY 4×4</button>
+      <button class="btn secondary" id="memHardBtn" style="padding:8px 10px; font-size:12px;">HARD 6×4</button>
     </div>
     <div class="game-panel" style="position:relative;">
       <div id="memoryGrid"></div>
@@ -293,6 +316,9 @@
           <p id="g2048OverlaySub"></p>
           <button class="btn" id="g2048RestartBtn" style="flex:none; padding:10px 22px;">PLAY AGAIN</button>
         </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="g2048UndoBtn">↩️ UNDO</button>
       </div>
     </div>
   </div>
@@ -363,8 +389,23 @@
 
   document.addEventListener('keydown', (e) => {
     if (current === 'hub') return;
+    if (e.key === 'Escape') { e.preventDefault(); showScreen('hub'); return; }
     if (games[current] && games[current].onKey) games[current].onKey(e);
   });
+
+  const CONFETTI_COLORS = ['#ff8fa3', '#ffd166', '#9c7fe0', '#7fd9d4', '#ffb37a'];
+  function celebrate() {
+    for (let i = 0; i < 22; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      el.style.animationDelay = Math.round(Math.random() * 200) + 'ms';
+      el.style.animationDuration = Math.round(900 + Math.random() * 500) + 'ms';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1700);
+    }
+  }
 
   function addSwipeListener(el, handlers) {
     let sx = 0, sy = 0, tracking = false;
@@ -396,6 +437,8 @@
     const overlayEl = document.getElementById('snakeOverlay');
     const overlayTitleEl = document.getElementById('snakeOverlayTitle');
     const overlaySubEl = document.getElementById('snakeOverlaySub');
+    const pauseBtn = document.getElementById('snakePauseBtn');
+    const pauseOverlayEl = document.getElementById('snakePauseOverlay');
 
     let snake, dir, nextDir, food, score, running, paused, timer, speedMs;
     const BASE_SPEED = 150, MIN_SPEED = 70;
@@ -429,18 +472,31 @@
       food = randomFood();
       running = true; paused = false;
       overlayEl.classList.add('hidden');
+      pauseOverlayEl.classList.add('hidden');
+      pauseBtn.textContent = '⏸';
+      pauseBtn.disabled = false;
       scoreEl.textContent = 0;
       if (timer) clearTimeout(timer);
       tick();
     }
 
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      pauseBtn.textContent = paused ? '▶️' : '⏸';
+      pauseOverlayEl.classList.toggle('hidden', !paused);
+      if (!paused) tick();
+    }
+
     function endGame() {
       running = false;
+      pauseBtn.disabled = true;
       if (timer) clearTimeout(timer);
       if (score > best()) {
         localStorage.setItem(SNAKE_BEST_KEY, String(score));
         overlayTitleEl.textContent = '🎉 NEW BEST!';
         overlaySubEl.textContent = 'Score: ' + score;
+        celebrate();
       } else {
         overlayTitleEl.textContent = 'GAME OVER';
         overlaySubEl.textContent = 'Score: ' + score;
@@ -517,6 +573,8 @@
       btn.addEventListener('click', () => { ensureAudio(); setDir(btn.dataset.dir); });
     });
     document.getElementById('snakeRestartBtn').addEventListener('click', () => { ensureAudio(); newGame(); });
+    pauseBtn.addEventListener('click', () => { ensureAudio(); togglePause(); });
+    document.getElementById('snakeResumeBtn').addEventListener('click', () => { ensureAudio(); togglePause(); });
     addSwipeListener(document.getElementById('snakeWrap'), {
       up: () => setDir('up'), down: () => setDir('down'), left: () => setDir('left'), right: () => setDir('right'),
     });
@@ -527,7 +585,7 @@
       onKey(e) {
         const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
         if (map[e.key]) { e.preventDefault(); setDir(map[e.key]); }
-        else if (e.key === ' ') { e.preventDefault(); if (running) { paused = !paused; if (!paused) tick(); } }
+        else if (e.key === ' ') { e.preventDefault(); togglePause(); }
       },
     };
   })();
@@ -535,7 +593,13 @@
   // ===================== MEMORY MATCH =====================
   (function () {
     const MEM_BEST_KEY = 'miniGamesMemoryBestMoves';
-    const ICONS = ['🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬜'];
+    const MEM_BEST_KEY_HARD = 'miniGamesMemoryBestMovesHard';
+    const MEM_DIFFICULTY_KEY = 'miniGamesMemoryDifficulty';
+    const ICON_POOL = ['🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬜', '🔴', '🔵', '🟢', '🟡'];
+    const DIFFICULTIES = {
+      easy: { label: 'EASY 4×4', icons: ICON_POOL.slice(0, 8), bestKey: MEM_BEST_KEY },
+      hard: { label: 'HARD 6×4', icons: ICON_POOL.slice(0, 12), bestKey: MEM_BEST_KEY_HARD },
+    };
     const grid = document.getElementById('memoryGrid');
     const movesEl = document.getElementById('memMoves');
     const timeEl = document.getElementById('memTime');
@@ -543,11 +607,14 @@
     const bestLabelEl = document.getElementById('memoryBestLabel');
     const overlayEl = document.getElementById('memoryOverlay');
     const overlaySubEl = document.getElementById('memoryOverlaySub');
+    const easyBtn = document.getElementById('memEasyBtn');
+    const hardBtn = document.getElementById('memHardBtn');
 
+    let difficulty = localStorage.getItem(MEM_DIFFICULTY_KEY) === 'hard' ? 'hard' : 'easy';
     let cards, flipped, matchedCount, moves, startTime, timerInterval;
 
     function best() {
-      const v = localStorage.getItem(MEM_BEST_KEY);
+      const v = localStorage.getItem(DIFFICULTIES[difficulty].bestKey);
       return v ? parseInt(v, 10) : null;
     }
     function updateBestLabels() {
@@ -555,7 +622,12 @@
       bestEl.textContent = b == null ? '—' : b;
       bestLabelEl.textContent = 'BEST: ' + (b == null ? '—' : b + ' moves');
     }
+    function updateDifficultyButtons() {
+      easyBtn.classList.toggle('selected', difficulty === 'easy');
+      hardBtn.classList.toggle('selected', difficulty === 'hard');
+    }
     updateBestLabels();
+    updateDifficultyButtons();
 
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
@@ -572,7 +644,8 @@
 
     function newGame() {
       overlayEl.classList.add('hidden');
-      cards = shuffle(ICONS.concat(ICONS)).map((icon, i) => ({ id: i, icon, flipped: false, matched: false }));
+      const icons = DIFFICULTIES[difficulty].icons;
+      cards = shuffle(icons.concat(icons)).map((icon, i) => ({ id: i, icon, flipped: false, matched: false }));
       flipped = []; matchedCount = 0; moves = 0; startTime = Date.now();
       movesEl.textContent = 0;
       timeEl.textContent = '0:00';
@@ -638,9 +711,21 @@
       overlaySubEl.textContent = `${moves} moves in ${formatTime(elapsed)}` + (newBest ? ' — new best!' : '');
       overlayEl.classList.remove('hidden');
       beep(500, 1400, 0.35, 'sine', 0.12);
+      if (newBest) celebrate();
     }
 
     document.getElementById('memoryRestartBtn').addEventListener('click', () => { ensureAudio(); newGame(); });
+    function setDifficulty(d) {
+      if (d === difficulty) return;
+      difficulty = d;
+      localStorage.setItem(MEM_DIFFICULTY_KEY, d);
+      updateDifficultyButtons();
+      updateBestLabels();
+      ensureAudio();
+      newGame();
+    }
+    easyBtn.addEventListener('click', () => setDifficulty('easy'));
+    hardBtn.addEventListener('click', () => setDifficulty('hard'));
 
     games.memory = {
       onEnter() { newGame(); },
@@ -659,6 +744,7 @@
     const overlayEl = document.getElementById('g2048Overlay');
     const overlayTitleEl = document.getElementById('g2048OverlayTitle');
     const overlaySubEl = document.getElementById('g2048OverlaySub');
+    const undoBtn = document.getElementById('g2048UndoBtn');
 
     const TILE_COLORS = {
       2: '#ffe8cf', 4: '#ffd9c2', 8: '#ffb37a', 16: '#ff9d5c', 32: '#ff8fa3',
@@ -666,7 +752,7 @@
       2048: '#ffd166',
     };
 
-    let grid, score, running, won;
+    let grid, score, running, won, lastSnapshot;
 
     function best() { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10); }
     function updateBestLabels() {
@@ -688,13 +774,27 @@
       grid[r][c] = Math.random() < 0.9 ? 2 : 4;
     }
 
+    function updateUndoBtn() { undoBtn.disabled = !lastSnapshot || !running; }
+
     function newGame() {
       grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-      score = 0; running = true; won = false;
+      score = 0; running = true; won = false; lastSnapshot = null;
       spawnTile(); spawnTile();
       scoreEl.textContent = 0;
       overlayEl.classList.add('hidden');
+      updateUndoBtn();
       render();
+    }
+
+    function undo() {
+      if (!lastSnapshot || !running) return;
+      grid = lastSnapshot.grid;
+      score = lastSnapshot.score;
+      lastSnapshot = null;
+      scoreEl.textContent = score;
+      updateUndoBtn();
+      render();
+      beep(420, 300, 0.1, 'square', 0.06);
     }
 
     function render() {
@@ -767,6 +867,8 @@
       for (let i = 0; i < (4 - rotations) % 4; i++) result = rotateGridCW(result);
 
       if (!anyMoved) return;
+      lastSnapshot = { grid: grid.map(row => row.slice()), score };
+      updateUndoBtn();
       grid = result;
       score += gainedTotal;
       scoreEl.textContent = score;
@@ -796,9 +898,11 @@
 
     function endGame() {
       running = false;
+      updateUndoBtn();
       if (score > best()) {
         localStorage.setItem(BEST_KEY, String(score));
         overlayTitleEl.textContent = '🎉 NEW BEST!';
+        celebrate();
       } else {
         overlayTitleEl.textContent = 'GAME OVER';
       }
@@ -809,6 +913,7 @@
     }
 
     document.getElementById('g2048RestartBtn').addEventListener('click', () => { ensureAudio(); newGame(); });
+    undoBtn.addEventListener('click', () => { ensureAudio(); undo(); });
     addSwipeListener(document.getElementById('g2048Wrap'), {
       up: () => move('up'), down: () => move('down'), left: () => move('left'), right: () => move('right'),
     });
