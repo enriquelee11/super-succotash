@@ -1156,6 +1156,7 @@
           <button class="action secondary" id="startScoresBtn">🏆 HIGH SCORES</button>
           <button class="action secondary" id="startSettingsBtn">⚙️ SETTINGS</button>
           <button class="action secondary" id="howToPlayBtn">❓ HOW TO PLAY</button>
+          <button class="action secondary" id="miniGamesBtn">🎮 MINI GAMES</button>
           <button class="action" id="backFromMenuBtn">← BACK</button>
         </div>
 
@@ -3845,6 +3846,9 @@
   document.getElementById('howToPlayBtn').addEventListener('click', () => {
     menuOverlay.classList.add('hidden');
     howToPlayOverlay.classList.remove('hidden');
+  });
+  document.getElementById('miniGamesBtn').addEventListener('click', () => {
+    window.location.href = 'minigames.html';
   });
   document.getElementById('closeHowToPlayBtn').addEventListener('click', () => {
     howToPlayOverlay.classList.add('hidden');

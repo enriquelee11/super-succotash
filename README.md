@@ -11,6 +11,8 @@ python3 -m http.server 8000
 # then visit http://localhost:8000/jumble.html
 ```
 
+A separate bonus page, `minigames.html`, holds three small arcade games (Snake, Memory Match, 2048) — reachable from Jumble's Menu (🎮 MINI GAMES) or by visiting it directly.
+
 ## How to play
 
 Drag pieces from the tray onto the 8×8 grid — fill a full row or column to blast it away and score points. Chain clears back-to-back for a combo multiplier. The game ends when none of your three pieces fit anywhere on the board.
@@ -36,7 +38,8 @@ Drag pieces from the tray onto the 8×8 grid — fill a full row or column to bl
 - Lucky Pieces (✨) occasionally show up gold-glowing in the tray and score double when placed
 - Colorblind-friendly Shape Marks (🔲, in Settings) overlay a distinct glyph on every piece color so you're never relying on hue alone
 - Quit button (🏠) in the toolbar backs out to the title from any in-progress game, with a tap-again-to-confirm safety
-- A clean title screen (Start Game, Daily Challenge) with a separate Menu page (☰) for High Scores, Settings, and How to Play (❓) — keeps the main screen from getting crowded
+- A clean title screen (Start Game, Daily Challenge) with a separate Menu page (☰) for High Scores, Settings, How to Play (❓), and Mini Games (🎮) — keeps the main screen from getting crowded
+- Mini Games (🎮, in the Menu) opens `minigames.html`, a separate bonus page with three small arcade games — Snake, Memory Match, and 2048 — each with its own best score saved locally, completely separate from Jumble's own stats and leaderboards
 - Top-10 named high score leaderboard (🏆) with tabs for Classic (split by board size), Sprint, Time Attack, Survival, Daily Challenge, and Weekly Challenge — each mode's runs are only ever compared against its own kind — plus session stats (games played, lines cleared, best combo, daily play streak, today's best score, total time played). A great Daily or Weekly Challenge run quietly posts to its own all-time board too, no extra prompt needed
 - Unlockable badges (🏅) for milestones — first clear, a x5 combo, a perfect clear, 100 lines total, a 7-day streak, a 500+ score, trying 5 themes, a Zen Mode game, a Hard Mode win, finishing a game without Undo, completing a Daily Challenge, a 7-day Daily Challenge streak, scoring 200+ on the Mini board, collecting Lucky Pieces, finishing a Sprint, beating a Time Attack clock, surviving 50 placements in Survival Mode, finishing at least one of each special mode (Sprint/Time Attack/Survival), playing for a total of an hour, a x10 combo, 5 Perfect Clears total, a 14-day play streak, a 30-day Daily Challenge streak, completing a Weekly Challenge, a 4-week Weekly Challenge streak, and unlocking every other badge — each worth points toward an overall rank (Rookie through Legend), shown with a live "X / Y unlocked" count and an All/Done/To‑do filter in the Badges screen, plus a "RANK UP" toast the moment your total points cross into the next rank. Locked badges with a numeric goal (combos, lines, streaks, and the like) show a live progress bar instead of a plain "???"
 - A small sparkline of your last 10 scores (per board size) in the High Scores screen
